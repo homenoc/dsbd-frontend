@@ -116,7 +116,7 @@ export function JPNICDetail(props: {
           labelPlacement="end"
           checked={jpnicCopy.is_group}
           onChange={() => {
-            setJPNICCopy({ ...jpnicCopy, hidden: !jpnicCopy.is_group })
+            setJPNICCopy({ ...jpnicCopy, is_group: !jpnicCopy.is_group })
           }}
         />
         <FormControlLabel
