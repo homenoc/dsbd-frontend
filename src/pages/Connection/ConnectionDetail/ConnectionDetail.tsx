@@ -211,7 +211,7 @@ export function ConnectionOpen(props: {
               type="number"
             >
               <MenuItem value={0}>なし(初期値)</MenuItem>
-              {template.bgp_router?.map((row: BGPRouterDetailData) => (
+              {template.bgp_router?.filter((router) => router.enable === true).map((row: BGPRouterDetailData) => (
                 <MenuItem key={row.ID + row.hostname} value={row.ID}>
                   {row.hostname}
                 </MenuItem>
@@ -240,7 +240,7 @@ export function ConnectionOpen(props: {
               type="number"
             >
               <MenuItem value={0}>なし(初期値)</MenuItem>
-              {template.tunnel_endpoint_router_ip?.map(
+              {template.tunnel_endpoint_router_ip?.filter((ip) => ip.enable === true).map(
                 (row: TunnelEndPointRouterIPTemplateData) => (
                   <MenuItem key={row.ID + row.ip} value={row.ID}>
                     {row.tunnel_endpoint_router.hostname}
