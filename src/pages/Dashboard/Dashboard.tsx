@@ -218,7 +218,8 @@ export default function Dashboard() {
                   if (!expired_status2IsChecked && item.expired_status === 2) { return false }
                   if (!expired_status3IsChecked && item.expired_status === 3) { return false }
 
-                  if(new Date() < new Date(item.member_expired.split('T')[0]) ) { return false }
+                  if (item.member_expired === '' || item.member_expired === null) { return true }
+                  if (new Date() < new Date(item.member_expired.split('T')[0])) { return false }
                   return true
                 }).map(((group) => 
                   group.users?.filter((user) => 
