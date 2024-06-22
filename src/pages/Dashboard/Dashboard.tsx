@@ -11,7 +11,7 @@ import {
   ServiceDetailData,
   TicketDetailData,
 } from '../../interface'
-import { Card, CardContent, Chip, Grid, Stack } from '@mui/material'
+import { Button, Card, CardContent, Chip, Checkbox, FormControlLabel, Grid, Stack } from '@mui/material'
 import Ticket from '../../components/Dashboard/Ticket/Ticket'
 import Request from '../../components/Dashboard/Request/Request'
 import Service from '../../components/Dashboard/Service/Service'
@@ -30,6 +30,11 @@ export default function Dashboard() {
   const [group, setGroup] = useState<GroupDetailData[]>()
   const [connection, setConnection] = useState<ConnectionDetailData[]>()
   const template = useRecoilValue(TemplateState)
+  const [expired_status0IsChecked, setExpired_status0IsChecked] = useState(true);
+  const [expired_status1IsChecked, setExpired_status1IsChecked] = useState(false);
+  const [expired_status2IsChecked, setExpired_status2IsChecked] = useState(false);
+  const [expired_status3IsChecked, setExpired_status3IsChecked] = useState(false);
+  const [groupDialogIsOpen, setGroupDialogIsOpen] = useState(false);
 
   useEffect(() => {
     if (reload) {
@@ -176,7 +181,54 @@ export default function Dashboard() {
           />
         </Grid>
         <Grid item xs={12}>
-          <Group key={'group'} data={template?.group} setReload={setReload} />
+          <Group
+            key={'group'}
+            data={template?.group?.filter((item) => {
+              if (!expired_status0IsChecked && item.expired_status === 0) {return false}
+              if (!expired_status1IsChecked && item.expired_status === 1) {return false}
+              if (!expired_status2IsChecked && item.expired_status === 2) {return false}
+              if (!expired_status3IsChecked && item.expired_status === 3) {return false}
+              return true
+            })}
+            setReload={setReload}
+          />
+          <FormControlLabel
+            control={<Checkbox checked={expired_status0IsChecked} onChange={() => setExpired_status0IsChecked(!expired_status0IsChecked)}/>}
+            label="通常"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={expired_status1IsChecked} onChange={() => setExpired_status1IsChecked(!expired_status1IsChecked)}/>}
+            label="審査落ち"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={expired_status2IsChecked} onChange={() => setExpired_status2IsChecked(!expired_status2IsChecked)}/>}
+            label="ユーザにより廃止"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={expired_status3IsChecked} onChange={() => setExpired_status3IsChecked(!expired_status3IsChecked)}/>}
+            label="運営委員により廃止"
+          />
+          <Button onClick={() => setGroupDialogIsOpen(!groupDialogIsOpen)} >(メール送信用)メールアドレス一覧表示</Button>
+          {
+            groupDialogIsOpen
+              ? (<p>
+                {template?.group?.filter((item) => {
+                  if (!expired_status0IsChecked && item.expired_status === 0) { return false }
+                  if (!expired_status1IsChecked && item.expired_status === 1) { return false }
+                  if (!expired_status2IsChecked && item.expired_status === 2) { return false }
+                  if (!expired_status3IsChecked && item.expired_status === 3) { return false }
+                  return true
+                }).map(((group) => 
+                  group.users?.filter((user) => 
+                    user.level < 3
+                  ).map((user) => 
+                    user.email + ","
+                  )
+                ))
+                }
+              </p>
+              ) : (<></>)
+          }
         </Grid>
         <Grid item xs={12}>
           <MemoGroup
