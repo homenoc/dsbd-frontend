@@ -212,6 +212,14 @@ export default function Dashboard() {
             control={<Checkbox checked={expired_status3IsChecked} onChange={() => setExpired_status3IsChecked(!expired_status3IsChecked)}/>}
             label="運営委員により廃止"
           />
+          <FormControlLabel
+            control={<Checkbox checked={member_type90IsChecked} onChange={() => setMember_type90IsChecked(!member_type90IsChecked)}/>}
+            label="member_type: 90"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={member_type99IsChecked} onChange={() => setMember_type99IsChecked(!member_type99IsChecked)}/>}
+            label="member_type: 99"
+          />
           <Button onClick={() => setGroupDialogIsOpen(!groupDialogIsOpen)} >(メール送信用)メールアドレス一覧表示</Button>
           {
             groupDialogIsOpen
