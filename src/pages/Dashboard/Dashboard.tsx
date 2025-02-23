@@ -37,6 +37,8 @@ export default function Dashboard() {
   const [member_type90IsChecked, setMember_type90IsChecked] = useState(false);
   const [member_type99IsChecked, setMember_type99IsChecked] = useState(false);
   const [groupDialogIsOpen, setGroupDialogIsOpen] = useState(false);
+  const [servicesIsChecked, setServicesIsChecked] = useState(false);
+  const [connectionsIsChecked, setConnectionsIsChecked] = useState(false);
 
   useEffect(() => {
     if (reload) {
@@ -192,6 +194,8 @@ export default function Dashboard() {
               if (!expired_status3IsChecked && item.expired_status === 3) {return false}
               if (!member_type90IsChecked && item.member_type === 90) return false
               if (!member_type99IsChecked && item.member_type === 99) return false
+              if (servicesIsChecked && item.services?.length === 0) return false
+              if (connectionsIsChecked && item.services?.every(service => service.connections?.length === 0)) return false
               return true
             })}
             setReload={setReload}
@@ -220,6 +224,14 @@ export default function Dashboard() {
             control={<Checkbox checked={member_type99IsChecked} onChange={() => setMember_type99IsChecked(!member_type99IsChecked)}/>}
             label="member_type: 99"
           />
+          <FormControlLabel
+            control={<Checkbox checked={servicesIsChecked} onChange={() => setServicesIsChecked(!servicesIsChecked)}/>}
+            label="servicesが0"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={connectionsIsChecked} onChange={() => setConnectionsIsChecked(!connectionsIsChecked)}/>}
+            label="connectionsが全て0"
+          />
           <Button onClick={() => setGroupDialogIsOpen(!groupDialogIsOpen)} >(メール送信用)メールアドレス一覧表示</Button>
           {
             groupDialogIsOpen
@@ -231,6 +243,8 @@ export default function Dashboard() {
                   if (!expired_status3IsChecked && item.expired_status === 3) { return false }
                   if (!member_type90IsChecked && item.member_type === 90) return false
                   if (!member_type99IsChecked && item.member_type === 99) return false
+                  if (servicesIsChecked && item.services?.length === 0) return false
+                  if (connectionsIsChecked && item.services?.every(service => service.connections?.length === 0)) return false
 
                   if (item.member_expired === '' || item.member_expired === null) { return true }
                   if (new Date() < new Date(item.member_expired.split('T')[0])) { return false }
