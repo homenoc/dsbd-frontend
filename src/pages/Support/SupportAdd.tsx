@@ -38,7 +38,7 @@ export default function SupportAdd() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (template !== undefined) {
+    if (template === DefaultTemplateData) {
       GetTemplate().then((res) => {
         if (res.error === '') {
           setTemplate(res.data)
