@@ -119,28 +119,26 @@ export default function GroupAdd() {
       then: (value) =>
         value
           .required('question1 is required')
-          .min(20, '20文字以上入力してください。'),
+          .min(20, 'question1 must be at least 20 characters'),
     }),
     question2: Yup.string().when('isMember', {
       is: (isMember: boolean) => !isMember,
       then: (value) =>
         value
           .required('question2 is required')
-          .min(30, '30文字以上入力してください。'),
+          .min(20, 'question2 must be at least 20 characters'),
     }),
     question3: Yup.string().when('isMember', {
       is: (isMember: boolean) => !isMember,
       then: (value) =>
         value
           .required('question3 is required')
-          .min(20, '20文字以上入力してください。'),
     }),
     question4: Yup.string().when('isMember', {
       is: (isMember: boolean) => !isMember,
       then: (value) =>
         value
           .required('question4 is required')
-          .min(20, '20文字以上入力してください。'),
     }),
   })
 
@@ -325,7 +323,7 @@ export default function GroupAdd() {
             {!isMember && (
               <div>
                 <FormControl component="fieldset">
-                  <FormLabel>1.1. どこで当団体のことを知りましたか？</FormLabel>
+                  <FormLabel>1.1. どこで当団体のことを知りましたか？ [20文字以上]</FormLabel>
                   <Typography variant="subtitle1" gutterBottom component="div">
                     当団体の運営委員より紹介を受けた方は紹介者の名前を記入してください。
                   </Typography>
@@ -346,11 +344,11 @@ export default function GroupAdd() {
                 <br />
                 <FormControl component="fieldset">
                   <FormLabel>
-                    1.2. どのような用途で当団体のネットワークに接続しますか？
+                    1.2. どのような用途で当団体のネットワークに接続しますか？ [20文字以上]
                   </FormLabel>
                   <Typography variant="subtitle1" gutterBottom component="div">
                     例)
-                    研究目的、勉強、自宅サーバ用途（商用利用は不可）[10文字以上]
+                    研究目的、勉強、自宅サーバ用途（商用利用は不可）
                   </Typography>
                   <StyledTextFieldVeryLong
                     id="question2"
