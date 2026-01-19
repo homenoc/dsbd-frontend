@@ -123,3 +123,24 @@ export function PasswordRecovery(
       }
     })
 }
+
+export function AgreeAntisocial(): Promise<{ error: string | undefined }> {
+  return axios
+    .put(restfulApiConfig.apiURL + '/user/antisocial/agree', null, {
+      headers: {
+        'Content-Type': 'application/json',
+        USER_TOKEN: Cookies.get('user_token')!,
+        ACCESS_TOKEN: Cookies.get('access_token')!,
+      },
+    })
+    .then((res) => {
+      return {
+        error: undefined,
+      }
+    })
+    .catch((err) => {
+      return {
+        error: '[' + err.response.status + '] ' + err.response.data.error,
+      }
+    })
+}

@@ -42,6 +42,7 @@ import { restfulApiConfig } from '../../api/Config'
 import { muiColorTheme } from '../Theme'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useSelector } from 'react-redux'
+import { AntisocialAgreementDialog } from '../AntisocialAgreementDialog'
 
 const drawerWidth = 240
 
@@ -116,6 +117,10 @@ interface DashboardProps {
 
 export default function Dashboard(props: DashboardProps) {
   const navigate = useNavigate()
+  const infos = useSelector((state: RootState) => state.infos)
+  const latestInfo = infos[infos.length - 1]
+  const userData = latestInfo?.data?.user
+  const showAntisocialDialog = userData && userData.antisocial_check !== true
   // Menu Bar
   // useMediaQuery("(min-width:800px)")でmobileかどうかを判定
   const [open, setOpen] = React.useState(useMediaQuery('(min-width:600px)'))
@@ -146,6 +151,7 @@ export default function Dashboard(props: DashboardProps) {
 
   return (
     <ThemeProvider theme={muiColorTheme}>
+      <AntisocialAgreementDialog open={showAntisocialDialog ?? false} />
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
         <AppBar position="fixed" open={open}>
