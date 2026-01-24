@@ -102,6 +102,10 @@ export default function ConnectionAdd() {
   const isNeedInternet = (value: string) =>
     template.connections?.find((ct) => ct.type === value)?.need_internet ??
     false
+  const isIXConnection = (value: string) => value === 'IXP'
+  const isCrossConnect = (value: string) =>
+    template.connections?.find((ct) => ct.type === value)?.need_cross_connect ??
+    false
   const isNeedBGP = () =>
     template.services?.find(
       (serviceTemplate) => serviceTemplate.type === serviceType
@@ -127,9 +131,13 @@ export default function ConnectionAdd() {
     connection_type: Yup.string()
       .required('接続情報を選択してください')
       .min(1, '正しく選択してください'),
-    preferred_ap: Yup.string()
-      .required('希望接続場所を選択してください')
-      .min(1, '正しく選択してください'),
+    preferred_ap: Yup.string().when('connection_type', {
+      is: (value: string) => !isIXConnection(value) && !isCrossConnect(value),
+      then: (value) =>
+        value
+          .required('希望接続場所を選択してください')
+          .min(1, '正しく選択してください'),
+    }),
     monitor: Yup.bool(),
     comment: Yup.string(),
 
@@ -181,6 +189,30 @@ export default function ConnectionAdd() {
       is: () => isNeedBGP() && isIPv6Route(),
       then: (value) => value.max(200),
     }),
+
+    ix: Yup.string().when('connection_type', {
+      is: (value: string) => isIXConnection(value),
+      then: (value) => value.required('IXを選択してください'),
+    }),
+    ix_peer_type: Yup.string().when('connection_type', {
+      is: (value: string) => isIXConnection(value),
+      then: (value) => value.required('ピアリングタイプを選択してください'),
+    }),
+    ix_vlan_id: Yup.string().when(['connection_type', 'ix_peer_type'], {
+      is: (connectionType: string, peerType: string) =>
+        isIXConnection(connectionType) && peerType === 'PI/CUG',
+      then: (value) => value.required('VLAN-IDを入力してください'),
+    }),
+    link_v4_your: Yup.string().when(['connection_type', 'ipv4_route'], {
+      is: (connectionType: string, ipv4Route: string) =>
+        isIXConnection(connectionType) && ipv4Route && ipv4Route !== '',
+      then: (value) => value.required('IPv4アドレスを入力してください'),
+    }),
+    link_v6_your: Yup.string().when(['connection_type', 'ipv6_route'], {
+      is: (connectionType: string, ipv6Route: string) =>
+        isIXConnection(connectionType) && ipv6Route && ipv6Route !== '',
+      then: (value) => value.required('IPv6アドレスを入力してください'),
+    }),
   })
 
   const {
@@ -205,6 +237,11 @@ export default function ConnectionAdd() {
       term_ip: '',
       monitor: false,
       comment: '',
+      ix: '',
+      ix_peer_type: '',
+      ix_vlan_id: '',
+      link_v4_your: '',
+      link_v6_your: '',
     },
   })
 
@@ -212,6 +249,7 @@ export default function ConnectionAdd() {
   const ipv4Route = watch('ipv4_route')
   const ipv6Route = watch('ipv6_route')
   const ntt = watch('ntt')
+  const ixPeerType = watch('ix_peer_type')
 
   const onSubmit = (data: any, e: any) => {
     const request: any = {
@@ -238,10 +276,25 @@ export default function ConnectionAdd() {
       request.ipv4_route = data.ipv4_route_comment
     }
     if (data.ipv6_route) {
-      request.ipv6_route = data.ipv4_route
+      request.ipv6_route = data.ipv6_route
     }
     if (data.ipv6_route_comment) {
       request.ipv6_route = data.ipv6_route_comment
+    }
+    if (data.ix) {
+      request.ix = data.ix
+    }
+    if (data.ix_peer_type) {
+      request.ix_peer_type = data.ix_peer_type
+    }
+    if (data.ix_vlan_id) {
+      request.ix_vlan_id = data.ix_vlan_id
+    }
+    if (data.link_v4_your) {
+      request.link_v4_your = data.link_v4_your
+    }
+    if (data.link_v6_your) {
+      request.link_v6_your = data.link_v6_your
     }
 
     // check
@@ -497,44 +550,170 @@ export default function ConnectionAdd() {
               </FormControl>
             </Grid>
           )}
-          <Grid item xs={12}>
-            <FormControl
-              component="fieldset"
-              error={errors?.hasOwnProperty('preferred_ap')}
-            >
-              <FormLabel component="legend">
-                3.1. ご希望の接続終端場所をお選びください
-              </FormLabel>
-              <FormHelperText error>
-                {errors?.preferred_ap && errors.preferred_ap?.message}
-              </FormHelperText>
-              <Controller
-                name="preferred_ap"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    aria-label="gender"
-                    onChange={(e) => field.onChange(e.target.value)}
-                    value={field.value}
-                  >
-                    {template.preferred_ap?.map((row, index) => (
-                      <MenuItem key={'preferred_ap_' + index} value={row}>
-                        {row}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
-              />
-            </FormControl>
-            <br />
-            <div>
-              (当団体のNOC一覧は https://www.homenoc.ad.jp/en/tech/backbone/
-              をご覧ください)
-            </div>
-            <div>
-              NOCの収容率などにより、ご希望にお答えできない場合がございます。
-            </div>
-          </Grid>
+          {isIXConnection(connectionType) && (
+            <Grid item xs={12}>
+              <FormControl
+                component="fieldset"
+                error={errors?.hasOwnProperty('ix')}
+              >
+                <FormLabel component="legend">
+                  2.2. 接続するIXを選択してください
+                </FormLabel>
+                <FormHelperText error>
+                  {errors?.ix && errors.ix?.message}
+                </FormHelperText>
+                <Controller
+                  name="ix"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      onChange={(e) => field.onChange(e.target.value)}
+                      value={field.value}
+                    >
+                      {template.ix?.map((ix, index) => (
+                        <MenuItem key={'ix_' + index} value={ix.name}>
+                          {ix.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+              </FormControl>
+            </Grid>
+          )}
+          {isIXConnection(connectionType) && (
+            <Grid item xs={12}>
+              <FormControl
+                component="fieldset"
+                error={errors?.hasOwnProperty('ix_peer_type')}
+              >
+                <FormLabel component="legend">
+                  2.3. ピアリングタイプを選択してください
+                </FormLabel>
+                <FormHelperText error>
+                  {errors?.ix_peer_type && errors.ix_peer_type?.message}
+                </FormHelperText>
+                <Controller
+                  name="ix_peer_type"
+                  control={control}
+                  render={({ field }) => (
+                    <RadioGroup
+                      onChange={(e) => field.onChange(e.target.value)}
+                      value={field.value}
+                    >
+                      <FormControlLabel
+                        value="パブリック"
+                        control={<Radio />}
+                        label="パブリック"
+                      />
+                      <FormControlLabel
+                        value="PI/CUG"
+                        control={<Radio />}
+                        label="PI/CUG (Private Connection / Closed User Group)"
+                      />
+                    </RadioGroup>
+                  )}
+                />
+              </FormControl>
+            </Grid>
+          )}
+          {isIXConnection(connectionType) && ixPeerType === 'PI/CUG' && (
+            <Grid item xs={12}>
+              <FormControl
+                component="fieldset"
+                error={errors?.hasOwnProperty('ix_vlan_id')}
+              >
+                <FormLabel component="legend">2.4. VLAN-ID</FormLabel>
+                <div>PI/CUGのVLAN-IDを入力してください</div>
+                <FormHelperText error>
+                  {errors?.ix_vlan_id && errors.ix_vlan_id?.message}
+                </FormHelperText>
+                <StyledTextFieldLong
+                  key={'ix_vlan_id'}
+                  label="VLAN-ID"
+                  variant="outlined"
+                  {...register(`ix_vlan_id`, { required: true })}
+                  error={!!errors.ix_vlan_id}
+                />
+              </FormControl>
+            </Grid>
+          )}
+          {isIXConnection(connectionType) && (
+            <Grid item xs={12}>
+              <FormControl
+                component="fieldset"
+                error={
+                  errors?.hasOwnProperty('link_v4_your') ||
+                  errors?.hasOwnProperty('link_v6_your')
+                }
+              >
+                <FormLabel component="legend">
+                  2.5. IX接続アドレス（貴団体側）
+                </FormLabel>
+                <div>IX接続で使用する貴団体側のIPアドレスを入力してください</div>
+                <FormHelperText error>
+                  {errors?.link_v4_your && errors.link_v4_your?.message}
+                </FormHelperText>
+                <StyledTextFieldLong
+                  key={'link_v4_your'}
+                  label="IPv4アドレス"
+                  variant="outlined"
+                  {...register(`link_v4_your`, { required: true })}
+                  error={!!errors.link_v4_your}
+                />
+                <FormHelperText error>
+                  {errors?.link_v6_your && errors.link_v6_your?.message}
+                </FormHelperText>
+                <StyledTextFieldLong
+                  key={'link_v6_your'}
+                  label="IPv6アドレス"
+                  variant="outlined"
+                  {...register(`link_v6_your`, { required: true })}
+                  error={!!errors.link_v6_your}
+                />
+              </FormControl>
+            </Grid>
+          )}
+          {!isIXConnection(connectionType) && !isCrossConnect(connectionType) && (
+            <Grid item xs={12}>
+              <FormControl
+                component="fieldset"
+                error={errors?.hasOwnProperty('preferred_ap')}
+              >
+                <FormLabel component="legend">
+                  3.1. ご希望の接続終端場所をお選びください
+                </FormLabel>
+                <FormHelperText error>
+                  {errors?.preferred_ap && errors.preferred_ap?.message}
+                </FormHelperText>
+                <Controller
+                  name="preferred_ap"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      aria-label="gender"
+                      onChange={(e) => field.onChange(e.target.value)}
+                      value={field.value}
+                    >
+                      {template.preferred_ap?.map((row, index) => (
+                        <MenuItem key={'preferred_ap_' + index} value={row}>
+                          {row}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+              </FormControl>
+              <br />
+              <div>
+                (当団体のNOC一覧は https://www.homenoc.ad.jp/en/tech/backbone/
+                をご覧ください)
+              </div>
+              <div>
+                NOCの収容率などにより、ご希望にお答えできない場合がございます。
+              </div>
+            </Grid>
+          )}
           {isNeedInternet(connectionType) && (
             <Grid item xs={12}>
               <FormControl

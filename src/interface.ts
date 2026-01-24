@@ -266,6 +266,12 @@ export interface ConnectionTemplateData {
   is_l3: boolean
 }
 
+export interface IXTemplateData {
+  name: string
+  ipv4_address: string
+  ipv6_address: string
+}
+
 export interface ServiceTemplateData {
   name: string
   comment: string
@@ -302,6 +308,7 @@ export interface TemplateData {
   ipv4_route?: string[]
   ipv6_route?: string[]
   payment_membership?: PaymentMembershipTemplate[]
+  ix?: IXTemplateData[]
 }
 
 export interface GroupAddData {
@@ -320,6 +327,7 @@ export interface GroupAddData {
 }
 
 export interface ServiceAddJPNICData {
+  is_group: boolean
   org: string
   org_en: string
   mail: string
@@ -328,8 +336,10 @@ export interface ServiceAddJPNICData {
   address_en: string
   name: string
   name_en: string
-  dept_en: string
   dept: string
+  dept_en: string
+  title: string
+  title_en: string
   country: string
   tel: string
   fax: string
@@ -370,6 +380,7 @@ export const DefaultTemplateData: TemplateData = {
   ipv4: undefined,
   ipv6: undefined,
   ntts: undefined,
+  ix: undefined,
 }
 
 export const DefaultGroupAddData: GroupAddData = {
