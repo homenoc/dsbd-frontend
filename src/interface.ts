@@ -20,6 +20,7 @@ export interface UserData {
   status: number
   level: number
   mail_verify: boolean
+  antisocial_check: boolean | null
 }
 
 export interface GroupData {
