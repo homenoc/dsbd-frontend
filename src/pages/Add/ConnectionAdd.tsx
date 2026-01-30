@@ -159,16 +159,28 @@ export default function ConnectionAdd() {
         isIXConnection(connectionType) && peerType === 'PI/CUG',
       then: (value) => value.required('VLAN-IDを入力してください'),
     }),
-    link_v4_your: Yup.string().when(['connection_type', 'ipv4_route'], {
-      is: (connectionType: string, ipv4Route: string) =>
-        isIXConnection(connectionType) && ipv4Route && ipv4Route !== '',
-      then: (value) => value.required('IPv4アドレスを入力してください'),
-    }),
-    link_v6_your: Yup.string().when(['connection_type', 'ipv6_route'], {
-      is: (connectionType: string, ipv6Route: string) =>
-        isIXConnection(connectionType) && ipv6Route && ipv6Route !== '',
-      then: (value) => value.required('IPv6アドレスを入力してください'),
-    }),
+    link_v4_your: Yup.string().when(
+      ['connection_type', 'ipv4_route', 'ix_peer_type'],
+      {
+        is: (connectionType: string, ipv4Route: string, peerType: string) =>
+          isIXConnection(connectionType) &&
+          ipv4Route &&
+          ipv4Route !== '' &&
+          peerType !== 'PI/CUG',
+        then: (value) => value.required('IPv4アドレスを入力してください'),
+      }
+    ),
+    link_v6_your: Yup.string().when(
+      ['connection_type', 'ipv6_route', 'ix_peer_type'],
+      {
+        is: (connectionType: string, ipv6Route: string, peerType: string) =>
+          isIXConnection(connectionType) &&
+          ipv6Route &&
+          ipv6Route !== '' &&
+          peerType !== 'PI/CUG',
+        then: (value) => value.required('IPv6アドレスを入力してください'),
+      }
+    ),
   })
 
   const {
@@ -581,7 +593,7 @@ export default function ConnectionAdd() {
               </FormControl>
             </Grid>
           )}
-          {isIXConnection(connectionType) && (
+          {isIXConnection(connectionType) && ixPeerType !== 'PI/CUG' && (
             <Grid item xs={12}>
               <FormControl
                 component="fieldset"
