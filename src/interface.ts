@@ -218,9 +218,6 @@ export interface ConnectionDetailData {
   ipv4_route: string
   ipv6_route: string
   tunnel_endpoint_router_ip?: TunnelEndPointRouterIPTemplateData
-  ix?: string
-  ix_peer_type?: string
-  ix_vlan_id?: string
 }
 
 export interface BGPRouterDetailData {
@@ -295,12 +292,6 @@ export interface ConnectionTemplateData {
   is_l3: boolean
 }
 
-export interface IXTemplateData {
-  name: string
-  ipv4_address: string
-  ipv6_address: string
-}
-
 export interface GroupDetailData {
   ID: number
   CreatedAt: string
@@ -358,7 +349,6 @@ export interface TemplateData {
   mail_template?: MailTemplateData[]
   member_type?: MemberTypeTemplateData[]
   payment_membership?: PaymentMembershipTemplate[]
-  ix?: IXTemplateData[]
 }
 
 export interface MemoAddData {
@@ -445,11 +435,6 @@ export interface ConnectionAddData {
   noc_id: number
   term_ip: string
   monitor: boolean
-  ix?: string
-  ix_peer_type?: string
-  ix_vlan_id?: string
-  link_v4_your?: string
-  link_v6_your?: string
 }
 
 export interface ChatData {
@@ -616,7 +601,6 @@ export const DefaultTemplateData: TemplateData = {
   user: undefined,
   group: undefined,
   member_type: undefined,
-  ix: undefined,
 }
 
 export const DefaultGroupDetailData: GroupDetailData = {
@@ -797,9 +781,6 @@ export const DefaultConnectionDetailData: ConnectionDetailData = {
   comment: '',
   service: undefined,
   tunnel_endpoint_router_ip: undefined,
-  ix: '',
-  ix_peer_type: '',
-  ix_vlan_id: '',
 }
 
 export const DefaultConnectionDetailDataArray: ConnectionDetailData[] = [
