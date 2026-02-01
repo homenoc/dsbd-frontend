@@ -741,18 +741,6 @@ export default function ConnectionAdd() {
                       }}
                       value={field.value}
                     >
-                      <FormControlLabel
-                        key={'ntt_kounai_setsuzoku'}
-                        value="構内接続"
-                        control={<Radio />}
-                        label="構内接続"
-                      />
-                      <FormControlLabel
-                        key={'ntt_ix'}
-                        value="IX"
-                        control={<Radio />}
-                        label="IX"
-                      />
                       {template.ntts?.map((ntt) => (
                         <FormControlLabel
                           key={'ntt_' + ntt}
