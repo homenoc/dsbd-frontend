@@ -327,7 +327,6 @@ export interface GroupAddData {
 }
 
 export interface ServiceAddJPNICData {
-  is_group: boolean
   org: string
   org_en: string
   mail: string
@@ -336,10 +335,8 @@ export interface ServiceAddJPNICData {
   address_en: string
   name: string
   name_en: string
-  dept: string
   dept_en: string
-  title: string
-  title_en: string
+  dept: string
   country: string
   tel: string
   fax: string
