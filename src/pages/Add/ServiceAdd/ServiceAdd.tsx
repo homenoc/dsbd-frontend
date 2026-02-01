@@ -4,7 +4,7 @@ import DashboardComponent from '../../../components/Dashboard/Dashboard'
 import Cookies from 'js-cookie'
 import store, { RootState } from '../../../store'
 import { clearInfos, clearTemplates } from '../../../store/action/Actions'
-import { DefaultTemplateData, TemplateData, ServiceAddJPNICData, ServiceAddIPv4PlanData } from '../../../interface'
+import { DefaultTemplateData, TemplateData } from '../../../interface'
 import { useSnackbar } from 'notistack'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
@@ -47,32 +47,6 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from '../reg'
 import { Post } from '../../../api/Service'
-
-interface ServiceAddFormData {
-  service_type: string
-  acceptTerms?: boolean
-  route_v4: string
-  route_v6: string
-  org: string
-  org_en: string
-  postcode: string
-  address: string
-  address_en: string
-  abuse: string
-  plan: ServiceAddIPv4PlanData[]
-  jpnic_admin: ServiceAddJPNICData
-  jpnic_tech: ServiceAddJPNICData[]
-  start_date: Date
-  end_date: Date
-  avg_upstream: number
-  max_upstream: number
-  avg_downstream: number
-  max_downstream: number
-  max_bandwidth_as: string
-  asn: number
-  comment: string
-  bgp_comment: string
-}
 
 export default function ServiceAdd() {
   const [template, setTemplate] =
@@ -357,12 +331,12 @@ export default function ServiceAdd() {
     route_v4: Yup.string()
       .test(
         'route_v4_required',
-        'Network Name is required',
+        'ネットワーク名を入力してください',
         (value) => !isIpv4 || (value !== undefined && value !== '')
       )
       .test(
         'route_v4_format',
-        'Use only uppercase letters, numbers, and hyphens (max 12 characters)',
+        '文字形式に誤りがあります。',
         (value) => !isIpv4 || !value || (value.length <= 12 && v4NetworkNameRegExp.test(value))
       ),
     // L2, L3 Static, L3 BGP, CoLocation
@@ -383,12 +357,12 @@ export default function ServiceAdd() {
     route_v6: Yup.string()
       .test(
         'route_v6_required',
-        'Network Name is required',
+        'ネットワーク名を入力してください',
         (value) => !isIpv6 || (value !== undefined && value !== '')
       )
       .test(
         'route_v6_format',
-        'Use only uppercase letters, numbers, and hyphens (max 12 characters)',
+        '文字形式に誤りがあります。',
         (value) => !isIpv6 || !value || (value.length <= 12 && v6NetworkNameRegExp.test(value))
       ),
   })
@@ -400,8 +374,8 @@ export default function ServiceAdd() {
     handleSubmit,
     formState: { errors },
     watch,
-  } = useForm<ServiceAddFormData>({
-    resolver: yupResolver(validationSchema) as any,
+  } = useForm({
+    resolver: yupResolver(validationSchema),
     defaultValues: {
       service_type: '',
       route_v4: '',
