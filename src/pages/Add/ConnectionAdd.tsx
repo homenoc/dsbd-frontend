@@ -484,8 +484,7 @@ export default function ConnectionAdd() {
                 <FormLabel component="legend">2.1. その他</FormLabel>
                 <div>
                   {' '}
-                  Cross
-                  Connectを選択された方は以下のフォームに詳しい情報(ラック情報など)をご記入ください。
+                  直接接続を選択された方は以下のフォームに詳しい情報(ラック情報など)をご記入ください。
                 </div>
                 <FormHelperText error>
                   {errors?.connection_comment &&
