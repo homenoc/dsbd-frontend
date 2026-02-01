@@ -578,7 +578,7 @@ export default function ConnectionAdd() {
                 error={errors?.hasOwnProperty('ix_vlan_id')}
               >
                 <FormLabel component="legend">2.4. VLAN-ID</FormLabel>
-                <div>PC/CUGのVLAN-IDを入力してください</div>
+                <div>PI/CUGのVLAN-IDを入力してください</div>
                 <FormHelperText error>
                   {errors?.ix_vlan_id && errors.ix_vlan_id?.message}
                 </FormHelperText>
