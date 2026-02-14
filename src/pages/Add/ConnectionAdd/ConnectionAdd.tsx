@@ -698,17 +698,20 @@ export default function ConnectionAdd() {
                   2.6. IX接続アドレス（貴団体側）
                 </FormLabel>
                 <div>IX接続で使用する貴団体側のIPアドレスを入力してください</div>
-                <FormHelperText error>
-                  {errors?.link_v4_your && errors.link_v4_your?.message}
-                </FormHelperText>
-                <StyledTextFieldLong
-                  key={'link_v4_your'}
-                  label="IPv4アドレス"
-                  variant="outlined"
-                  {...register(`link_v4_your`, { required: true })}
-                  error={!!errors.link_v4_your}
-                  disabled={rfc8950}
-                />
+                {!rfc8950 && (
+                  <>
+                    <FormHelperText error>
+                      {errors?.link_v4_your && errors.link_v4_your?.message}
+                    </FormHelperText>
+                    <StyledTextFieldLong
+                      key={'link_v4_your'}
+                      label="IPv4アドレス"
+                      variant="outlined"
+                      {...register(`link_v4_your`, { required: true })}
+                      error={!!errors.link_v4_your}
+                    />
+                  </>
+                )}
                 <FormHelperText error>
                   {errors?.link_v6_your && errors.link_v6_your?.message}
                 </FormHelperText>
