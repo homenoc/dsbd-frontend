@@ -200,10 +200,10 @@ export function ConnectionOpen(props: {
                 color="primary"
                 checked={connection.rfc8950}
                 onChange={(event) => {
-                  setConnection({
-                    ...connection,
+                  setConnection((prev) => ({
+                    ...prev,
                     rfc8950: event.target.checked,
-                  })
+                  }))
                 }}
                 disabled={lock}
               />
