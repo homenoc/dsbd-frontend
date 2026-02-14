@@ -160,6 +160,10 @@ export default function Info() {
                       <td colSpan={2}>{info.noc_ip}</td>
                     </tr>
                     <tr>
+                      <th>RFC8950利用</th>
+                      <td colSpan={2}>{info.rfc8950 ? 'あり' : 'なし'}</td>
+                    </tr>
+                    <tr>
                       <th colSpan={3}>当団体との間の境界アドレス</th>
                     </tr>
                     <tr>
@@ -169,12 +173,16 @@ export default function Info() {
                     </tr>
                     <tr>
                       <th>HomeNOC側</th>
-                      <td>{info.link_v4_our}</td>
+                      <td>
+                        {info.rfc8950 ? 'RFC8950利用のため無し' : info.link_v4_our}
+                      </td>
                       <td>{info.link_v6_our}</td>
                     </tr>
                     <tr>
                       <th>貴団体側</th>
-                      <td>{info.link_v4_your}</td>
+                      <td>
+                        {info.rfc8950 ? 'RFC8950利用のため無し' : info.link_v4_your}
+                      </td>
                       <td>{info.link_v6_your}</td>
                     </tr>
                   </thead>

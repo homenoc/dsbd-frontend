@@ -161,6 +161,7 @@ export interface InfosData {
   noc: string
   noc_ip: string
   term_ip: string
+  rfc8950?: boolean
   link_v4_our: string
   link_v4_your: string
   link_v6_our: string
