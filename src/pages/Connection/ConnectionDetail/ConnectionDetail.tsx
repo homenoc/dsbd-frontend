@@ -1,4 +1,4 @@
-import React, {Dispatch, SetStateAction, useEffect, useState} from 'react'
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import {
   Button,
   CardContent,
@@ -17,9 +17,9 @@ import {
   TunnelEndPointRouterIPTemplateData,
 } from '../../../interface'
 import classes from './ConnectionDialog.module.scss'
-import {enqueueSnackbar, useSnackbar} from 'notistack'
-import {Update} from '../../../api/Connection'
-import {Open} from '../../../components/Dashboard/Open/Open'
+import { enqueueSnackbar, useSnackbar } from 'notistack'
+import { Update } from '../../../api/Connection'
+import { Open } from '../../../components/Dashboard/Open/Open'
 import {
   StyledButton1,
   StyledCardRoot3,
@@ -34,25 +34,25 @@ import {
   GetConnectionWithTemplate,
   GetServiceWithTemplate,
 } from '../../../api/Tool'
-import {useRecoilState, useRecoilValue} from 'recoil'
-import {TemplateState} from '../../../api/Recoil'
+import { useRecoilState, useRecoilValue } from 'recoil'
+import { TemplateState } from '../../../api/Recoil'
 import Dashboard from '../../../components/Dashboard/Dashboard'
-import {Get, Put} from '../../../api/Connection'
-import {useNavigate, useParams} from 'react-router-dom'
-import {GenServiceCode} from '../../../components/Tool'
+import { Get, Put } from '../../../api/Connection'
+import { useNavigate, useParams } from 'react-router-dom'
+import { GenServiceCode } from '../../../components/Tool'
 
 export default function ConnectionDetail() {
   const template = useRecoilValue(TemplateState)
   const [reload, setReload] = useState(true)
   const [connection, setConnection] = useState(DefaultConnectionDetailData)
-  const {enqueueSnackbar} = useSnackbar()
-  const {id} = useParams()
+  const { enqueueSnackbar } = useSnackbar()
+  const { id } = useParams()
 
   useEffect(() => {
     if (reload) {
       Get(Number(id)).then((res) => {
         if (res.error !== '') {
-          enqueueSnackbar('' + res.error, {variant: 'error'})
+          enqueueSnackbar('' + res.error, { variant: 'error' })
           return
         }
         setConnection(res.data)
@@ -100,8 +100,8 @@ export function ConnectionOpenButton(props: {
   lock: boolean
   setReload: Dispatch<SetStateAction<boolean>>
 }) {
-  const {connection, lock, setReload} = props
-  const {enqueueSnackbar} = useSnackbar()
+  const { connection, lock, setReload } = props
+  const { enqueueSnackbar } = useSnackbar()
 
   // Update Service Information
   const updateInfo = (open: boolean) => {
@@ -110,9 +110,9 @@ export function ConnectionOpenButton(props: {
     connection.tunnel_endpoint_router_ip = undefined
     Update(connection).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', {variant: 'success'})
+        enqueueSnackbar('Request Success', { variant: 'success' })
       } else {
-        enqueueSnackbar(String(res.error), {variant: 'error'})
+        enqueueSnackbar(String(res.error), { variant: 'error' })
       }
 
       setReload(true)
@@ -149,7 +149,7 @@ export function ConnectionOpen(props: {
   connection: ConnectionDetailData
   setReload: Dispatch<SetStateAction<boolean>>
 }) {
-  const {connection: original_connection, setReload} = props
+  const { connection: original_connection, setReload } = props
   const [template] = useRecoilState(TemplateState)
   const [connection, setConnection] = useState(original_connection)
   const [lock, setLock] = React.useState(true)
@@ -166,9 +166,9 @@ export function ConnectionOpen(props: {
     connection.tunnel_endpoint_router_ip = undefined
     Update(connection).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', {variant: 'success'})
+        enqueueSnackbar('Request Success', { variant: 'success' })
       } else {
-        enqueueSnackbar(String(res.error), {variant: 'error'})
+        enqueueSnackbar(String(res.error), { variant: 'error' })
       }
 
       setReload(true)
@@ -289,7 +289,7 @@ export function ConnectionOpenVPN(props: {
   setConnection: Dispatch<SetStateAction<ConnectionDetailData>>
   lock: boolean
 }) {
-  const {connection, setConnection, lock} = props
+  const { connection, setConnection, lock } = props
 
   if (connection.connection_type === '') {
     return null
@@ -306,7 +306,7 @@ export function ConnectionOpenVPN(props: {
         value={connection.term_ip ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({...connection, term_ip: event.target.value})
+          setConnection({ ...connection, term_ip: event.target.value })
         }}
       />
       <br />
@@ -319,7 +319,7 @@ export function ConnectionOpenL3User(props: {
   setConnection: Dispatch<SetStateAction<ConnectionDetailData>>
   lock: boolean
 }) {
-  const {connection, setConnection, lock} = props
+  const { connection, setConnection, lock } = props
   const template = useRecoilValue(TemplateState)
 
   if (
@@ -342,7 +342,7 @@ export function ConnectionOpenL3User(props: {
         value={connection.link_v4_our ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({...connection, link_v4_our: event.target.value})
+          setConnection({ ...connection, link_v4_our: event.target.value })
         }}
       />
       <StyledTextFieldMedium
@@ -355,7 +355,7 @@ export function ConnectionOpenL3User(props: {
         value={connection.link_v4_your ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({...connection, link_v4_your: event.target.value})
+          setConnection({ ...connection, link_v4_your: event.target.value })
         }}
       />
       <br />
@@ -369,7 +369,7 @@ export function ConnectionOpenL3User(props: {
         value={connection.link_v6_our ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({...connection, link_v6_our: event.target.value})
+          setConnection({ ...connection, link_v6_our: event.target.value })
         }}
       />
       <StyledTextFieldMedium
@@ -382,15 +382,15 @@ export function ConnectionOpenL3User(props: {
         value={connection.link_v6_your ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({...connection, link_v6_your: event.target.value})
+          setConnection({ ...connection, link_v6_your: event.target.value })
         }}
       />
     </div>
   )
 }
 
-export function ConnectionStatus(props: {connection: ConnectionDetailData}) {
-  const {connection} = props
+export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
+  const { connection } = props
   const serviceCode = GenServiceCode(connection)
   const createDate = '作成日: ' + connection.CreatedAt
   const updateDate = '更新日: ' + connection.UpdatedAt
@@ -463,8 +463,8 @@ export function ConnectionStatus(props: {connection: ConnectionDetailData}) {
   )
 }
 
-export function ConnectionEtc(props: {connection: ConnectionDetailData}) {
-  const {connection} = props
+export function ConnectionEtc(props: { connection: ConnectionDetailData }) {
+  const { connection } = props
   const navigate = useNavigate()
   const clickGroupPage = () =>
     navigate('/dashboard/group/' + connection.service?.group_id)
@@ -516,8 +516,8 @@ export function ConnectionEtc(props: {connection: ConnectionDetailData}) {
   )
 }
 
-export function ConnectionMonitorDisplay(props: {monitor: boolean}) {
-  const {monitor} = props
+export function ConnectionMonitorDisplay(props: { monitor: boolean }) {
+  const { monitor } = props
 
   if (monitor) {
     return <Chip size="small" color="primary" label="必要" />
@@ -528,7 +528,7 @@ export function ConnectionMonitorDisplay(props: {monitor: boolean}) {
 export function ConnectionUserDisplay(props: {
   connection: ConnectionDetailData
 }) {
-  const {connection} = props
+  const { connection } = props
 
   const distinctionIPAssign = (our: boolean) => {
     if (our) {
@@ -653,10 +653,10 @@ export function ConnectionEtc2(props: {
   connection: ConnectionDetailData
   setReload: Dispatch<SetStateAction<boolean>>
 }) {
-  const {connection: original_connection, setReload} = props
+  const { connection: original_connection, setReload } = props
   const [lock, setLockInfo] = React.useState(true)
   const [connection, setConnection] = useState(original_connection)
-  const {enqueueSnackbar} = useSnackbar()
+  const { enqueueSnackbar } = useSnackbar()
   const template = useRecoilValue(TemplateState)
 
   const clickLockInfo = () => {
@@ -671,10 +671,10 @@ export function ConnectionEtc2(props: {
   const updateInfo = () => {
     Put(connection.ID, connection).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', {variant: 'success'})
+        enqueueSnackbar('Request Success', { variant: 'success' })
         setLockInfo(true)
       } else {
-        enqueueSnackbar(String(res.error), {variant: 'error'})
+        enqueueSnackbar(String(res.error), { variant: 'error' })
       }
 
       setReload(true)
