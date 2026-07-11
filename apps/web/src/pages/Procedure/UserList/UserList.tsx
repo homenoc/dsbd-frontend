@@ -1,10 +1,10 @@
 import { Button, CardActions, CardContent, Chip, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Dashboard from '../../../components/Dashboard/Dashboard';
-import { useGroup } from '../../../hooks/useInfo';
-import type { InfoData, UserData } from '../../../interface';
+import { useInfo } from '../../../hooks/useInfo';
+import type { UserData } from '../../../interface';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
@@ -15,14 +15,7 @@ import {
 export default function UserList() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [initUsers, setInitUsers] = useState<UserData[]>([]);
-  const groupQ = useGroup();
-  const error = groupQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (groupQ.isLoading) return undefined;
-    return {
-      user_list: groupQ.userList,
-    };
-  }, [groupQ.userList, groupQ.isLoading]);
+  const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 

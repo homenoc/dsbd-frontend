@@ -16,14 +16,13 @@ import {
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useSnackbar } from 'notistack';
-import React, { Fragment, useEffect, useMemo } from 'react';
+import React, { Fragment, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import { Post } from '../../../api/Group';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
-import { invalidateAllInfo, useMe } from '../../../hooks/useInfo';
-import type { InfoData } from '../../../interface';
+import { infoQueryKey, useInfo } from '../../../hooks/useInfo';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledTextFieldLong,
@@ -36,14 +35,7 @@ import {
 export default function GroupAdd() {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
-  const meQ = useMe();
-  const error = meQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (meQ.isLoading) return undefined;
-    return {
-      user: meQ.data,
-    };
-  }, [meQ.data, meQ.isLoading]);
+  const { data: infoData, error } = useInfo();
 
   const privacyPolicyURL = 'https://www.homenoc.ad.jp/about/privacy/';
   const usageURL = 'https://www.homenoc.ad.jp/usage/';
@@ -186,7 +178,7 @@ export default function GroupAdd() {
     Post(request).then((res) => {
       if (res.error === '') {
         enqueueSnackbar('Request Success', { variant: 'success' });
-        invalidateAllInfo(queryClient);
+        queryClient.invalidateQueries({ queryKey: infoQueryKey });
         navigate('/dashboard/add');
       } else {
         enqueueSnackbar(String(res.error), { variant: 'error' });

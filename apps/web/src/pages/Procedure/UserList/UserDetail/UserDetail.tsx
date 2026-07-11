@@ -11,13 +11,13 @@ import {
   useTheme,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import shaJS from 'sha.js';
 import { Delete, Put } from '../../../../api/User';
 import Dashboard from '../../../../components/Dashboard/Dashboard';
-import { invalidateAllInfo, useGroup, useMe } from '../../../../hooks/useInfo';
-import type { InfoData, UserData } from '../../../../interface';
+import { infoQueryKey, useInfo } from '../../../../hooks/useInfo';
+import type { UserData } from '../../../../interface';
 import { queryClient } from '../../../../lib/queryClient';
 import {
   StyledCardRoot3,
@@ -64,16 +64,7 @@ export default function UserDetail() {
   const theme = useTheme();
   const [loginUserID, setLoginUserID] = useState<number>();
   const [user, setUser] = useState<UserData>();
-  const meQ = useMe();
-  const groupQ = useGroup();
-  const error = meQ.error ?? groupQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (meQ.isLoading || groupQ.isLoading) return undefined;
-    return {
-      user: meQ.data,
-      user_list: groupQ.userList,
-    };
-  }, [meQ.data, meQ.isLoading, groupQ.userList, groupQ.isLoading]);
+  const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const { id } = useParams();
   const { enqueueSnackbar } = useSnackbar();
@@ -88,7 +79,7 @@ export default function UserDetail() {
 
   useEffect(() => {
     if (reload) {
-      invalidateAllInfo(queryClient);
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
       setReload(false);
     }
   }, [reload]);
@@ -122,7 +113,7 @@ export default function UserDetail() {
     Delete(Number(id)).then((res) => {
       if (res.error === undefined) {
         enqueueSnackbar('OK', { variant: 'success' });
-        invalidateAllInfo(queryClient);
+        queryClient.invalidateQueries({ queryKey: infoQueryKey });
         navigate('/dashboard/procedure/user');
       } else {
         enqueueSnackbar(res.error, { variant: 'error' });

@@ -24,15 +24,14 @@ import {
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useSnackbar } from 'notistack';
-import React, { Fragment, useEffect, useMemo } from 'react';
+import React, { Fragment, useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import { Post } from '../../../api/Service';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
-import { invalidateAllInfo, useGroup } from '../../../hooks/useInfo';
+import { infoQueryKey, useInfo } from '../../../hooks/useInfo';
 import { useTemplate } from '../../../hooks/useTemplate';
-import type { InfoData } from '../../../interface';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledRootForm,
@@ -49,14 +48,7 @@ import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from '../reg';
 
 export default function ServiceAdd() {
   const { data: template } = useTemplate();
-  const groupQ = useGroup();
-  const error = groupQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (groupQ.isLoading) return undefined;
-    return {
-      group: groupQ.data,
-    };
-  }, [groupQ.data, groupQ.isLoading]);
+  const { data: infoData, error } = useInfo();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const today = new Date();
@@ -572,7 +564,7 @@ export default function ServiceAdd() {
     Post(request).then((res) => {
       if (res.error === '') {
         enqueueSnackbar('Request Success', { variant: 'success' });
-        invalidateAllInfo(queryClient);
+        queryClient.invalidateQueries({ queryKey: infoQueryKey });
         navigate('/dashboard/add');
       } else {
         enqueueSnackbar(String(res.error), { variant: 'error' });

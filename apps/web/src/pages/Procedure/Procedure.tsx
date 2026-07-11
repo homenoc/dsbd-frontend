@@ -15,10 +15,10 @@ import {
   Typography,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
-import { useConnections, useGroup, useMe, useRequests, useServices } from '../../hooks/useInfo';
+import { useInfo } from '../../hooks/useInfo';
 import type { InfoData, TicketData } from '../../interface';
 import { StyledCardRoot3, StyledTable2 } from '../../style';
 import { GroupChangeDialog } from './Group/GroupChangeDialog';
@@ -27,41 +27,7 @@ import { UserAddDialog } from './UserAddDialog/UserAddDialog';
 
 export default function Procedure() {
   const [data, setData] = React.useState<InfoData>();
-  const meQ = useMe();
-  const groupQ = useGroup();
-  const serviceQ = useServices();
-  const connectionsQ = useConnections();
-  const requestsQ = useRequests();
-  const error =
-    meQ.error ?? groupQ.error ?? serviceQ.error ?? connectionsQ.error ?? requestsQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (
-      meQ.isLoading ||
-      groupQ.isLoading ||
-      serviceQ.isLoading ||
-      connectionsQ.isLoading ||
-      requestsQ.isLoading
-    )
-      return undefined;
-    return {
-      user: meQ.data,
-      group: groupQ.data,
-      service: serviceQ.data,
-      connection: connectionsQ.data,
-      request: requestsQ.data,
-    };
-  }, [
-    meQ.data,
-    meQ.isLoading,
-    groupQ.data,
-    groupQ.isLoading,
-    serviceQ.data,
-    serviceQ.isLoading,
-    connectionsQ.data,
-    connectionsQ.isLoading,
-    requestsQ.data,
-    requestsQ.isLoading,
-  ]);
+  const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 

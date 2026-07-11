@@ -16,15 +16,15 @@ import {
   Typography,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { Fragment, useEffect, useMemo } from 'react';
+import React, { Fragment, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import { Post } from '../../../api/Connection';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
-import { invalidateAllInfo, useServices } from '../../../hooks/useInfo';
+import { infoQueryKey, useInfo } from '../../../hooks/useInfo';
 import { useTemplate } from '../../../hooks/useTemplate';
-import type { InfoData, ServiceData } from '../../../interface';
+import type { ServiceData } from '../../../interface';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledFormControlFormSelect,
@@ -35,14 +35,7 @@ import {
 export default function ConnectionAdd() {
   const { enqueueSnackbar } = useSnackbar();
   const { data: template } = useTemplate();
-  const serviceQ = useServices();
-  const error = serviceQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (serviceQ.isLoading) return undefined;
-    return {
-      service: serviceQ.data,
-    };
-  }, [serviceQ.data, serviceQ.isLoading]);
+  const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const [serviceType, setServiceType] = React.useState('');
   const [serviceID, setServiceID] = React.useState(0);
@@ -268,7 +261,7 @@ export default function ConnectionAdd() {
     Post(serviceID, request).then((res) => {
       if (res.error === '') {
         enqueueSnackbar('Request Success', { variant: 'success' });
-        invalidateAllInfo(queryClient);
+        queryClient.invalidateQueries({ queryKey: infoQueryKey });
         navigate('/dashboard/add');
       } else {
         enqueueSnackbar(String(res.error), { variant: 'error' });

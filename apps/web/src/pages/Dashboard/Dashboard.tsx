@@ -1,52 +1,19 @@
 import { isActive } from '@dsbd/shared';
 import { Box, Button, CardActions, CardContent, Chip, Grid, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
 import { restfulApiConfig } from '../../api/Config';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
-import { useGroup, useInfoSummary, useMe, useNotices, useServices } from '../../hooks/useInfo';
+import { useInfo } from '../../hooks/useInfo';
 import type { InfoData } from '../../interface';
 import { StyledCardRoot3, StyledTypographyTitle } from '../../style';
 
 export default function Dashboard() {
   const [data, setData] = React.useState<InfoData>();
-  const meQ = useMe();
-  const groupQ = useGroup();
-  const serviceQ = useServices();
-  const infoQ = useInfoSummary();
-  const noticesQ = useNotices();
-  const error = meQ.error ?? groupQ.error ?? serviceQ.error ?? infoQ.error ?? noticesQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (
-      meQ.isLoading ||
-      groupQ.isLoading ||
-      serviceQ.isLoading ||
-      infoQ.isLoading ||
-      noticesQ.isLoading
-    )
-      return undefined;
-    return {
-      user: meQ.data,
-      group: groupQ.data,
-      service: serviceQ.data,
-      info: infoQ.data,
-      notice: noticesQ.data,
-    };
-  }, [
-    meQ.data,
-    meQ.isLoading,
-    groupQ.data,
-    groupQ.isLoading,
-    serviceQ.data,
-    serviceQ.isLoading,
-    infoQ.data,
-    infoQ.isLoading,
-    noticesQ.data,
-    noticesQ.isLoading,
-  ]);
+  const { data: infoData, error } = useInfo();
   const [status, setStatus] = React.useState(3);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();

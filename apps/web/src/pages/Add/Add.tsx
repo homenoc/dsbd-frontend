@@ -1,10 +1,10 @@
 import { isActive } from '@dsbd/shared';
 import { Button, Grid, Step, StepLabel, Stepper } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
-import { useConnections, useGroup, useMe, useServices } from '../../hooks/useInfo';
+import { useInfo } from '../../hooks/useInfo';
 import type { ConnectionData, InfoData, ServiceData } from '../../interface';
 
 function getSteps() {
@@ -20,30 +20,7 @@ function getSteps() {
 
 export default function Add() {
   const [data, setData] = React.useState<InfoData>();
-  const meQ = useMe();
-  const groupQ = useGroup();
-  const serviceQ = useServices();
-  const connectionsQ = useConnections();
-  const error = meQ.error ?? groupQ.error ?? serviceQ.error ?? connectionsQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (meQ.isLoading || groupQ.isLoading || serviceQ.isLoading || connectionsQ.isLoading)
-      return undefined;
-    return {
-      user: meQ.data,
-      group: groupQ.data,
-      service: serviceQ.data,
-      connection: connectionsQ.data,
-    };
-  }, [
-    meQ.data,
-    meQ.isLoading,
-    groupQ.data,
-    groupQ.isLoading,
-    serviceQ.data,
-    serviceQ.isLoading,
-    connectionsQ.data,
-    connectionsQ.isLoading,
-  ]);
+  const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [activeStep, setActiveStep] = React.useState(0);

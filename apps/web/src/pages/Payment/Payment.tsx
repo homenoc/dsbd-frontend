@@ -1,10 +1,10 @@
 import { isActive, isPaidMemberType } from '@dsbd/shared';
 import { Button, Card, CardActions, CardContent, Container, Grid, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
-import { useGroup, useInfoSummary, useMe } from '../../hooks/useInfo';
+import { useInfo } from '../../hooks/useInfo';
 import { useTemplate } from '../../hooks/useTemplate';
 import type { InfoData } from '../../interface';
 import { StyledCardHeader1, StyledDivCardPricing } from './styles';
@@ -15,18 +15,7 @@ import { StyledContainer1 } from '../../style';
 
 export default function Payment() {
   const [data, setData] = React.useState<InfoData>();
-  const meQ = useMe();
-  const groupQ = useGroup();
-  const infoQ = useInfoSummary();
-  const error = meQ.error ?? groupQ.error ?? infoQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (meQ.isLoading || groupQ.isLoading || infoQ.isLoading) return undefined;
-    return {
-      user: meQ.data,
-      group: groupQ.data,
-      info: infoQ.data,
-    };
-  }, [meQ.data, meQ.isLoading, groupQ.data, groupQ.isLoading, infoQ.data, infoQ.isLoading]);
+  const { data: infoData, error } = useInfo();
   const { data: template } = useTemplate();
   const navigate = useNavigate();
   const [isStatus, setIsStatus] = React.useState(0);

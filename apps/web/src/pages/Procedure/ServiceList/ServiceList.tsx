@@ -1,10 +1,10 @@
 import { CardActions, CardContent, Chip, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Dashboard from '../../../components/Dashboard/Dashboard';
-import { useServices } from '../../../hooks/useInfo';
-import type { InfoData, ServiceData } from '../../../interface';
+import { useInfo } from '../../../hooks/useInfo';
+import type { ServiceData } from '../../../interface';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
@@ -17,14 +17,7 @@ import { ServiceListDeleteDialog } from './ServiceListDeleteDialog';
 export default function ServiceList() {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [initServices, setInitServices] = useState<ServiceData[]>([]);
-  const serviceQ = useServices();
-  const error = serviceQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (serviceQ.isLoading) return undefined;
-    return {
-      service: serviceQ.data,
-    };
-  }, [serviceQ.data, serviceQ.isLoading]);
+  const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 

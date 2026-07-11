@@ -32,12 +32,11 @@ import MuiAppBar, { type AppBarProps as MuiAppBarProps } from '@mui/material/App
 import MuiDrawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Cookies from 'js-cookie';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logout } from '../../api/Auth';
 import { restfulApiConfig } from '../../api/Config';
-import { invalidateAllInfo, useMe } from '../../hooks/useInfo';
-import type { InfoData } from '../../interface';
+import { infoQueryKey, useInfo } from '../../hooks/useInfo';
 import { queryClient } from '../../lib/queryClient';
 import { AntisocialAgreementDialog } from '../AntisocialAgreementDialog';
 import { muiColorTheme } from '../Theme';
@@ -116,13 +115,7 @@ interface DashboardProps {
 
 export default function Dashboard(props: DashboardProps) {
   const navigate = useNavigate();
-  const meQ = useMe();
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (meQ.isLoading) return undefined;
-    return {
-      user: meQ.data,
-    };
-  }, [meQ.data, meQ.isLoading]);
+  const { data: infoData } = useInfo();
   const userData = infoData?.user;
   const showAntisocialDialog = userData && userData.antisocial_check !== true;
   // Menu Bar
@@ -144,7 +137,7 @@ export default function Dashboard(props: DashboardProps) {
 
   const handleDrawerOpen = () => setOpen(true);
   const handleDrawerClose = () => setOpen(false);
-  const reloadClick = () => invalidateAllInfo(queryClient);
+  const reloadClick = () => queryClient.invalidateQueries({ queryKey: infoQueryKey });
   const DashboardPage = () => navigate('/dashboard');
   const InfoPage = () => navigate('/dashboard/info');
   const AddPage = () => navigate('/dashboard/add');

@@ -1,12 +1,12 @@
 import Cookies from 'js-cookie';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useWebSocket from 'react-use-websocket';
 import { restfulApiConfig } from '../../../api/Config';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
-import { useGroup, useMe, useRequests, useTickets } from '../../../hooks/useInfo';
-import type { InfoData, TicketData, UserData } from '../../../interface';
+import { useInfo } from '../../../hooks/useInfo';
+import type { TicketData, UserData } from '../../../interface';
 import { StyledPaperMessage } from '../styles';
 import { MessageLeft, MessageRight } from './Message';
 import { TextInput } from './TextInput';
@@ -32,30 +32,7 @@ export default function SupportDetail() {
   const [inputChatData, setInputChatData] = useState('');
   const [ticket, setTicket] = useState<TicketData>();
   const [userList, setUserList] = useState<UserData[]>();
-  const meQ = useMe();
-  const groupQ = useGroup();
-  const ticketsQ = useTickets();
-  const requestsQ = useRequests();
-  const error = meQ.error ?? groupQ.error ?? ticketsQ.error ?? requestsQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (meQ.isLoading || groupQ.isLoading || ticketsQ.isLoading || requestsQ.isLoading)
-      return undefined;
-    return {
-      user: meQ.data,
-      user_list: groupQ.userList,
-      ticket: ticketsQ.data,
-      request: requestsQ.data,
-    };
-  }, [
-    meQ.data,
-    meQ.isLoading,
-    groupQ.userList,
-    groupQ.isLoading,
-    ticketsQ.data,
-    ticketsQ.isLoading,
-    requestsQ.data,
-    requestsQ.isLoading,
-  ]);
+  const { data: infoData, error } = useInfo();
   const [sendPush, setSendPush] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

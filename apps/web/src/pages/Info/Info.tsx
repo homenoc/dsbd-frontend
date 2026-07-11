@@ -1,9 +1,9 @@
 import { Box, CardContent, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
-import { useInfoSummary } from '../../hooks/useInfo';
-import type { InfoData, InfosData } from '../../interface';
+import { useInfo } from '../../hooks/useInfo';
+import type { InfosData } from '../../interface';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
@@ -15,14 +15,7 @@ import classesCSS from './style.module.scss';
 export default function Info() {
   const [infos, setInfos] = useState<InfosData[]>([]);
   const [initInfos, setInitInfos] = useState<InfosData[]>([]);
-  const infoQ = useInfoSummary();
-  const error = infoQ.error;
-  const data = useMemo<InfoData | undefined>(() => {
-    if (infoQ.isLoading) return undefined;
-    return {
-      info: infoQ.data,
-    };
-  }, [infoQ.data, infoQ.isLoading]);
+  const { data, error } = useInfo();
   const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).

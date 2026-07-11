@@ -10,13 +10,13 @@ import {
   Typography,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Put } from '../../api/Support';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { Solved } from '../../components/Dashboard/Solved/Open';
-import { invalidateAllInfo, useMe, useTickets } from '../../hooks/useInfo';
-import type { InfoData, TicketData } from '../../interface';
+import { infoQueryKey, useInfo } from '../../hooks/useInfo';
+import type { TicketData } from '../../interface';
 import { queryClient } from '../../lib/queryClient';
 import {
   StyledCardRoot3,
@@ -30,16 +30,7 @@ export default function Support() {
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [initTickets, setInitTickets] = useState<TicketData[]>([]);
   const [group, setGroupID] = useState(0);
-  const meQ = useMe();
-  const ticketsQ = useTickets();
-  const error = meQ.error ?? ticketsQ.error;
-  const infoData = useMemo<InfoData | undefined>(() => {
-    if (meQ.isLoading || ticketsQ.isLoading) return undefined;
-    return {
-      user: meQ.data,
-      ticket: ticketsQ.data,
-    };
-  }, [meQ.data, meQ.isLoading, ticketsQ.data, ticketsQ.isLoading]);
+  const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [value, setValue] = React.useState(false);
@@ -82,7 +73,7 @@ export default function Support() {
     Put(id, { solved }).then((res) => {
       if (res.error === undefined) {
         enqueueSnackbar('OK', { variant: 'success' });
-        invalidateAllInfo(queryClient);
+        queryClient.invalidateQueries({ queryKey: infoQueryKey });
       } else {
         enqueueSnackbar(res.error, { variant: 'error' });
       }
