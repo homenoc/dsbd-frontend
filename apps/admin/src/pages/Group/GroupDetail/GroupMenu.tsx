@@ -1,4 +1,4 @@
-import { ExpiredStatus, isActive } from '@dsbd/shared';
+import { ExpiredStatus, expiredStatusLabels, isActive } from '@dsbd/shared';
 import { Menu, MenuItem } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { type Dispatch, type SetStateAction } from 'react';
@@ -206,12 +206,14 @@ export function GroupAbolition(props: {
         open={Boolean(anchorEl)}
         onClose={handleClose}
       >
-        <MenuItem onClick={() => handleClickExpire(ExpiredStatus.ReviewFailed)}>審査落ち</MenuItem>
+        <MenuItem onClick={() => handleClickExpire(ExpiredStatus.ReviewFailed)}>
+          {expiredStatusLabels[ExpiredStatus.ReviewFailed]}
+        </MenuItem>
         <MenuItem onClick={() => handleClickExpire(ExpiredStatus.ByMaster)}>
-          ユーザより廃止
+          {expiredStatusLabels[ExpiredStatus.ByMaster]}
         </MenuItem>
         <MenuItem onClick={() => handleClickExpire(ExpiredStatus.ByCommittee)}>
-          運営委員より廃止
+          {expiredStatusLabels[ExpiredStatus.ByCommittee]}
         </MenuItem>
       </Menu>
     </div>

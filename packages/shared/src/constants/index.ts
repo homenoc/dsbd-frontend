@@ -36,6 +36,13 @@ export function isActive(expiredStatus: number | undefined): boolean {
   return expiredStatus === ExpiredStatus.None;
 }
 
+/** Admin-facing labels (mirrors backend core.ExpiredLabel). */
+export const expiredStatusLabels: Record<number, string> = {
+  [ExpiredStatus.ReviewFailed]: '審査落ち',
+  [ExpiredStatus.ByMaster]: 'ユーザより廃止',
+  [ExpiredStatus.ByCommittee]: '運営委員より廃止',
+};
+
 /** Group.MemberType IDs (core/constant.go). 1-49 paid / 70-89 free special / 90-99 steering. */
 export const MemberType = {
   Standard: 1,

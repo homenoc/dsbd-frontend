@@ -1,4 +1,10 @@
-import { ExpiredStatus, MemberType, canManageServices, isActive } from '@dsbd/shared';
+import {
+  ExpiredStatus,
+  MemberType,
+  canManageServices,
+  expiredStatusLabels,
+  isActive,
+} from '@dsbd/shared';
 import {
   Button,
   Card,
@@ -242,7 +248,7 @@ export default function Dashboard() {
                 onChange={() => setExpired_status1IsChecked(!expired_status1IsChecked)}
               />
             }
-            label="審査落ち"
+            label={expiredStatusLabels[ExpiredStatus.ReviewFailed]}
           />
           <FormControlLabel
             control={

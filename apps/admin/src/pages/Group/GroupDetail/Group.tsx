@@ -1,4 +1,4 @@
-import { ExpiredStatus, MemberType } from '@dsbd/shared';
+import { ExpiredStatus, MemberType, expiredStatusLabels } from '@dsbd/shared';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Accordion,
@@ -614,13 +614,25 @@ export function GroupStatus(props: {
         <Grid container spacing={3}>
           <Grid item xs={12}>
             {data.expired_status === ExpiredStatus.ReviewFailed && (
-              <Chip size="small" color="secondary" label={'審査落ち'} />
+              <Chip
+                size="small"
+                color="secondary"
+                label={expiredStatusLabels[ExpiredStatus.ReviewFailed]}
+              />
             )}
             {data.expired_status === ExpiredStatus.ByMaster && (
-              <Chip size="small" color="secondary" label={'ユーザより廃止'} />
+              <Chip
+                size="small"
+                color="secondary"
+                label={expiredStatusLabels[ExpiredStatus.ByMaster]}
+              />
             )}
             {data.expired_status === ExpiredStatus.ByCommittee && (
-              <Chip size="small" color="secondary" label={'運営委員より廃止\n'} />
+              <Chip
+                size="small"
+                color="secondary"
+                label={expiredStatusLabels[ExpiredStatus.ByCommittee]}
+              />
             )}
             <h4>Status</h4>
             <Chip size="small" color="primary" label={GroupStatusStr(data)} />
