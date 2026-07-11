@@ -1,2 +1,7 @@
-// Placeholder — populated in a later phase (F2/F4).
-export {};
+export {
+  createApiClient,
+  type ApiClient,
+  type ApiClientConfig,
+  type RequestOptions,
+} from './client';
+export { ApiError } from './error';

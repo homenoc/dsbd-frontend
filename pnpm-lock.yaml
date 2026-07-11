@@ -321,10 +321,6 @@ importers:
         version: 4.3.2(typescript@5.0.4)(vite@4.5.14(@types/node@15.14.9)(sass@1.101.0)(terser@5.49.0))
 
   packages/shared:
-    dependencies:
-      axios:
-        specifier: ^1
-        version: 1.18.1
     devDependencies:
       typescript:
         specifier: ~5.5.4
