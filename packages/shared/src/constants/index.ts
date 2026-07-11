@@ -1,18 +1,22 @@
 // Mirrors dsbd-backend pkg/api/core enums/constants. The numeric/string values
 // are FROZEN wire/DB values — change labels here freely, never the codes.
 
-/** User.Level — lower value = more privilege within a group (core/enums.go). */
+/**
+ * User.Level — lower value = more privilege within a group (core/enums.go).
+ * 1 is assigned only at account registration; 2-4 are what a master assigns
+ * when inviting users (追加・変更・閲覧(Master) / 閲覧のみ(User) / 通知のみ(Guest)).
+ */
 export const UserLevel = {
   Master: 1,
-  Member: 2,
+  Editor: 2,
   Viewer: 3,
-  StatusOnly: 4,
+  Guest: 4,
 } as const;
 export type UserLevel = (typeof UserLevel)[keyof typeof UserLevel];
 
 /** Mirrors core.CanManageServices: may create/modify services & connections. */
 export function canManageServices(level: number): boolean {
-  return level <= UserLevel.Member;
+  return level >= UserLevel.Master && level <= UserLevel.Editor;
 }
 
 /**
