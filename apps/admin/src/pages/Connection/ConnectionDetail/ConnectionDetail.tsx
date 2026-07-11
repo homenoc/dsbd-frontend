@@ -62,23 +62,40 @@ export default function ConnectionDetail() {
 
   return (
     <Dashboard title="Connection Detail">
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6} lg={3}>
-          <ConnectionStatus key={'connectionStatus'} connection={connection} />
+      {/* The child cards copy `connection` into local edit state on mount, so we
+          must not mount them until Get has resolved — otherwise they freeze the
+          ID=0 default and later PUT to /connection/0. Keying by ID also remounts
+          them with fresh data when the loaded connection changes. */}
+      {connection.ID !== 0 && (
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6} lg={3}>
+            <ConnectionStatus key={`connectionStatus_${connection.ID}`} connection={connection} />
+          </Grid>
+          <Grid item xs={12} md={6} lg={3}>
+            <ConnectionEtc key={`connectionETC_${connection.ID}`} connection={connection} />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ConnectionOpen
+              key={`connection_open_${connection.ID}`}
+              connection={connection}
+              setReload={setReload}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <ConnectionUserDisplay
+              key={`connection_user_display_${connection.ID}`}
+              connection={connection}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <ConnectionEtc2
+              key={`connection_etc2_${connection.ID}`}
+              connection={connection}
+              setReload={setReload}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
-          <ConnectionEtc key={'connectionETC'} connection={connection} />
-        </Grid>
-        <Grid item xs={12} lg={6}>
-          <ConnectionOpen key={'connection_open'} connection={connection} setReload={setReload} />
-        </Grid>
-        <Grid item xs={12}>
-          <ConnectionUserDisplay key={'connection_user_display'} connection={connection} />
-        </Grid>
-        <Grid item xs={12}>
-          <ConnectionEtc2 key={'connection_etc2'} connection={connection} setReload={setReload} />
-        </Grid>
-      </Grid>
+      )}
     </Dashboard>
   );
 }
