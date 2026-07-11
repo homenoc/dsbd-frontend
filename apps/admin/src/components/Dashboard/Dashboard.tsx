@@ -1,51 +1,51 @@
-import React, { useEffect } from 'react'
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import ChatIcon from '@mui/icons-material/Chat';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ClassIcon from '@mui/icons-material/Class';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import LayersIcon from '@mui/icons-material/Layers';
+import MenuIcon from '@mui/icons-material/Menu';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import PeopleIcon from '@mui/icons-material/People';
+import PermIdentityIcon from '@mui/icons-material/PermIdentity';
+import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import {
   Badge,
+  Box,
+  type CSSObject,
   Collapse,
-  ThemeProvider,
+  Container,
   CssBaseline,
   Divider,
+  Fade,
   IconButton,
   List,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
-  MenuItem,
   Menu,
-  Fade,
-  styled,
+  MenuItem,
+  type Theme,
+  ThemeProvider,
   Toolbar,
-  CSSObject,
-  Theme,
-  Box,
   Typography,
-  Container,
-  ListItemButton,
-} from '@mui/material'
-import MuiDrawer from '@mui/material/Drawer'
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar'
-import MenuIcon from '@mui/icons-material/Menu'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import NotificationsIcon from '@mui/icons-material/Notifications'
-import { ExpandLess, ExpandMore } from '@mui/icons-material'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import PersonIcon from '@mui/icons-material/Person'
-import PeopleIcon from '@mui/icons-material/People'
-import LayersIcon from '@mui/icons-material/Layers'
-import ClassIcon from '@mui/icons-material/Class'
-import AccountTreeIcon from '@mui/icons-material/AccountTree'
-import VpnKeyIcon from '@mui/icons-material/VpnKey'
-import ChatIcon from '@mui/icons-material/Chat'
-import SettingsIcon from '@mui/icons-material/Settings'
-import PermIdentityIcon from '@mui/icons-material/PermIdentity'
-import { StyledDivDashboardToolBarIcon, StyledDivDashboardRoot } from './styles'
-import { useNavigate } from 'react-router-dom'
-import { Logout } from '../../api/Auth'
-import { muiColorTheme } from '../Theme'
-import { useTemplate } from '../../hooks/useTemplate'
-import { useSnackbar } from 'notistack'
-import useMediaQuery from '@mui/material/useMediaQuery'
+  styled,
+} from '@mui/material';
+import MuiAppBar, { type AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
+import MuiDrawer from '@mui/material/Drawer';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useSnackbar } from 'notistack';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Logout } from '../../api/Auth';
+import { useTemplate } from '../../hooks/useTemplate';
+import { muiColorTheme } from '../Theme';
+import { StyledDivDashboardRoot, StyledDivDashboardToolBarIcon } from './styles';
 
-const drawerWidth = 240
+const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
@@ -54,7 +54,7 @@ const openedMixin = (theme: Theme): CSSObject => ({
     duration: theme.transitions.duration.enteringScreen,
   }),
   overflowX: 'hidden',
-})
+});
 
 const closedMixin = (theme: Theme): CSSObject => ({
   transition: theme.transitions.create('width', {
@@ -67,10 +67,10 @@ const closedMixin = (theme: Theme): CSSObject => ({
   // [theme.breakpoints.up('sm')]: {
   //  width: `calc(${theme.spacing(9)} + 1px)`,
   // },
-})
+});
 
 interface AppBarProps extends MuiAppBarProps {
-  open?: boolean
+  open?: boolean;
 }
 
 const AppBar = styled(MuiAppBar, {
@@ -89,7 +89,7 @@ const AppBar = styled(MuiAppBar, {
       duration: theme.transitions.duration.enteringScreen,
     }),
   }),
-}))
+}));
 
 const Drawer = styled(MuiDrawer, {
   shouldForwardProp: (prop) => prop !== 'open',
@@ -106,69 +106,69 @@ const Drawer = styled(MuiDrawer, {
     ...closedMixin(theme),
     '& .MuiDrawer-paper': closedMixin(theme),
   }),
-}))
+}));
 
 interface DashboardProps {
-  title?: string
-  children?: React.ReactNode
-  sx?: CSSObject
-  forceDrawerClosed?: boolean
+  title?: string;
+  children?: React.ReactNode;
+  sx?: CSSObject;
+  forceDrawerClosed?: boolean;
 }
 
 export default function Dashboard(props: DashboardProps) {
   // Menu Bar
   // useMediaQuery("(min-width:800px)")でmobileかどうかを判定
-  const [open, setOpen] = React.useState(useMediaQuery('(min-width:600px)'))
+  const [open, setOpen] = React.useState(useMediaQuery('(min-width:600px)'));
 
   // 画面サイズが変わったときにopenを変更
   // closeが強制されているときは、openをfalseにする
-  const isMobile = !useMediaQuery('(min-width:600px)')
+  const isMobile = !useMediaQuery('(min-width:600px)');
   useEffect(() => {
     if (props.forceDrawerClosed) {
-      setOpen(false)
+      setOpen(false);
     } else if (isMobile) {
-      setOpen(false)
+      setOpen(false);
     } else {
-      setOpen(true)
+      setOpen(true);
     }
-  }, [isMobile, props.forceDrawerClosed])
+  }, [isMobile, props.forceDrawerClosed]);
 
-  const { isLoading: loading, error: templateError } = useTemplate()
-  const { enqueueSnackbar } = useSnackbar()
+  const { error: templateError } = useTemplate();
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (templateError) {
-      enqueueSnackbar('' + (templateError as Error).message, { variant: 'error' })
+      enqueueSnackbar('' + (templateError as Error).message, { variant: 'error' });
     }
-  }, [templateError, enqueueSnackbar])
+  }, [templateError, enqueueSnackbar]);
 
   const handleDrawerOpen = () => {
-    setOpen(true)
-  }
+    setOpen(true);
+  };
   const handleDrawerClose = () => {
-    setOpenOther(false)
-    setOpen(false)
-  }
+    setOpenOther(false);
+    setOpen(false);
+  };
   // Menu Bar (Other Button)
-  const [openOther, setOpenOther] = React.useState(false)
+  const [openOther, setOpenOther] = React.useState(false);
   const handleClick = () => {
-    setOpenOther(!openOther)
+    setOpenOther(!openOther);
     // Menu Bar is not opened...
     if (!open) {
-      setOpen(true)
+      setOpen(true);
     }
-  }
+  };
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const DashboardPage = () => navigate('/dashboard')
-  const NoticePage = () => navigate('/dashboard/notice')
-  const GroupPage = () => navigate('/dashboard/group')
-  const SupportPage = () => navigate('/dashboard/support')
-  const ServicePage = () => navigate('/dashboard/service')
-  const ConnectionPage = () => navigate('/dashboard/connection')
-  const UserPage = () => navigate('/dashboard/user')
-  const TokenPage = () => navigate('/dashboard/token')
+  const DashboardPage = () => navigate('/dashboard');
+  const NoticePage = () => navigate('/dashboard/notice');
+  const GroupPage = () => navigate('/dashboard/group');
+  const SupportPage = () => navigate('/dashboard/support');
+  const ServicePage = () => navigate('/dashboard/service');
+  const ConnectionPage = () => navigate('/dashboard/connection');
+  const UserPage = () => navigate('/dashboard/user');
+  const TokenPage = () => navigate('/dashboard/token');
 
   return (
     <ThemeProvider theme={muiColorTheme}>
@@ -278,39 +278,41 @@ export default function Dashboard(props: DashboardProps) {
             <Divider />
           </List>
         </Drawer>
-        {!loading && (
-          <Box component="main" sx={{ flexGrow: 1, p: 3, ...props.sx }}>
-            <StyledDivDashboardToolBarIcon />
-            <Typography sx={{ m: 1 }} variant="h5" color="inherit">
-              {props.title}
-            </Typography>
-            {props.children}
-          </Box>
-        )}
+        {/* Render content unconditionally. Template data arrives via TanStack
+            Query and dropdowns re-render reactively (empty-array fallback until
+            then), so page visibility no longer hinges on the heavy /template
+            load — which previously blanked the whole page on nav/cache-GC. */}
+        <Box component="main" sx={{ flexGrow: 1, p: 3, ...props.sx }}>
+          <StyledDivDashboardToolBarIcon />
+          <Typography sx={{ m: 1 }} variant="h5" color="inherit">
+            {props.title}
+          </Typography>
+          {props.children}
+        </Box>
       </Box>
     </ThemeProvider>
-  )
+  );
 }
 
 export function UserMenu() {
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
-  const navigate = useNavigate()
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const navigate = useNavigate();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
+    setAnchorEl(event.currentTarget);
+  };
 
   const handleClose = () => {
-    setAnchorEl(null)
-  }
+    setAnchorEl(null);
+  };
 
   const clickLogout = () => {
     Logout().then(() => {
-      sessionStorage.removeItem('ACCESS_TOKEN')
-      navigate('/login')
-    })
-  }
+      sessionStorage.removeItem('ACCESS_TOKEN');
+      navigate('/login');
+    });
+  };
 
   return (
     <StyledDivDashboardRoot>
@@ -334,5 +336,5 @@ export function UserMenu() {
         <MenuItem onClick={clickLogout}>Logout</MenuItem>
       </Menu>
     </StyledDivDashboardRoot>
-  )
+  );
 }
