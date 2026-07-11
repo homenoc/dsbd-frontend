@@ -14,8 +14,7 @@ import { AgreeAntisocial } from '../api/User'
 import { Logout } from '../api/Auth'
 import { Get } from '../api/Info'
 import Cookies from 'js-cookie'
-import store from '../store'
-import { clearInfos, clearTemplates } from '../store/action/Actions'
+import { queryClient } from '../lib/queryClient'
 
 interface AntisocialAgreementDialogProps {
   open: boolean
@@ -45,8 +44,7 @@ export function AntisocialAgreementDialog(
     Logout().then(() => {
       Cookies.remove('user_token')
       Cookies.remove('access_token')
-      store.dispatch(clearInfos())
-      store.dispatch(clearTemplates())
+      queryClient.clear()
       enqueueSnackbar('ログアウトしました。', { variant: 'info' })
       navigate('/login')
     })

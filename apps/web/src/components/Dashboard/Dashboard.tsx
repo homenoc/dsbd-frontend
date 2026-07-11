@@ -33,15 +33,13 @@ import PaymentIcon from '@mui/icons-material/Payment'
 import { StyledDivDashboardRoot, StyledDivDashboardToolBarIcon } from './styles'
 import { useNavigate } from 'react-router-dom'
 import { Logout } from '../../api/Auth'
-import { Get } from '../../api/Info'
 import Cookies from 'js-cookie'
-import store, { RootState } from '../../store'
-import { clearInfos, clearTemplates } from '../../store/action/Actions'
+import { queryClient } from '../../lib/queryClient'
+import { useInfo, infoQueryKey } from '../../hooks/useInfo'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import { restfulApiConfig } from '../../api/Config'
 import { muiColorTheme } from '../Theme'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { useSelector } from 'react-redux'
 import { AntisocialAgreementDialog } from '../AntisocialAgreementDialog'
 
 const drawerWidth = 240
@@ -117,9 +115,8 @@ interface DashboardProps {
 
 export default function Dashboard(props: DashboardProps) {
   const navigate = useNavigate()
-  const infos = useSelector((state: RootState) => state.infos)
-  const latestInfo = infos[infos.length - 1]
-  const userData = latestInfo?.data?.user
+  const { data: infoData } = useInfo()
+  const userData = infoData?.user
   const showAntisocialDialog = userData && userData.antisocial_check !== true
   // Menu Bar
   // useMediaQuery("(min-width:800px)")でmobileかどうかを判定
@@ -140,7 +137,7 @@ export default function Dashboard(props: DashboardProps) {
 
   const handleDrawerOpen = () => setOpen(true)
   const handleDrawerClose = () => setOpen(false)
-  const reloadClick = () => Get().then()
+  const reloadClick = () => queryClient.invalidateQueries({ queryKey: infoQueryKey })
   const DashboardPage = () => navigate('/dashboard')
   const InfoPage = () => navigate('/dashboard/info')
   const AddPage = () => navigate('/dashboard/add')
@@ -269,8 +266,7 @@ export function UserMenu() {
     Logout().then((res) => {
       Cookies.remove('user_token')
       Cookies.remove('access_token')
-      store.dispatch(clearInfos())
-      store.dispatch(clearTemplates())
+      queryClient.clear()
       navigate('/login')
     })
   }

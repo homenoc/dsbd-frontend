@@ -14,8 +14,7 @@ import { Login } from '../../api/Auth'
 import { useSnackbar } from 'notistack'
 import { Get } from '../../api/Info'
 import Cookies from 'js-cookie'
-import store from '../../store'
-import { clearInfos, clearTemplates } from '../../store/action/Actions'
+import { queryClient } from '../../lib/queryClient'
 import { muiColorTheme } from '../../components/Theme'
 import {
   StyledAvatar,
@@ -45,8 +44,7 @@ export default function SignIn() {
 
     Cookies.remove('user_token')
     Cookies.remove('access_token')
-    store.dispatch(clearInfos())
-    store.dispatch(clearTemplates())
+    queryClient.clear()
 
     Login(mail, password)
       .then((err) => {

@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import DashboardComponent from '../../components/Dashboard/Dashboard'
-import { useSelector } from 'react-redux'
-import store, { RootState } from '../../store'
-import { useNavigate } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
-import Cookies from 'js-cookie'
-import { clearInfos, clearTemplates } from '../../store/action/Actions'
-import { Get } from '../../api/Info'
+import { useInfo } from '../../hooks/useInfo'
 import { InfosData } from '../../interface'
 import {Box, CardContent, Typography} from '@mui/material'
 import classesCSS from './style.module.scss'
@@ -20,40 +15,22 @@ import {
 export default function Info() {
   const [infos, setInfos] = useState<InfosData[]>([])
   const [initInfos, setInitInfos] = useState<InfosData[]>([])
-  const serviceInfos = useSelector((state: RootState) => state.infos)
-  const navigate = useNavigate()
+  const { data, error } = useInfo()
   const { enqueueSnackbar } = useSnackbar()
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = serviceInfos.length
-    const tmpData = serviceInfos[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/login')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          Get().then()
-        }
-      } else if (tmpData.data != null && tmpData.data?.info != null) {
-        setInitInfos(tmpData.data?.info)
-        setInfos(tmpData.data?.info)
-      }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
+    if (data?.info != null) {
+      setInitInfos(data.info)
+      setInfos(data.info)
     }
-  }, [serviceInfos])
+  }, [data])
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const handleFilter = (search: string) => {
     let tmp: InfosData[]
