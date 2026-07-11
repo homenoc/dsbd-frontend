@@ -42,6 +42,16 @@
 - **場所**: `apps/admin`（`api/Recoil.ts` の `TemplateState` atom がまだ生きている）
 - **状態**: web の F3 は完了。admin はこれから（同じ useTemplate パターンを適用予定）。
 
+### 9. Dashboard(admin) で /group を二重取得
+- **場所**: `apps/admin/src/pages/Dashboard/Dashboard.tsx`
+- **何をした**: 統計チップ用に `GroupGetAll()`(imperative)で `group` state を、Group ウィジェット用に `useGroups()`(TanStack Query)で `groups` を、それぞれ取得している。/group を2回叩く。
+- **あるべき姿**: `useGroups()` に一本化し `GroupGetAll` を撤去。
+
+### 10. useTemplate/TemplateData の名称が実体(catalog)と不一致
+- **場所**: 両アプリ `hooks/useTemplate.ts`, `interface.ts TemplateData`
+- **何をした**: B5 で `/template`→`/catalog` に repoint したが、churn 抑制のため hook 名 `useTemplate`・型名 `TemplateData` を据え置き。
+- **あるべき姿**: `useCatalog`/`CatalogData` にリネーム。
+
 ### 8. 各 API ファイル（Service.ts 等）の共有クライアント移行は未完
 - **場所**: `apps/web/src/api/*`, `apps/admin/src/api/*`
 - **何をした**: 共有 `createApiClient` は用意し info/template は移行したが、命令的 API（Service.Post 等）は旧 axios のまま。
