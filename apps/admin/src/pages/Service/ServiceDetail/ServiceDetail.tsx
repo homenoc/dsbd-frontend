@@ -1,4 +1,3 @@
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import {
   Button,
   Card,
@@ -9,168 +8,149 @@ import {
   InputLabel,
   MenuItem,
   Select,
-} from '@mui/material'
-import cssModule from '../../Connection/ConnectionDetail/ConnectionDialog.module.scss'
-import { DefaultServiceDetailData, ServiceDetailData } from '../../../interface'
-import { ServiceAddAllowButton } from './ServiceMenu'
-import { useSnackbar } from 'notistack'
-import { Get, Put } from '../../../api/Service'
-import { ServiceJPNICTechBase } from './JPNICTech/JPNICTech'
-import { ServiceJPNICAdminBase } from './JPNICAdmin/JPNICAdmin'
-import { ServiceIPBase } from './IP/IP'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Get, Put } from '../../../api/Service';
+import Dashboard from '../../../components/Dashboard/Dashboard';
+import { GenServiceCodeOnlyService } from '../../../components/Tool';
+import { useTemplate } from '../../../hooks/useTemplate';
+import { DefaultServiceDetailData, type ServiceDetailData } from '../../../interface';
 import {
+  StyledButton1,
   StyledCardRoot1,
   StyledChip1,
   StyledDivRoot1,
   StyledRootForm,
-  StyledTextFieldMedium,
   StyledTextFieldLong,
+  StyledTextFieldMedium,
   StyledTextFieldVeryShort1,
-  StyledButton1,
-} from '../../../style'
-import { useTemplate } from '../../../hooks/useTemplate'
-import Dashboard from '../../../components/Dashboard/Dashboard'
-import { useNavigate, useParams } from 'react-router-dom'
-import { GenServiceCodeOnlyService } from '../../../components/Tool'
-import { ConnectionList } from './ConnectionList'
+} from '../../../style';
+import cssModule from '../../Connection/ConnectionDetail/ConnectionDialog.module.scss';
+import { ConnectionList } from './ConnectionList';
+import { ServiceIPBase } from './IP/IP';
+import { ServiceJPNICAdminBase } from './JPNICAdmin/JPNICAdmin';
+import { ServiceJPNICTechBase } from './JPNICTech/JPNICTech';
+import { ServiceAddAllowButton } from './ServiceMenu';
 
 export default function ServiceDetail() {
-  const { data: template } = useTemplate()
-  const [reload, setReload] = useState(true)
-  const [service, setService] = useState(DefaultServiceDetailData)
-  const { enqueueSnackbar } = useSnackbar()
-  const { id } = useParams()
+  const { data: template } = useTemplate();
+  const [reload, setReload] = useState(true);
+  const [service, setService] = useState(DefaultServiceDetailData);
+  const { enqueueSnackbar } = useSnackbar();
+  const { id } = useParams();
 
   useEffect(() => {
     if (reload) {
       Get(Number(id)).then((res) => {
         if (res.error !== '') {
-          enqueueSnackbar('' + res.error, { variant: 'error' })
-          return
+          enqueueSnackbar('' + res.error, { variant: 'error' });
+          return;
         }
-        setService(res.data)
-        setReload(false)
-      })
+        setService(res.data);
+        setReload(false);
+      });
     }
-  }, [template, reload])
+  }, [template, reload]);
 
   return (
     <Dashboard title="Service Dialog">
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={4} lg={3}>
-          <ServiceStatus key={'ServiceStatus'} service={service} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={3}>
-          <ServiceOpen
-            key={'ServiceOpen'}
-            service={service}
-            setReload={setReload}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={3}>
-          <ServiceMainMenu
-            key={'ServiceMainMenu'}
-            service={service}
-            setReload={setReload}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <StyledCardRoot1>
-            <CardContent>
-              <h3>Help</h3>
-              <h4>開通に向けて手順</h4>
-              <div>1. 該当のサービスを審査OKにする</div>
-              <div>
-                2.
-                登録されたIPアドレスを確認/JPNICへの登録が完了すれば、該当のIPステータスを開通にする。
-              </div>
-              <div>3. 接続情報を元に、開通作業を行う</div>
-              <div>
-                4. 開通が完了すれば、接続情報からステータスを開通にする。
-              </div>
-            </CardContent>
-          </StyledCardRoot1>
-        </Grid>
-        <Grid item xs={12}>
-          <div className={cssModule.contract}>
-            <ServiceEtc1 key={'ServiceEtc1'} service={service} />
-          </div>
-        </Grid>
-        {template.services?.find((ser) => ser.type === service.service_type)
-          ?.need_jpnic && (
-          <Grid item xs={6}>
-            <ServiceIPBase
-              key={'ServiceIPBase'}
-              ip={service.ip}
-              serviceID={service.ID}
-              setReload={setReload}
-            />
+      {/* Child cards copy `service` into local edit state on mount, so we must
+          not mount them until Get resolves — otherwise they freeze the ID=0
+          empty default (blank edit forms that PUT blank data to the real
+          service). Gate the whole grid on the loaded service. */}
+      {service.ID !== 0 && (
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={4} lg={3}>
+            <ServiceStatus key={'ServiceStatus'} service={service} />
           </Grid>
-        )}
-        <Grid item xs={12}>
-          <ServiceEtc2 key={'ServiceEtc2'} service={service} />
-        </Grid>
-        {template.services?.find((ser) => ser.type === service.service_type)
-          ?.need_jpnic && (
+          <Grid item xs={12} sm={6} md={4} lg={3}>
+            <ServiceOpen key={'ServiceOpen'} service={service} setReload={setReload} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} lg={3}>
+            <ServiceMainMenu key={'ServiceMainMenu'} service={service} setReload={setReload} />
+          </Grid>
+          <Grid item xs={12} sm={6} lg={3}>
+            <StyledCardRoot1>
+              <CardContent>
+                <h3>Help</h3>
+                <h4>開通に向けて手順</h4>
+                <div>1. 該当のサービスを審査OKにする</div>
+                <div>
+                  2.
+                  登録されたIPアドレスを確認/JPNICへの登録が完了すれば、該当のIPステータスを開通にする。
+                </div>
+                <div>3. 接続情報を元に、開通作業を行う</div>
+                <div>4. 開通が完了すれば、接続情報からステータスを開通にする。</div>
+              </CardContent>
+            </StyledCardRoot1>
+          </Grid>
           <Grid item xs={12}>
-            <ServiceJPNICBase
-              key={'ServiceJPNICBase'}
-              service={service}
-              setReload={setReload}
-            />
+            <div className={cssModule.contract}>
+              <ServiceEtc1 key={'ServiceEtc1'} service={service} />
+            </div>
           </Grid>
-        )}
-        {template.services?.find((ser) => ser.type === service.service_type)
-          ?.need_jpnic && (
-          <Grid item xs={6}>
-            <ServiceJPNICAdminBase
-              key={'ServiceJPNICAdminBase'}
-              serviceID={service.ID}
-              jpnic={service.jpnic_admin}
-              setReload={setReload}
-            />
+          {template.services?.find((ser) => ser.type === service.service_type)?.need_jpnic && (
+            <Grid item xs={6}>
+              <ServiceIPBase
+                key={'ServiceIPBase'}
+                ip={service.ip}
+                serviceID={service.ID}
+                setReload={setReload}
+              />
+            </Grid>
+          )}
+          <Grid item xs={12}>
+            <ServiceEtc2 key={'ServiceEtc2'} service={service} />
           </Grid>
-        )}
-        {template.services?.find((ser) => ser.type === service.service_type)
-          ?.need_jpnic && (
-          <Grid item xs={6}>
-            <ServiceJPNICTechBase
-              key={'ServiceJPNICTechBase'}
-              serviceID={service.ID}
-              jpnicAdmin={service.jpnic_admin}
-              jpnicTech={service.jpnic_tech}
-              setReload={setReload}
-            />
+          {template.services?.find((ser) => ser.type === service.service_type)?.need_jpnic && (
+            <Grid item xs={12}>
+              <ServiceJPNICBase key={'ServiceJPNICBase'} service={service} setReload={setReload} />
+            </Grid>
+          )}
+          {template.services?.find((ser) => ser.type === service.service_type)?.need_jpnic && (
+            <Grid item xs={6}>
+              <ServiceJPNICAdminBase
+                key={'ServiceJPNICAdminBase'}
+                serviceID={service.ID}
+                jpnic={service.jpnic_admin}
+                setReload={setReload}
+              />
+            </Grid>
+          )}
+          {template.services?.find((ser) => ser.type === service.service_type)?.need_jpnic && (
+            <Grid item xs={6}>
+              <ServiceJPNICTechBase
+                key={'ServiceJPNICTechBase'}
+                serviceID={service.ID}
+                jpnicAdmin={service.jpnic_admin}
+                jpnicTech={service.jpnic_tech}
+                setReload={setReload}
+              />
+            </Grid>
+          )}
+          <Grid item xs={12}>
+            <ServiceBase key={'ServiceBase'} service={service} setReload={setReload} />
           </Grid>
-        )}
-        <Grid item xs={12}>
-          <ServiceBase
-            key={'ServiceBase'}
-            service={service}
-            setReload={setReload}
-          />
+          <Grid>
+            <div className={cssModule.contract}></div>
+          </Grid>
+          <Grid item xs={12}>
+            <ConnectionList key={'connection_list'} service={service} setReload={setReload} />
+          </Grid>
+          <Grid item xs={12}></Grid>
+          <Grid item xs={12}></Grid>
         </Grid>
-        <Grid>
-          <div className={cssModule.contract}></div>
-        </Grid>
-        <Grid item xs={12}>
-          <ConnectionList
-            key={'connection_list'}
-            service={service}
-            setReload={setReload}
-          />
-        </Grid>
-        <Grid item xs={12}></Grid>
-        <Grid item xs={12}></Grid>
-      </Grid>
+      )}
     </Dashboard>
-  )
+  );
 }
 
 export function ServiceStatus(props: { service: ServiceDetailData }) {
-  const { service } = props
-  const createDate = '作成日: ' + service.CreatedAt
-  const updateDate = '更新日: ' + service.UpdatedAt
+  const { service } = props;
+  const createDate = '作成日: ' + service.CreatedAt;
+  const updateDate = '更新日: ' + service.UpdatedAt;
 
   return (
     <StyledCardRoot1>
@@ -194,17 +174,17 @@ export function ServiceStatus(props: { service: ServiceDetailData }) {
         </Grid>
       </CardContent>
     </StyledCardRoot1>
-  )
+  );
 }
 
 export function ServiceMainMenu(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, setReload } = props
-  const navigate = useNavigate()
+  const { service, setReload } = props;
+  const navigate = useNavigate();
 
-  const clickGroupPage = () => navigate('/dashboard/group/' + service.group_id)
+  const clickGroupPage = () => navigate('/dashboard/group/' + service.group_id);
 
   return (
     <StyledCardRoot1>
@@ -227,72 +207,62 @@ export function ServiceMainMenu(props: {
         </StyledButton1>
       </CardContent>
     </StyledCardRoot1>
-  )
+  );
 }
 
 export function ServiceOpenButton(props: {
-  service: ServiceDetailData
-  lockInfo: boolean
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  lockInfo: boolean;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, lockInfo, setReload } = props
-  const { enqueueSnackbar } = useSnackbar()
+  const { service, lockInfo, setReload } = props;
+  const { enqueueSnackbar } = useSnackbar();
 
   // Update Service Information
   const updateInfo = (pass: boolean) => {
-    service.pass = pass
+    service.pass = pass;
     Put(service.ID, service).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   if (!service.pass) {
     return (
-      <Button
-        size="small"
-        color="primary"
-        disabled={lockInfo}
-        onClick={() => updateInfo(true)}
-      >
+      <Button size="small" color="primary" disabled={lockInfo} onClick={() => updateInfo(true)}>
         審査済に変更
       </Button>
-    )
+    );
   }
   return (
-    <Button
-      size="small"
-      color="secondary"
-      disabled={lockInfo}
-      onClick={() => updateInfo(false)}
-    >
+    <Button size="small" color="secondary" disabled={lockInfo} onClick={() => updateInfo(false)}>
       審査中に変更
     </Button>
-  )
+  );
 }
 
 export function ServiceOpen(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, setReload } = props
-  const [serviceCopy, setServiceCopy] = useState(service)
-  const serviceCode = GenServiceCodeOnlyService(service)
-  const [lock, setLockInfo] = React.useState(true)
+  const { service, setReload } = props;
+  const [serviceCopy, setServiceCopy] = useState(service);
+  const serviceCode = GenServiceCodeOnlyService(service);
+  const [lock, setLockInfo] = React.useState(true);
 
   const clickLockInfo = () => {
-    setLockInfo(!lock)
-  }
+    setLockInfo(!lock);
+  };
 
   const resetAction = () => {
-    setServiceCopy(service)
-    setLockInfo(true)
-  }
+    setServiceCopy(service);
+    setLockInfo(true);
+  };
 
   return (
     <StyledCardRoot1>
@@ -302,9 +272,7 @@ export function ServiceOpen(props: {
         <br />
         <h3>Pass</h3>
         {service.pass && <Chip size="small" color="primary" label="審査OK" />}
-        {!service.pass && (
-          <Chip size="small" color="secondary" label="審査中/審査NG" />
-        )}
+        {!service.pass && <Chip size="small" color="secondary" label="審査中/審査NG" />}
         <br />
         <br />
         <StyledRootForm noValidate autoComplete="off">
@@ -321,34 +289,25 @@ export function ServiceOpen(props: {
             onChange={(event) => {
               setServiceCopy({
                 ...serviceCopy,
-                asn: parseInt(event.target.value, 10),
-              })
+                asn: Number.parseInt(event.target.value, 10),
+              });
             }}
           />
         </StyledRootForm>
-        <Button
-          size="small"
-          color="secondary"
-          disabled={!lock}
-          onClick={clickLockInfo}
-        >
+        <Button size="small" color="secondary" disabled={!lock} onClick={clickLockInfo}>
           ロック解除
         </Button>
         <Button size="small" disabled={lock} onClick={resetAction}>
           Reset
         </Button>
-        <ServiceOpenButton
-          service={serviceCopy}
-          lockInfo={lock}
-          setReload={setReload}
-        />
+        <ServiceOpenButton service={serviceCopy} lockInfo={lock} setReload={setReload} />
       </CardContent>
     </StyledCardRoot1>
-  )
+  );
 }
 
 export function ServiceEtc1(props: { service: ServiceDetailData }) {
-  const { service } = props
+  const { service } = props;
 
   return (
     <StyledCardRoot1>
@@ -387,11 +346,11 @@ export function ServiceEtc1(props: { service: ServiceDetailData }) {
         </table>
       </CardContent>
     </StyledCardRoot1>
-  )
+  );
 }
 
 export function ServiceEtc2(props: { service: ServiceDetailData }) {
-  const { service } = props
+  const { service } = props;
 
   return (
     <Card className={cssModule.contract}>
@@ -434,59 +393,55 @@ export function ServiceEtc2(props: { service: ServiceDetailData }) {
         </Grid>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export function ServiceJPNICBase(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, setReload } = props
+  const { service, setReload } = props;
 
   return (
     <Card className={cssModule.contract}>
       <CardContent>
         <h3>JPNIC基本情報</h3>
-        <ServiceJPNICDetail
-          key={'ServiceJPNICDetail'}
-          service={service}
-          setReload={setReload}
-        />
+        <ServiceJPNICDetail key={'ServiceJPNICDetail'} service={service} setReload={setReload} />
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export function ServiceJPNICDetail(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, setReload } = props
-  const [lock, setLockInfo] = React.useState(true)
-  const [serviceCopy, setServiceCopy] = useState(service)
-  const { enqueueSnackbar } = useSnackbar()
+  const { service, setReload } = props;
+  const [lock, setLockInfo] = React.useState(true);
+  const [serviceCopy, setServiceCopy] = useState(service);
+  const { enqueueSnackbar } = useSnackbar();
 
   const clickLockInfo = () => {
-    setLockInfo(!lock)
-  }
+    setLockInfo(!lock);
+  };
   const resetAction = () => {
-    setServiceCopy(service)
-    setLockInfo(true)
-  }
+    setServiceCopy(service);
+    setLockInfo(true);
+  };
 
   // Update Group Information
   const updateInfo = () => {
     Put(service.ID, serviceCopy).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        setLockInfo(true)
+        enqueueSnackbar('Request Success', { variant: 'success' });
+        setLockInfo(true);
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   return (
     <StyledDivRoot1>
@@ -501,7 +456,7 @@ export function ServiceJPNICDetail(props: {
           value={serviceCopy.org}
           variant="outlined"
           onChange={(event) => {
-            setServiceCopy({ ...serviceCopy, org: event.target.value })
+            setServiceCopy({ ...serviceCopy, org: event.target.value });
           }}
         />
         <StyledTextFieldMedium
@@ -514,7 +469,7 @@ export function ServiceJPNICDetail(props: {
           value={serviceCopy.org_en}
           variant="outlined"
           onChange={(event) => {
-            setServiceCopy({ ...serviceCopy, org_en: event.target.value })
+            setServiceCopy({ ...serviceCopy, org_en: event.target.value });
           }}
         />
         <br />
@@ -528,7 +483,7 @@ export function ServiceJPNICDetail(props: {
           value={serviceCopy.postcode}
           variant="outlined"
           onChange={(event) => {
-            setServiceCopy({ ...serviceCopy, postcode: event.target.value })
+            setServiceCopy({ ...serviceCopy, postcode: event.target.value });
           }}
         />
         <StyledTextFieldMedium
@@ -541,7 +496,7 @@ export function ServiceJPNICDetail(props: {
           value={serviceCopy.address}
           variant="outlined"
           onChange={(event) => {
-            setServiceCopy({ ...serviceCopy, address: event.target.value })
+            setServiceCopy({ ...serviceCopy, address: event.target.value });
           }}
         />
         <StyledTextFieldMedium
@@ -554,7 +509,7 @@ export function ServiceJPNICDetail(props: {
           value={serviceCopy.address_en}
           variant="outlined"
           onChange={(event) => {
-            setServiceCopy({ ...serviceCopy, address_en: event.target.value })
+            setServiceCopy({ ...serviceCopy, address_en: event.target.value });
           }}
         />
         <br />
@@ -568,16 +523,11 @@ export function ServiceJPNICDetail(props: {
           value={serviceCopy.abuse}
           variant="outlined"
           onChange={(event) => {
-            setServiceCopy({ ...serviceCopy, abuse: event.target.value })
+            setServiceCopy({ ...serviceCopy, abuse: event.target.value });
           }}
         />
       </StyledRootForm>
-      <Button
-        size="small"
-        color="secondary"
-        disabled={!lock}
-        onClick={clickLockInfo}
-      >
+      <Button size="small" color="secondary" disabled={!lock} onClick={clickLockInfo}>
         ロック解除
       </Button>
       <Button size="small" onClick={resetAction} disabled={lock}>
@@ -587,40 +537,40 @@ export function ServiceJPNICDetail(props: {
         Apply
       </Button>
     </StyledDivRoot1>
-  )
+  );
 }
 
 export function ServiceBase(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, setReload } = props
-  const [lock, setLockInfo] = React.useState(true)
-  const [serviceCopy, setServiceCopy] = useState(service)
-  const { enqueueSnackbar } = useSnackbar()
-  const { data: template } = useTemplate()
+  const { service, setReload } = props;
+  const [lock, setLockInfo] = React.useState(true);
+  const [serviceCopy, setServiceCopy] = useState(service);
+  const { enqueueSnackbar } = useSnackbar();
+  const { data: template } = useTemplate();
 
   const clickLockInfo = () => {
-    setLockInfo(!lock)
-  }
+    setLockInfo(!lock);
+  };
   const resetAction = () => {
-    setServiceCopy(service)
-    setLockInfo(true)
-  }
+    setServiceCopy(service);
+    setLockInfo(true);
+  };
 
   // Update Group Information
   const updateInfo = () => {
     Put(service.ID, serviceCopy).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        setLockInfo(true)
+        enqueueSnackbar('Request Success', { variant: 'success' });
+        setLockInfo(true);
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   return (
     <Card>
@@ -643,9 +593,7 @@ export function ServiceBase(props: {
         </Grid>
         <Grid item xs={12}>
           <FormControl fullWidth>
-            <InputLabel id={'connection_type_label'}>
-              サービスタイプ(注意)
-            </InputLabel>
+            <InputLabel id={'connection_type_label'}>サービスタイプ(注意)</InputLabel>
             <Select
               labelId="connection_type_label"
               id="connection_type"
@@ -654,7 +602,7 @@ export function ServiceBase(props: {
                 setServiceCopy({
                   ...serviceCopy,
                   service_type: event.target.value,
-                })
+                });
               }}
               value={serviceCopy.service_type}
               inputProps={{
@@ -662,39 +610,25 @@ export function ServiceBase(props: {
               }}
             >
               {template.services?.map((service_type, index) => (
-                <MenuItem
-                  key={'service_template' + index}
-                  value={service_type.type}
-                >
-                  {service_type.type}: {service_type.name}(
-                  {service_type.comment})
+                <MenuItem key={'service_template' + index} value={service_type.type}>
+                  {service_type.type}: {service_type.name}({service_type.comment})
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Grid>
         <Grid item xs={12}>
-          <Button
-            size="small"
-            color="secondary"
-            disabled={!lock}
-            onClick={clickLockInfo}
-          >
+          <Button size="small" color="secondary" disabled={!lock} onClick={clickLockInfo}>
             ロック解除
           </Button>
           <Button size="small" onClick={resetAction} disabled={lock}>
             Reset
           </Button>
-          <Button
-            size="small"
-            color="primary"
-            disabled={lock}
-            onClick={updateInfo}
-          >
+          <Button size="small" color="primary" disabled={lock} onClick={updateInfo}>
             Apply
           </Button>
         </Grid>
       </CardContent>
     </Card>
-  )
+  );
 }
