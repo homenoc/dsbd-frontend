@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  web:
+    image: yoneyan/homenoc-dsbd-web-admin:v5
+    container_name: web
+    ports:
+      - 80:80
+    restart: always
