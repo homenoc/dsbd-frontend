@@ -28,13 +28,12 @@ import {
   StyledTextFieldVeryLong,
 } from './style'
 import { Post } from '../../api/Connection'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
+import { useTemplate } from '../../hooks/useTemplate'
 import { GenServiceCodeOnlyService } from '../../components/Tool'
 
 export default function ConnectionAdd() {
   const { enqueueSnackbar } = useSnackbar()
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [group, setGroup] = useState(DefaultGroupDetailData)
   const navigate = useNavigate()
   const [serviceType, setServiceType] = React.useState('')

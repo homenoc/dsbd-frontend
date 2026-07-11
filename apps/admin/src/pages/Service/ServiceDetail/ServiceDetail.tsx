@@ -28,15 +28,14 @@ import {
   StyledTextFieldVeryShort1,
   StyledButton1,
 } from '../../../style'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../../api/Recoil'
+import { useTemplate } from '../../../hooks/useTemplate'
 import Dashboard from '../../../components/Dashboard/Dashboard'
 import { useNavigate, useParams } from 'react-router-dom'
 import { GenServiceCodeOnlyService } from '../../../components/Tool'
 import { ConnectionList } from './ConnectionList'
 
 export default function ServiceDetail() {
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [reload, setReload] = useState(true)
   const [service, setService] = useState(DefaultServiceDetailData)
   const { enqueueSnackbar } = useSnackbar()
@@ -599,7 +598,7 @@ export function ServiceBase(props: {
   const [lock, setLockInfo] = React.useState(true)
   const [serviceCopy, setServiceCopy] = useState(service)
   const { enqueueSnackbar } = useSnackbar()
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
 
   const clickLockInfo = () => {
     setLockInfo(!lock)

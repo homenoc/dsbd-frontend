@@ -18,8 +18,7 @@ import Service from '../../components/Dashboard/Service/Service'
 import Connection from '../../components/Dashboard/Connection/Connection'
 import { Group } from '../../components/Dashboard/Group/Group'
 import { MemoGroup } from '../../components/Dashboard/Group/Memo'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
+import { useTemplate } from '../../hooks/useTemplate'
 
 export default function Dashboard() {
   const { enqueueSnackbar } = useSnackbar()
@@ -29,7 +28,7 @@ export default function Dashboard() {
   const [service, setService] = useState<ServiceDetailData[]>()
   const [group, setGroup] = useState<GroupDetailData[]>()
   const [connection, setConnection] = useState<ConnectionDetailData[]>()
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [expired_status0IsChecked, setExpired_status0IsChecked] = useState(true);
   const [expired_status1IsChecked, setExpired_status1IsChecked] = useState(false);
   const [expired_status2IsChecked, setExpired_status2IsChecked] = useState(false);

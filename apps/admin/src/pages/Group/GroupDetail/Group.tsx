@@ -36,8 +36,7 @@ import {
 import { LocalizationProvider, DesktopDatePicker } from '@mui/x-date-pickers'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { useNavigate } from 'react-router-dom'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../../api/Recoil'
+import { useTemplate } from '../../../hooks/useTemplate'
 import { StyledSelect1, StyledTextFieldShort } from '../../Add/style'
 import {
   GetCustomerDashboard,
@@ -63,7 +62,7 @@ export function GroupProfileInfo(props: {
   const { data, setOpenMailSendDialog, setReload } = props
   const [lockPersonalInformation, setLockPersonalInformation] =
     React.useState(true)
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [group, setGroup] = useState(data)
   const { enqueueSnackbar } = useSnackbar()
   const [paymentCoupon, setPaymentCoupon] = React.useState('')

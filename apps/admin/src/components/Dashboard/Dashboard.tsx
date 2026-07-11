@@ -41,9 +41,7 @@ import { StyledDivDashboardToolBarIcon, StyledDivDashboardRoot } from './styles'
 import { useNavigate } from 'react-router-dom'
 import { Logout } from '../../api/Auth'
 import { muiColorTheme } from '../Theme'
-import { useRecoilState } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
-import { GetTemplate } from '../../api/Group'
+import { useTemplate } from '../../hooks/useTemplate'
 import { useSnackbar } from 'notistack'
 import useMediaQuery from '@mui/material/useMediaQuery'
 
@@ -135,20 +133,14 @@ export default function Dashboard(props: DashboardProps) {
     }
   }, [isMobile, props.forceDrawerClosed])
 
-  const [loading, setLoading] = React.useState(true)
-  const [template, setTemplate] = useRecoilState(TemplateState)
+  const { isLoading: loading, error: templateError } = useTemplate()
   const { enqueueSnackbar } = useSnackbar()
 
   useEffect(() => {
-    GetTemplate().then((res) => {
-      if (res.error === '') {
-        setTemplate(res.data)
-        setLoading(false)
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
-      }
-    })
-  }, [])
+    if (templateError) {
+      enqueueSnackbar('' + (templateError as Error).message, { variant: 'error' })
+    }
+  }, [templateError, enqueueSnackbar])
 
   const handleDrawerOpen = () => {
     setOpen(true)

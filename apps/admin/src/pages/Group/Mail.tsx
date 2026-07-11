@@ -14,8 +14,7 @@ import {
   SelectChangeEvent,
   TextField,
 } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
+import { useTemplate } from '../../hooks/useTemplate'
 
 export function MailAutoSendDialogs(props: {
   open: string
@@ -24,7 +23,7 @@ export function MailAutoSendDialogs(props: {
   org: string
 }) {
   const { open, setOpen, mails, org } = props
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [data, setData] = React.useState(DefaultMailSendData)
   const [toMail, setToMail] = React.useState('')
   const { enqueueSnackbar } = useSnackbar()
@@ -151,7 +150,7 @@ export function MailSendDialogs(props: {
   org: string
 }) {
   const { open, setOpen, mails, org } = props
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [data, setData] = React.useState(DefaultMailSendData)
   const [processID, setProcessID] = React.useState('')
   const [toMail, setToMail] = React.useState(mails)

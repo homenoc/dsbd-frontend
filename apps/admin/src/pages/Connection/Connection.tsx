@@ -23,9 +23,6 @@ import {
   ConnectionDetailData,
   DefaultConnectionDetailDataArray,
 } from '../../interface'
-import { GetTemplate } from '../../api/Group'
-import { useRecoilState } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
 import { useNavigate } from 'react-router-dom'
 import { GenServiceCode } from '../../components/Tool'
 
@@ -34,7 +31,6 @@ export default function Connection() {
   const [connections, setConnections] = useState(
     DefaultConnectionDetailDataArray
   )
-  const [template, setTemplate] = useRecoilState(TemplateState)
   const [initConnections, setInitConnections] = useState(
     DefaultConnectionDetailDataArray
   )
@@ -45,14 +41,6 @@ export default function Connection() {
 
   useEffect(() => {
     if (reload) {
-      GetTemplate().then((res) => {
-        if (res.error === '') {
-          setTemplate(res.data)
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' })
-        }
-      })
-
       GetAll().then((res) => {
         if (res.error === '') {
           setConnections(res.data)

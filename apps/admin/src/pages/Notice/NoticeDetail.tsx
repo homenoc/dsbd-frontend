@@ -9,13 +9,12 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Dashboard from '../../components/Dashboard/Dashboard'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
+import { useTemplate } from '../../hooks/useTemplate'
 import { useParams } from 'react-router-dom'
 import { DateToString1 } from '../../components/Tool'
 
 export default function NoticeDetail() {
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [isPermanent, setIsPermanent] = React.useState(false)
   const [startTime, setStartTime] = React.useState<Date>(new Date())
   const [endTime, setEndTime] = React.useState<Date>(new Date())

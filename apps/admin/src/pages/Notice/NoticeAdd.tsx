@@ -16,8 +16,7 @@ import { MailAutoNoticeSendDialogs } from '../Group/Mail'
 import { StyledTextFieldWrap, StyledTextFieldWrapTitle } from '../../style'
 import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
+import { useTemplate } from '../../hooks/useTemplate'
 import { GetAll as ConnectionGetAll } from '../../api/Connection'
 import { ReactMarkdown } from 'react-markdown/lib/react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -33,7 +32,7 @@ type OptionType = {
   value: number
 }
 export default function NoticeAdd() {
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const navigate = useNavigate()
   const nowDate = new Date()
   const [isPermanent, setIsPermanent] = React.useState(true)

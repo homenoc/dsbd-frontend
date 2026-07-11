@@ -33,15 +33,14 @@ import {
   StyledTextFieldMedium,
   StyledTextFieldTooVeryShort,
 } from '../../../../style'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../../../api/Recoil'
+import { useTemplate } from '../../../../hooks/useTemplate'
 
 export function AddAssignIPDialog(props: {
   serviceID: number
   setReload: Dispatch<SetStateAction<boolean>>
 }) {
   const { serviceID, setReload } = props
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [checkBoxIPv4, setCheckBoxIPv4] = React.useState(false)
   const [data, setData] = React.useState(DefaultAddIP)
   const [ipv4PlanSubnetCount, setIPv4PlanSubnetCount] = React.useState(0)

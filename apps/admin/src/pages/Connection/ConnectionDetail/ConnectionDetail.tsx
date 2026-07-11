@@ -36,15 +36,14 @@ import {
   GetConnectionWithTemplate,
   GetServiceWithTemplate,
 } from '../../../api/Tool'
-import { useRecoilState, useRecoilValue } from 'recoil'
-import { TemplateState } from '../../../api/Recoil'
+import { useTemplate } from '../../../hooks/useTemplate'
 import Dashboard from '../../../components/Dashboard/Dashboard'
 import { Get, Put } from '../../../api/Connection'
 import { useNavigate, useParams } from 'react-router-dom'
 import { GenServiceCode } from '../../../components/Tool'
 
 export default function ConnectionDetail() {
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const [reload, setReload] = useState(true)
   const [connection, setConnection] = useState(DefaultConnectionDetailData)
   const { enqueueSnackbar } = useSnackbar()
@@ -152,7 +151,7 @@ export function ConnectionOpen(props: {
   setReload: Dispatch<SetStateAction<boolean>>
 }) {
   const { connection: original_connection, setReload } = props
-  const [template] = useRecoilState(TemplateState)
+  const { data: template } = useTemplate()
   const [connection, setConnection] = useState(original_connection)
   const [lock, setLock] = React.useState(true)
 
@@ -338,7 +337,7 @@ export function ConnectionOpenL3User(props: {
   lock: boolean
 }) {
   const { connection, setConnection, lock } = props
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
 
   if (
     connection.service === undefined ||
@@ -691,7 +690,7 @@ export function ConnectionEtc2(props: {
   const [lock, setLockInfo] = React.useState(true)
   const [connection, setConnection] = useState(original_connection)
   const { enqueueSnackbar } = useSnackbar()
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
 
   const clickLockInfo = () => {
     setLockInfo(!lock)

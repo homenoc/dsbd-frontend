@@ -30,8 +30,7 @@ import {
   StyledTextFieldShort,
   StyledTextFieldTooVeryShort,
 } from '../../../../style'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../../../api/Recoil'
+import { useTemplate } from '../../../../hooks/useTemplate'
 
 export function IPOpenButton(props: {
   ip: IPData
@@ -88,7 +87,7 @@ export function ServiceIPBase(props: {
   setReload: Dispatch<SetStateAction<boolean>>
 }) {
   const { ip, serviceID, setReload } = props
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
 
   if (ip === undefined) {
     return (

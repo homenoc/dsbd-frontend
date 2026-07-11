@@ -41,11 +41,10 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from './reg'
 import { Post } from '../../api/Service'
 import Dashboard from '../../components/Dashboard/Dashboard'
-import { useRecoilValue } from 'recoil'
-import { TemplateState } from '../../api/Recoil'
+import { useTemplate } from '../../hooks/useTemplate'
 
 export default function ServiceAdd() {
-  const template = useRecoilValue(TemplateState)
+  const { data: template } = useTemplate()
   const { enqueueSnackbar } = useSnackbar()
   const navigate = useNavigate()
   const today = new Date()
