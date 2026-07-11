@@ -7,7 +7,7 @@ import { Get } from '../../../api/Group';
 import Dashboard from '../../../components/Dashboard/Dashboard';
 import Request from '../../../components/Dashboard/Request/Request';
 import Ticket from '../../../components/Dashboard/Ticket/Ticket';
-import { DefaultGroupDetailData } from '../../../interface';
+import type { GroupDetailData } from '../../../interface';
 import { StyledDivRoot1 } from '../../../style';
 import { MailAutoSendDialogs, MailSendDialogs } from '../Mail';
 import { GroupMainMenu, GroupProfileInfo, GroupStatus } from './Group';
@@ -29,7 +29,7 @@ export default function GroupDetail() {
   const { enqueueSnackbar } = useSnackbar();
   const [reload, setReload] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [group, setGroup] = useState(DefaultGroupDetailData);
+  const [group, setGroup] = useState<GroupDetailData>();
   const [openMailSendDialog, setOpenMailSendDialog] = useState(false);
   const [openMailAutoSendDialog, setOpenMailAutoSendDialog] = useState('');
   const [sendAutoEmail, setSendAutoEmail] = useState('');
@@ -70,8 +70,8 @@ export default function GroupDetail() {
   }, []);
 
   return (
-    <Dashboard title={getTitle(group.ID, group.org, group.org_en, loading)}>
-      {loading ? (
+    <Dashboard title={getTitle(group?.ID ?? 0, group?.org ?? '', group?.org_en ?? '', loading)}>
+      {loading || !group ? (
         <StyledDivRoot1>
           <CircularProgress />
           <div>loading</div>

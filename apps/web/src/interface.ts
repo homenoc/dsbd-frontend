@@ -266,14 +266,6 @@ export interface UserAddData {
   level: number;
 }
 
-export const DefaultTemplateData: TemplateData = {
-  services: undefined,
-  ipv4: undefined,
-  ipv6: undefined,
-  ntts: undefined,
-  ix: undefined,
-};
-
 export const DefaultGroupAddData: GroupAddData = {
   agree: false,
   question: '',

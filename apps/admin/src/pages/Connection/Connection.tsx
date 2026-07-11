@@ -1,11 +1,3 @@
-import React, { useEffect, useState } from 'react'
-import Dashboard from '../../components/Dashboard/Dashboard'
-import {
-  StyledCard,
-  StyledInputBase,
-  StyledPaperRootInput,
-  StyledTypographyTitle,
-} from '../Dashboard/styles'
 import {
   Button,
   CardActions,
@@ -16,74 +8,72 @@ import {
   RadioGroup,
   Stack,
   Typography,
-} from '@mui/material'
-import { GetAll } from '../../api/Connection'
-import { useSnackbar } from 'notistack'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { GetAll } from '../../api/Connection';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import { GenServiceCode } from '../../components/Tool';
+import type { ConnectionDetailData } from '../../interface';
 import {
-  ConnectionDetailData,
-  DefaultConnectionDetailDataArray,
-} from '../../interface'
-import { useNavigate } from 'react-router-dom'
-import { GenServiceCode } from '../../components/Tool'
+  StyledCard,
+  StyledInputBase,
+  StyledPaperRootInput,
+  StyledTypographyTitle,
+} from '../Dashboard/styles';
 
 export default function Connection() {
-  const navigate = useNavigate()
-  const [connections, setConnections] = useState(
-    DefaultConnectionDetailDataArray
-  )
-  const [initConnections, setInitConnections] = useState(
-    DefaultConnectionDetailDataArray
-  )
-  const [reload, setReload] = useState(true)
-  const { enqueueSnackbar } = useSnackbar()
+  const navigate = useNavigate();
+  const [connections, setConnections] = useState<ConnectionDetailData[]>([]);
+  const [initConnections, setInitConnections] = useState<ConnectionDetailData[]>([]);
+  const [reload, setReload] = useState(true);
+  const { enqueueSnackbar } = useSnackbar();
   // 1:開通 2:未開通
-  const [value, setValue] = React.useState(1)
+  const [value, setValue] = React.useState(1);
 
   useEffect(() => {
     if (reload) {
       GetAll().then((res) => {
         if (res.error === '') {
-          setConnections(res.data)
-          setInitConnections(res.data)
-          setReload(false)
+          setConnections(res.data);
+          setInitConnections(res.data);
+          setReload(false);
         } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' })
+          enqueueSnackbar('' + res.error, { variant: 'error' });
         }
-      })
+      });
     }
-  }, [])
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(Number(event.target.value))
-  }
+    setValue(Number(event.target.value));
+  };
 
   const checkConnection = (connection: ConnectionDetailData) => {
     if (value === 1) {
-      return connection.open
+      return connection.open;
     }
     if (value === 2) {
-      return !connection.open
+      return !connection.open;
     }
-    return true
-  }
+    return true;
+  };
 
   const handleFilter = (search: string) => {
-    let tmp: ConnectionDetailData[]
+    let tmp: ConnectionDetailData[];
     if (search === '') {
-      tmp = initConnections
+      tmp = initConnections;
     } else {
       tmp = initConnections.filter((connection: ConnectionDetailData) => {
-        return GenServiceCode(connection)
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      })
+        return GenServiceCode(connection).toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setConnections(tmp)
-  }
-  const clickGroupPage = (id: number) => navigate('/dashboard/group/' + id)
-  const clickServicePage = (id: number) => navigate('/dashboard/service/' + id)
-  const clickConnectionPage = (id: number) =>
-    navigate('/dashboard/connection/' + id)
+    setConnections(tmp);
+  };
+  const clickGroupPage = (id: number) => navigate('/dashboard/group/' + id);
+  const clickServicePage = (id: number) => navigate('/dashboard/service/' + id);
+  const clickConnectionPage = (id: number) => navigate('/dashboard/connection/' + id);
 
   return (
     <Dashboard title="Connection List">
@@ -92,28 +82,14 @@ export default function Connection() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
       <FormControl component="fieldset">
-        <RadioGroup
-          row
-          aria-label="gender"
-          name="open"
-          value={value}
-          onChange={handleChange}
-        >
-          <FormControlLabel
-            value={1}
-            control={<Radio color="primary" />}
-            label="開通"
-          />
-          <FormControlLabel
-            value={2}
-            control={<Radio color="secondary" />}
-            label="未開通"
-          />
+        <RadioGroup row aria-label="gender" name="open" value={value} onChange={handleChange}>
+          <FormControlLabel value={1} control={<Radio color="primary" />} label="開通" />
+          <FormControlLabel value={2} control={<Radio color="secondary" />} label="未開通" />
         </RadioGroup>
       </FormControl>
       {connections
@@ -153,9 +129,7 @@ export default function Connection() {
                   size="small"
                   variant="outlined"
                   disabled={connection.service?.group_id === undefined}
-                  onClick={() =>
-                    clickGroupPage(connection.service?.group_id ?? 0)
-                  }
+                  onClick={() => clickGroupPage(connection.service?.group_id ?? 0)}
                 >
                   Group
                 </Button>
@@ -164,5 +138,5 @@ export default function Connection() {
           </StyledCard>
         ))}
     </Dashboard>
-  )
+  );
 }

@@ -1,6 +1,3 @@
-import React, { useEffect, useState } from 'react'
-import { format, parseISO } from 'date-fns'
-import Dashboard from '../../../components/Dashboard/Dashboard'
 import {
   Button,
   CardContent,
@@ -14,34 +11,37 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-} from '@mui/material'
-import { Get } from '../../../api/User'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useSnackbar } from 'notistack'
-import { DefaultUserDetailData } from '../../../interface'
-import { StyledCardRoot1, StyledDivRoot1 } from '../../../style'
+} from '@mui/material';
+import { format, parseISO } from 'date-fns';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Get } from '../../../api/User';
+import Dashboard from '../../../components/Dashboard/Dashboard';
+import type { UserDetailData } from '../../../interface';
+import { StyledCardRoot1, StyledDivRoot1 } from '../../../style';
 
 export default function UserDetail() {
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState(DefaultUserDetailData)
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
-  const { id } = useParams()
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<UserDetailData>();
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const { id } = useParams();
 
   useEffect(() => {
     Get(id!).then((res) => {
       if (res.error === '') {
-        setUser(res.data)
-        setLoading(false)
+        setUser(res.data);
+        setLoading(false);
       } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
+        enqueueSnackbar('' + res.error, { variant: 'error' });
       }
-    })
-  }, [])
+    });
+  }, []);
 
   return (
     <Dashboard title="User Info">
-      {loading ? (
+      {loading || !user ? (
         <StyledDivRoot1>
           <CircularProgress />
           <div>loading</div>
@@ -52,11 +52,7 @@ export default function UserDetail() {
             <StyledCardRoot1>
               <CardContent>
                 <TableContainer component={Paper}>
-                  <Table
-                    sx={{ minWidth: 200 }}
-                    size="small"
-                    aria-label="a dense table"
-                  >
+                  <Table sx={{ minWidth: 200 }} size="small" aria-label="a dense table">
                     <TableHead>
                       <TableRow>
                         <TableCell>Key</TableCell>
@@ -171,7 +167,7 @@ export default function UserDetail() {
             <StyledCardRoot1>
               <CardContent>
                 Operation
-                <br/>
+                <br />
               </CardContent>
             </StyledCardRoot1>
           </Grid>
@@ -179,13 +175,11 @@ export default function UserDetail() {
             <StyledCardRoot1>
               <CardContent>
                 Link
-                <br/>
+                <br />
                 {user.group_id != null && (
                   <Button
                     variant="contained"
-                    onClick={() =>
-                      navigate(`/dashboard/group/${user.group_id}`)
-                    }
+                    onClick={() => navigate(`/dashboard/group/${user.group_id}`)}
                   >
                     Group
                   </Button>
@@ -197,5 +191,5 @@ export default function UserDetail() {
         </Grid>
       )}
     </Dashboard>
-  )
+  );
 }

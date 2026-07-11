@@ -23,11 +23,10 @@ import { Open } from '../../../components/Dashboard/Open/Open';
 import { GenServiceCode } from '../../../components/Tool';
 import { useBGPRouters, useGatewayIPs } from '../../../hooks/useResources';
 import { useTemplate } from '../../../hooks/useTemplate';
-import {
-  type BGPRouterDetailData,
-  type ConnectionDetailData,
-  DefaultConnectionDetailData,
-  type TunnelEndPointRouterIPTemplateData,
+import type {
+  BGPRouterDetailData,
+  ConnectionDetailData,
+  TunnelEndPointRouterIPTemplateData,
 } from '../../../interface';
 import {
   StyledButton1,
@@ -44,7 +43,7 @@ import classes from './ConnectionDialog.module.scss';
 export default function ConnectionDetail() {
   const { data: template } = useTemplate();
   const [reload, setReload] = useState(true);
-  const [connection, setConnection] = useState(DefaultConnectionDetailData);
+  const [connection, setConnection] = useState<ConnectionDetailData>();
   const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
 
@@ -64,10 +63,10 @@ export default function ConnectionDetail() {
   return (
     <Dashboard title="Connection Detail">
       {/* The child cards copy `connection` into local edit state on mount, so we
-          must not mount them until Get has resolved — otherwise they freeze the
-          ID=0 default and later PUT to /connection/0. Keying by ID also remounts
+          must not mount them until Get has resolved — otherwise they would
+          freeze empty data and later PUT it back. Keying by ID also remounts
           them with fresh data when the loaded connection changes. */}
-      {connection.ID !== 0 && (
+      {connection && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={6} lg={3}>
             <ConnectionStatus key={`connectionStatus_${connection.ID}`} connection={connection} />

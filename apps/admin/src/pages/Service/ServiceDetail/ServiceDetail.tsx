@@ -16,7 +16,7 @@ import { Get, Put } from '../../../api/Service';
 import Dashboard from '../../../components/Dashboard/Dashboard';
 import { GenServiceCodeOnlyService } from '../../../components/Tool';
 import { useTemplate } from '../../../hooks/useTemplate';
-import { DefaultServiceDetailData, type ServiceDetailData } from '../../../interface';
+import type { ServiceDetailData } from '../../../interface';
 import {
   StyledButton1,
   StyledCardRoot1,
@@ -37,7 +37,7 @@ import { ServiceAddAllowButton } from './ServiceMenu';
 export default function ServiceDetail() {
   const { data: template } = useTemplate();
   const [reload, setReload] = useState(true);
-  const [service, setService] = useState(DefaultServiceDetailData);
+  const [service, setService] = useState<ServiceDetailData>();
   const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
 
@@ -57,10 +57,10 @@ export default function ServiceDetail() {
   return (
     <Dashboard title="Service Dialog">
       {/* Child cards copy `service` into local edit state on mount, so we must
-          not mount them until Get resolves — otherwise they freeze the ID=0
-          empty default (blank edit forms that PUT blank data to the real
-          service). Gate the whole grid on the loaded service. */}
-      {service.ID !== 0 && (
+          not mount them until Get resolves — otherwise they would freeze empty
+          data (blank edit forms that PUT blank data to the real service).
+          Gate the whole grid on the loaded service. */}
+      {service && (
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={4} lg={3}>
             <ServiceStatus key={'ServiceStatus'} service={service} />

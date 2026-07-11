@@ -1,11 +1,3 @@
-import React, { useEffect, useState } from 'react'
-import Dashboard from '../../components/Dashboard/Dashboard'
-import {
-  StyledCard,
-  StyledInputBase,
-  StyledPaperRootInput,
-  StyledTypographyTitle,
-} from '../Dashboard/styles'
 import {
   CardActions,
   CardContent,
@@ -14,55 +6,63 @@ import {
   Radio,
   RadioGroup,
   Typography,
-} from '@mui/material'
-import { GetAll } from '../../api/Token'
-import { DefaultTokenDetailDataArray, TokenDetailData } from '../../interface'
-import { useSnackbar } from 'notistack'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { GetAll } from '../../api/Token';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import type { TokenDetailData } from '../../interface';
+import {
+  StyledCard,
+  StyledInputBase,
+  StyledPaperRootInput,
+  StyledTypographyTitle,
+} from '../Dashboard/styles';
 
 export default function Token() {
-  const [tokens, setTokens] = useState(DefaultTokenDetailDataArray)
-  const [initTokens, setInitTokens] = useState(DefaultTokenDetailDataArray)
-  const { enqueueSnackbar } = useSnackbar()
+  const [tokens, setTokens] = useState<TokenDetailData[]>([]);
+  const [initTokens, setInitTokens] = useState<TokenDetailData[]>([]);
+  const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効
-  const [value, setValue] = React.useState(1)
+  const [value, setValue] = React.useState(1);
 
   useEffect(() => {
     GetAll().then((res) => {
       if (res.error === '') {
-        setTokens(res.data)
-        setInitTokens(res.data)
+        setTokens(res.data);
+        setInitTokens(res.data);
       } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
+        enqueueSnackbar('' + res.error, { variant: 'error' });
       }
-    })
-  }, [])
+    });
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(Number(event.target.value))
-  }
+    setValue(Number(event.target.value));
+  };
 
   const checkToken = (token: TokenDetailData) => {
     if (value === 1) {
-      return token.admin
+      return token.admin;
     }
     if (value === 2) {
-      return !token.admin
+      return !token.admin;
     }
-    return true
-  }
+    return true;
+  };
 
   const handleFilter = (search: string) => {
-    let tmp: TokenDetailData[]
+    let tmp: TokenDetailData[];
     if (search === '') {
-      tmp = initTokens
+      tmp = initTokens;
     } else {
       tmp = initTokens.filter((token: TokenDetailData) => {
-        const tmpToken = token.access_token + token.user_token + token.tmp_token
-        return tmpToken.toLowerCase().includes(search.toLowerCase())
-      })
+        const tmpToken = token.access_token + token.user_token + token.tmp_token;
+        return tmpToken.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setTokens(tmp)
-  }
+    setTokens(tmp);
+  };
 
   return (
     <Dashboard title="Token Info">
@@ -71,28 +71,14 @@ export default function Token() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
       <FormControl component="fieldset">
-        <RadioGroup
-          row
-          aria-label="gender"
-          name="gender1"
-          value={value}
-          onChange={handleChange}
-        >
-          <FormControlLabel
-            value={1}
-            control={<Radio color="primary" />}
-            label="管理側"
-          />
-          <FormControlLabel
-            value={2}
-            control={<Radio color="secondary" />}
-            label="ユーザ側"
-          />
+        <RadioGroup row aria-label="gender" name="gender1" value={value} onChange={handleChange}>
+          <FormControlLabel value={1} control={<Radio color="primary" />} label="管理側" />
+          <FormControlLabel value={2} control={<Radio color="secondary" />} label="ユーザ側" />
         </RadioGroup>
       </FormControl>
       {tokens
@@ -118,5 +104,5 @@ export default function Token() {
           </StyledCard>
         ))}
     </Dashboard>
-  )
+  );
 }

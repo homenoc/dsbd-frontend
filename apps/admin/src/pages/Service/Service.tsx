@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { GetAll } from '../../api/Service';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { GenServiceCode, GenServiceCodeOnlyService } from '../../components/Tool';
-import { DefaultServiceDetailDataArray, type ServiceDetailData } from '../../interface';
+import type { ServiceDetailData } from '../../interface';
 import {
   StyledCard,
   StyledInputBase,
@@ -25,8 +25,8 @@ import {
 
 export default function Service() {
   const navigate = useNavigate();
-  const [services, setServices] = useState(DefaultServiceDetailDataArray);
-  const [initServices, setInitServices] = useState(DefaultServiceDetailDataArray);
+  const [services, setServices] = useState<ServiceDetailData[]>([]);
+  const [initServices, setInitServices] = useState<ServiceDetailData[]>([]);
   const [reload, setReload] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
   // 1:開通 2:未開通

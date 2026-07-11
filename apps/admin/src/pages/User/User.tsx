@@ -15,7 +15,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GetAll } from '../../api/User';
 import Dashboard from '../../components/Dashboard/Dashboard';
-import { DefaultUserDetailDataArray, type UserDetailData } from '../../interface';
+import type { UserDetailData } from '../../interface';
 import {
   StyledCard,
   StyledInputBase,
@@ -25,8 +25,8 @@ import {
 
 export default function User() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState(DefaultUserDetailDataArray);
-  const [initUsers, setInitUsers] = useState(DefaultUserDetailDataArray);
+  const [users, setUsers] = useState<UserDetailData[]>([]);
+  const [initUsers, setInitUsers] = useState<UserDetailData[]>([]);
   const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効
   const [value, setValue] = React.useState(1);

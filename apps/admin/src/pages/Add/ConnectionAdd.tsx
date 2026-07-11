@@ -25,13 +25,13 @@ import { Get } from '../../api/Group';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
 import { GenServiceCodeOnlyService } from '../../components/Tool';
 import { useTemplate } from '../../hooks/useTemplate';
-import { DefaultGroupDetailData } from '../../interface';
+import type { GroupDetailData } from '../../interface';
 import { StyledFormControlFormSelect, StyledTextFieldLong, StyledTextFieldVeryLong } from './style';
 
 export default function ConnectionAdd() {
   const { enqueueSnackbar } = useSnackbar();
   const { data: template } = useTemplate();
-  const [group, setGroup] = useState(DefaultGroupDetailData);
+  const [group, setGroup] = useState<GroupDetailData>();
   const navigate = useNavigate();
   const [serviceType, setServiceType] = React.useState('');
   const [serviceID, setServiceID] = React.useState(0);
@@ -66,11 +66,11 @@ export default function ConnectionAdd() {
     template.services?.find((serviceTemplate) => serviceTemplate.type === serviceType)
       ?.need_global_as ?? false;
   const isIPv4Route = () =>
-    (group.services
+    (group?.services
       ?.find((service) => service.ID === serviceID)
       ?.ip?.filter((ip) => ip.version === 4)?.length ?? 0) > 0 || isGlobalAS();
   const isIPv6Route = () =>
-    (group.services
+    (group?.services
       ?.find((service) => service.ID === serviceID)
       ?.ip?.filter((ip) => ip.version === 6)?.length ?? 0) > 0 || isGlobalAS();
 
@@ -290,7 +290,7 @@ export default function ConnectionAdd() {
                 labelId="service_code"
                 id="service_code"
                 onChange={(event) => {
-                  const tmpService = group.services?.filter(
+                  const tmpService = group?.services?.filter(
                     (data) => data.ID === Number(event.target.value),
                   );
                   if (tmpService != null) {
@@ -299,7 +299,7 @@ export default function ConnectionAdd() {
                   setServiceID(Number(event.target.value));
                 }}
               >
-                {group.services
+                {group?.services
                   ?.filter((tmp) => tmp.add_allow)
                   .map((row, index) => (
                     <MenuItem key={'service_code_' + index} value={row.ID}>

@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GetAll } from '../../api/Group';
 import Dashboard from '../../components/Dashboard/Dashboard';
-import { DefaultGroupDetailDataArray, type GroupDetailData } from '../../interface';
+import type { GroupDetailData } from '../../interface';
 import {
   StyledCard,
   StyledInputBase,
@@ -23,8 +23,8 @@ import {
 } from '../Dashboard/styles';
 
 export default function Group() {
-  const [groups, setGroups] = useState(DefaultGroupDetailDataArray);
-  const [initGroups, setInitGroups] = useState(DefaultGroupDetailDataArray);
+  const [groups, setGroups] = useState<GroupDetailData[]>([]);
+  const [initGroups, setInitGroups] = useState<GroupDetailData[]>([]);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効

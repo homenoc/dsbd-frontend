@@ -24,7 +24,7 @@ import { Post } from '../../../api/Connection';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
 import { invalidateAllInfo, useServices } from '../../../hooks/useInfo';
 import { useTemplate } from '../../../hooks/useTemplate';
-import { DefaultTemplateData, type InfoData, type ServiceData } from '../../../interface';
+import type { InfoData, ServiceData } from '../../../interface';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledFormControlFormSelect,
@@ -34,7 +34,7 @@ import {
 
 export default function ConnectionAdd() {
   const { enqueueSnackbar } = useSnackbar();
-  const { data: template = DefaultTemplateData } = useTemplate();
+  const { data: template } = useTemplate();
   const serviceQ = useServices();
   const error = serviceQ.error;
   const infoData = useMemo<InfoData | undefined>(() => {

@@ -32,7 +32,7 @@ import { Post } from '../../../api/Service';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
 import { invalidateAllInfo, useGroup } from '../../../hooks/useInfo';
 import { useTemplate } from '../../../hooks/useTemplate';
-import { DefaultTemplateData, type InfoData } from '../../../interface';
+import type { InfoData } from '../../../interface';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledRootForm,
@@ -48,7 +48,7 @@ import {
 import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from '../reg';
 
 export default function ServiceAdd() {
-  const { data: template = DefaultTemplateData } = useTemplate();
+  const { data: template } = useTemplate();
   const groupQ = useGroup();
   const error = groupQ.error;
   const infoData = useMemo<InfoData | undefined>(() => {

@@ -1,21 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react'
-import {
-  DefaultUserDetailData,
-  TicketDetailData,
-  UserDetailData,
-} from '../../../interface'
-import { StyledPaperMessage } from '../styles'
-import { restfulApiConfig } from '../../../api/Config'
-import useWebSocket from 'react-use-websocket'
-import { MessageLeft, MessageRight } from './Message'
-import { TextInput } from './TextInput'
-import { Get } from '../../../api/Support'
-import { useSnackbar } from 'notistack'
-import { useParams } from 'react-router-dom'
-import DashboardComponent from '../../../components/Dashboard/Dashboard'
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import useWebSocket from 'react-use-websocket';
+import { restfulApiConfig } from '../../../api/Config';
+import { Get } from '../../../api/Support';
+import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import type { TicketDetailData, UserDetailData } from '../../../interface';
+import { StyledPaperMessage } from '../styles';
+import { MessageLeft, MessageRight } from './Message';
+import { TextInput } from './TextInput';
 
 export default function SupportDetail() {
-  const { id } = useParams()
+  const { id } = useParams();
   const { sendMessage, lastMessage } = useWebSocket(
     restfulApiConfig.wsURL +
       '/support' +
@@ -26,34 +22,45 @@ export default function SupportDetail() {
       '&access_token=' +
       sessionStorage.getItem('AccessToken'),
     {
-      onOpen: () =>
-        enqueueSnackbar('WebSocket接続確立', { variant: 'success' }),
+      onOpen: () => enqueueSnackbar('WebSocket接続確立', { variant: 'success' }),
       onClose: () => enqueueSnackbar('WebSocket切断', { variant: 'error' }),
       shouldReconnect: () => true,
-    }
-  )
-  const { enqueueSnackbar } = useSnackbar()
-  const [ticket, setTicket] = useState<TicketDetailData>()
-  const [inputChatData, setInputChatData] = useState('')
-  const [sendPush, setSendPush] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+    },
+  );
+  const { enqueueSnackbar } = useSnackbar();
+  const [ticket, setTicket] = useState<TicketDetailData>();
+  const [inputChatData, setInputChatData] = useState('');
+  const [sendPush, setSendPush] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     Get(Number(id)).then((res) => {
       if (res.error !== '') {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
-        return
+        enqueueSnackbar('' + res.error, { variant: 'error' });
+        return;
       }
-      setTicket(res.data)
-      ref.current?.scrollIntoView()
-    })
-  }, [])
+      setTicket(res.data);
+      ref.current?.scrollIntoView();
+    });
+  }, []);
 
   useEffect(() => {
     if (lastMessage !== null) {
-      const obj = JSON.parse(lastMessage?.data)
-      const user: UserDetailData = DefaultUserDetailData
-      user.name = obj.username
+      const obj = JSON.parse(lastMessage?.data);
+      const user: UserDetailData = {
+        CreatedAt: '',
+        ID: 0,
+        UpdatedAt: '',
+        email: '',
+        expired_status: 0,
+        group_id: 0,
+        level: 0,
+        mail_token: '',
+        mail_verify: true,
+        name: obj.username,
+        name_en: '',
+        pass: '',
+      };
       if (ticket?.chat != null) {
         setTicket({
           ...ticket,
@@ -69,16 +76,16 @@ export default function SupportDetail() {
               user,
             },
           ],
-        })
+        });
       }
       if (obj.admin) {
-        enqueueSnackbar('送信しました。', { variant: 'success' })
+        enqueueSnackbar('送信しました。', { variant: 'success' });
       } else {
-        enqueueSnackbar('新規メッセージがあります', { variant: 'success' })
+        enqueueSnackbar('新規メッセージがあります', { variant: 'success' });
       }
-      ref.current?.scrollIntoView()
+      ref.current?.scrollIntoView();
     }
-  }, [lastMessage])
+  }, [lastMessage]);
 
   useEffect(() => {
     if (sendPush) {
@@ -86,11 +93,11 @@ export default function SupportDetail() {
         JSON.stringify({
           ACCESS_TOKEN: sessionStorage.getItem('AccessToken')!,
           message: inputChatData,
-        })
-      )
-      setSendPush(false)
+        }),
+      );
+      setSendPush(false);
     }
-  }, [sendPush])
+  }, [sendPush]);
 
   return (
     <>
@@ -109,11 +116,7 @@ export default function SupportDetail() {
             <b>このチャットはMarkdownに準拠しております。</b>
             {ticket?.chat.map((chat, index) =>
               chat.admin ? (
-                <MessageRight
-                  key={index}
-                  message={chat.data}
-                  timestamp={chat.CreatedAt}
-                />
+                <MessageRight key={index} message={chat.data} timestamp={chat.CreatedAt} />
               ) : (
                 <MessageLeft
                   key={index}
@@ -121,7 +124,7 @@ export default function SupportDetail() {
                   timestamp={chat.CreatedAt}
                   displayName={chat.user?.name}
                 />
-              )
+              ),
             )}
             <div ref={ref} />
           </StyledPaperMessage>
@@ -134,5 +137,5 @@ export default function SupportDetail() {
         </DashboardComponent>
       )}
     </>
-  )
+  );
 }

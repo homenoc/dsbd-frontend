@@ -26,8 +26,6 @@ export type {
 } from '@dsbd/shared';
 export { DefaultAddIP, DefaultServiceAddIPv4PlanData } from '@dsbd/shared';
 
-import { ExpiredStatus, MemberType } from '@dsbd/shared';
-
 export interface NoticeData {
   ID: number;
   CreatedAt: string;
@@ -505,49 +503,6 @@ export interface JPNICGetHandleData {
   update_date: string;
 }
 
-export const DefaultTemplateData: TemplateData = {
-  connections: undefined,
-  services: undefined,
-  ipv4: undefined,
-  ipv6: undefined,
-  ntts: undefined,
-  ipv4_route: undefined,
-  ipv6_route: undefined,
-  preferred_ap: undefined,
-  mail_template: undefined,
-  member_type: undefined,
-  payment_membership: undefined,
-  ix: undefined,
-};
-
-export const DefaultGroupDetailData: GroupDetailData = {
-  ID: 0,
-  CreatedAt: '',
-  UpdatedAt: '',
-  org: '',
-  org_en: '',
-  status: 0,
-  expired_status: ExpiredStatus.None,
-  pass: false,
-  add_allow: false,
-  agree: false,
-  question: '',
-  postcode: '',
-  address: '',
-  address_en: '',
-  tel: '',
-  country: '',
-  contract: '',
-  coupon_id: '',
-  member_expired: '',
-  member_type: MemberType.Standard,
-  users: undefined,
-  tickets: undefined,
-  services: undefined,
-};
-
-export const DefaultGroupDetailDataArray: GroupDetailData[] = [DefaultGroupDetailData];
-
 export const DefaultServiceJPNICData: JPNICData = {
   ID: 0,
   CreatedAt: '',
@@ -586,24 +541,6 @@ export const DefaultChatData: ChatData = {
 
 export const DefaultChatDataArray: ChatData[] = [DefaultChatData];
 
-export const DefaultTicketData: TicketDetailData = {
-  ID: 0,
-  CreatedAt: '',
-  UpdatedAt: '',
-  solved: false,
-  group_id: 0,
-  user_id: 0,
-  title: '',
-  request_reject: false,
-  request: false,
-  admin: false,
-  chat: undefined,
-  user: undefined,
-  group: undefined,
-};
-
-export const DefaultTicketDataArray: TicketDetailData[] = [DefaultTicketData];
-
 export const DefaultNoticeData: NoticeData = {
   CreatedAt: '',
   ID: 0,
@@ -620,119 +557,6 @@ export const DefaultNoticeData: NoticeData = {
   title: '',
   user_id: 0,
 };
-
-export const DefaultNoticeDataArray: NoticeData[] = [DefaultNoticeData];
-
-export const DefaultServiceDetailData: ServiceDetailData = {
-  ID: 0,
-  CreatedAt: '',
-  UpdatedAt: '',
-  group_id: 0,
-  asn: 0,
-  fee: 0,
-  org: '',
-  org_en: '',
-  postcode: '',
-  address: '',
-  address_en: '',
-  abuse: '',
-  start_date: '',
-  end_date: undefined,
-  avg_downstream: 0,
-  avg_upstream: 0,
-  max_downstream: 0,
-  max_upstream: 0,
-  max_bandwidth_as: '',
-  service_type: '',
-  service_number: 0,
-  service_comment: '',
-  bgp_comment: '',
-  comment: '',
-  pass: false,
-  enable: false,
-  add_allow: false,
-  ip: undefined,
-  jpnic_admin: undefined,
-  jpnic_tech: undefined,
-  connections: undefined,
-};
-
-export const DefaultServiceDetailDataArray: ServiceDetailData[] = [DefaultServiceDetailData];
-
-export const DefaultConnectionDetailData: ConnectionDetailData = {
-  ID: 0,
-  CreatedAt: '',
-  UpdatedAt: '',
-  address: '',
-  link_v4_our: '',
-  link_v4_your: '',
-  link_v6_our: '',
-  link_v6_your: '',
-  term_ip: '',
-  rfc8950: false,
-  open: false,
-  enable: false,
-  monitor: false,
-  noc: undefined,
-  noc_id: 0,
-  preferred_ap: '',
-  bgp_router_id: 0,
-  bgp_router: undefined,
-  connection_type: '',
-  connection_number: 0,
-  connection_comment: '',
-  tunnel_endpoint_router_ip_id: 0,
-  ntt: '',
-  ipv4_route: '',
-  ipv6_route: '',
-  comment: '',
-  service: undefined,
-  tunnel_endpoint_router_ip: undefined,
-  ix: '',
-  ix_peer_type: '',
-  ix_vlan_id: '',
-};
-
-export const DefaultConnectionDetailDataArray: ConnectionDetailData[] = [
-  DefaultConnectionDetailData,
-];
-
-export const DefaultUserDetailData: UserDetailData = {
-  CreatedAt: '',
-  ID: 0,
-  UpdatedAt: '',
-  email: '',
-  expired_status: ExpiredStatus.None,
-  group: undefined,
-  group_id: 0,
-  level: 0,
-  mail_token: '',
-  mail_verify: true,
-  name: '',
-  name_en: '',
-  notice: undefined,
-  pass: '',
-  tokens: undefined,
-  antisocial_check: null,
-};
-export const DefaultUserDetailDataArray: UserDetailData[] = [DefaultUserDetailData];
-
-export const DefaultTokenDetailData: TokenDetailData = {
-  CreatedAt: '',
-  ID: 0,
-  UpdatedAt: '',
-  access_token: '',
-  admin: false,
-  debug: '',
-  expired_at: '',
-  status: 0,
-  tmp_token: '',
-  user: undefined,
-  user_id: 0,
-  user_token: '',
-};
-
-export const DefaultTokenDetailDataArray: TokenDetailData[] = [DefaultTokenDetailData];
 
 export const DefaultNoticeRegisterData: NoticeRegisterData = {
   user_id: [],
