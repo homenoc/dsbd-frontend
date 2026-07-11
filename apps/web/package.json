@@ -39,7 +39,8 @@
     "sha.js": "^2.4.12",
     "typescript": "~5.0.4",
     "web-vitals": "^3.5.2",
-    "yup": "^1.7.1"
+    "yup": "^1.7.1",
+    "@dsbd/shared": "workspace:*"
   },
   "scripts": {
     "start": "vite --mode development",

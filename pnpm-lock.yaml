@@ -20,6 +20,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@dsbd/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@emotion/react':
         specifier: ^11.11.0
         version: 11.14.0(@types/react@18.3.31)(react@18.3.1)
@@ -165,6 +168,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@dsbd/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@18.3.31)(react@18.3.1)
