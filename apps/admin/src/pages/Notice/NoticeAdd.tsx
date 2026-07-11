@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Box,
   Button,
@@ -7,101 +7,85 @@ import {
   FormHelperText,
   Grid,
   Stack,
-} from '@mui/material'
-import Select from 'react-select'
-import { ConnectionDetailData } from '../../interface'
-import { Post } from '../../api/Notice'
-import { useSnackbar } from 'notistack'
-import { MailAutoNoticeSendDialogs } from '../Group/Mail'
-import { StyledTextFieldWrap, StyledTextFieldWrapTitle } from '../../style'
-import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { useTemplate } from '../../hooks/useTemplate'
-import { GetAll as ConnectionGetAll } from '../../api/Connection'
-import { ReactMarkdown } from 'react-markdown/lib/react-markdown'
-import remarkGfm from 'remark-gfm'
-import Dashboard from '../../components/Dashboard/Dashboard'
-import * as Yup from 'yup'
-import { Controller, useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import { DateToString1 } from '../../components/Tool'
-import { useNavigate } from 'react-router-dom'
+} from '@mui/material';
+import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { ReactMarkdown } from 'react-markdown/lib/react-markdown';
+import { useNavigate } from 'react-router-dom';
+import Select from 'react-select';
+import remarkGfm from 'remark-gfm';
+import * as Yup from 'yup';
+import { GetAll as ConnectionGetAll } from '../../api/Connection';
+import { Post } from '../../api/Notice';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import { DateToString1 } from '../../components/Tool';
+import { useGroups, useNOCs, useUsers } from '../../hooks/useResources';
+import { useTemplate } from '../../hooks/useTemplate';
+import type { ConnectionDetailData } from '../../interface';
+import { StyledTextFieldWrap, StyledTextFieldWrapTitle } from '../../style';
+import { MailAutoNoticeSendDialogs } from '../Group/Mail';
 
 type OptionType = {
-  label: string
-  value: number
-}
+  label: string;
+  value: number;
+};
 export default function NoticeAdd() {
-  const { data: template } = useTemplate()
-  const navigate = useNavigate()
-  const nowDate = new Date()
-  const [isPermanent, setIsPermanent] = React.useState(true)
-  const [email, setEmail] = React.useState<string>('')
-  const [openMailSendDialog, setOpenMailSendDialog] = React.useState(false)
-  const [inputUserID, setInputUserID] = React.useState<number[]>([])
-  const [inputGroupID, setInputGroupID] = React.useState<number[]>([])
-  const [inputNOCID, setInputNOCID] = React.useState<number[]>([])
-  const [templateUser, setTemplateUser] = React.useState<OptionType[]>([])
-  const [templateGroup, setTemplateGroup] = React.useState<OptionType[]>([])
-  const [templateNOC, setTemplateNOC] = React.useState<OptionType[]>([])
-  const [connections, setConnections] = useState<ConnectionDetailData[]>()
-  const { enqueueSnackbar } = useSnackbar()
+  const { data: users } = useUsers();
+  const { data: groups } = useGroups();
+  const { data: nocs } = useNOCs();
+  const { data: catalog } = useTemplate();
+  const navigate = useNavigate();
+  const nowDate = new Date();
+  const [isPermanent, setIsPermanent] = React.useState(true);
+  const [email, setEmail] = React.useState<string>('');
+  const [openMailSendDialog, setOpenMailSendDialog] = React.useState(false);
+  const [inputUserID, setInputUserID] = React.useState<number[]>([]);
+  const [inputGroupID, setInputGroupID] = React.useState<number[]>([]);
+  const [inputNOCID, setInputNOCID] = React.useState<number[]>([]);
+  const [templateUser, setTemplateUser] = React.useState<OptionType[]>([]);
+  const [templateGroup, setTemplateGroup] = React.useState<OptionType[]>([]);
+  const [templateNOC, setTemplateNOC] = React.useState<OptionType[]>([]);
+  const [connections, setConnections] = useState<ConnectionDetailData[]>();
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (email && !openMailSendDialog) {
-      navigate('/dashboard/notice')
+      navigate('/dashboard/notice');
     }
-  }, [openMailSendDialog])
+  }, [openMailSendDialog]);
 
   useEffect(() => {
-    if (template !== undefined) {
-      if (template.user !== undefined) {
-        const templateTmp: OptionType[] = []
-        for (const tmp of template.user) {
-          templateTmp.push({
-            value: tmp.ID,
-            label: tmp.name + '(' + tmp.name_en + ')',
-          })
-        }
-        setTemplateUser(templateTmp)
+    setTemplateUser(
+      users.map((tmp) => ({ value: tmp.ID, label: tmp.name + '(' + tmp.name_en + ')' })),
+    );
+  }, [users]);
+
+  useEffect(() => {
+    setTemplateGroup(
+      groups.map((tmp) => ({ value: tmp.ID, label: tmp.org + '(' + tmp.org_en + ')' })),
+    );
+  }, [groups]);
+
+  useEffect(() => {
+    setTemplateNOC(nocs.map((tmp) => ({ value: tmp.ID, label: tmp.name })));
+  }, [nocs]);
+
+  useEffect(() => {
+    ConnectionGetAll().then((res) => {
+      if (res.error === '') {
+        setConnections(res.data.filter((item: ConnectionDetailData) => item.enable && item.open));
+      } else {
+        enqueueSnackbar('' + res.error, { variant: 'error' });
       }
-      if (template.group !== undefined) {
-        const templateTmp: OptionType[] = []
-        for (const tmp of template.group) {
-          templateTmp.push({
-            value: tmp.ID,
-            label: tmp.org + '(' + tmp.org_en + ')',
-          })
-        }
-        setTemplateGroup(templateTmp)
-      }
-      if (template.nocs !== undefined) {
-        const templateTmp: OptionType[] = []
-        for (const tmp of template.nocs) {
-          templateTmp.push({ value: tmp.ID, label: tmp.name })
-        }
-        setTemplateNOC(templateTmp)
-      }
-      ConnectionGetAll().then((res) => {
-        if (res.error === '') {
-          const data = res.data
-          setConnections(
-            data.filter(
-              (item: ConnectionDetailData) => item.enable && item.open
-            )
-          )
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' })
-        }
-      })
-    }
-  }, [template])
+    });
+  }, []);
 
   const validationSchema = Yup.object().shape({
     title: Yup.string().required('タイトルを入力してください'),
-    body: Yup.string()
-      .required('内容を入力してください')
-      .min(10, '10文字以上入力してください'),
+    body: Yup.string().required('内容を入力してください').min(10, '10文字以上入力してください'),
     start_time: Yup.date().required('利用開始日を入力してください'),
     end_time: Yup.date(),
     is_permanent: Yup.bool(),
@@ -109,7 +93,7 @@ export default function NoticeAdd() {
     important: Yup.bool(),
     fault: Yup.bool(),
     info: Yup.bool(),
-  })
+  });
 
   const {
     register,
@@ -131,16 +115,16 @@ export default function NoticeAdd() {
       fault: false,
       info: false,
     },
-  })
-  const title = watch('title')
-  const body = watch('body')
-  const isEveryone = watch('everyone')
+  });
+  const title = watch('title');
+  const body = watch('body');
+  const isEveryone = watch('everyone');
 
   const onSubmit = (data: any, e: any) => {
-    const start_time = DateToString1(data.start_time)
-    let end_time = undefined
+    const start_time = DateToString1(data.start_time);
+    let end_time = undefined;
     if (!isPermanent) {
-      end_time = DateToString1(data.end_time)
+      end_time = DateToString1(data.end_time);
     }
 
     const request: any = {
@@ -155,61 +139,59 @@ export default function NoticeAdd() {
       important: data.important,
       fault: data.fault,
       info: data.info,
-    }
+    };
 
     // eslint-disable-next-line no-console
-    console.log('request', request)
-    setEmail(getEMail())
+    console.log('request', request);
+    setEmail(getEMail());
 
     Post(request).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        setOpenMailSendDialog(true)
+        enqueueSnackbar('Request Success', { variant: 'success' });
+        setOpenMailSendDialog(true);
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console
-    console.log('error', errors)
+    console.log('error', errors);
 
-    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' })
-  }
+    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' });
+  };
 
   const getEMail = () => {
     // Mail用
-    let emails = ''
+    let emails = '';
 
     // 全体に通知の場合は全ユーザーのメールアドレスを取得
     if (isEveryone) {
-      const allUsers = template.user?.filter((d) => d.level < 3)
+      const allUsers = users.filter((d) => d.level < 3);
       if (allUsers !== undefined) {
         for (const user of allUsers) {
           if (emails.indexOf(user.email) === -1) {
-            emails += ',' + user.email
+            emails += ',' + user.email;
           }
         }
       }
-      return emails.slice(1)
+      return emails.slice(1);
     }
 
     for (const tmpUserID of inputUserID) {
-      const u = template.user?.filter((d) => d.ID === tmpUserID)
+      const u = users.filter((d) => d.ID === tmpUserID);
       if (u !== undefined && u.length > 0) {
         if (emails.indexOf(u[0].email) === -1) {
-          emails += ',' + u[0].email
+          emails += ',' + u[0].email;
         }
       }
     }
     for (const tmpGroupID of inputGroupID) {
-      const tmpUser = template.user?.filter(
-        (d) => d.group_id === tmpGroupID && d.level < 3
-      )
+      const tmpUser = users.filter((d) => d.group_id === tmpGroupID && d.level < 3);
       if (tmpUser !== undefined && tmpUser.length > 0) {
         for (const user of tmpUser) {
           if (emails.indexOf(user.email) === -1) {
-            emails += ',' + user.email
+            emails += ',' + user.email;
           }
         }
       }
@@ -217,36 +199,31 @@ export default function NoticeAdd() {
     for (const tmpNOCID of inputNOCID) {
       // const tmpBGP
       const tmpConnections = connections?.filter(
-        (d) =>
-          d.bgp_router?.noc_id === tmpNOCID &&
-          d.service?.pass &&
-          d.service?.enable
-      )
+        (d) => d.bgp_router?.noc_id === tmpNOCID && d.service?.pass && d.service?.enable,
+      );
       if (tmpConnections !== undefined) {
         for (const tmpConnection of tmpConnections) {
-          const tmpUser = template.user?.filter(
-            (d) => d.group_id === tmpConnection.service?.group_id && d.level < 3
-          )
+          const tmpUser = users.filter(
+            (d) => d.group_id === tmpConnection.service?.group_id && d.level < 3,
+          );
           if (tmpUser !== undefined && tmpUser.length > 0) {
             for (const user of tmpUser) {
               if (emails.indexOf(user.email) === -1) {
-                emails += ',' + user.email
+                emails += ',' + user.email;
               }
             }
           }
         }
       }
     }
-    return emails.slice(1)
-  }
+    return emails.slice(1);
+  };
 
   return (
     <Dashboard title="Notice Add">
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <FormHelperText error>
-            {errors?.title && errors.title?.message}
-          </FormHelperText>
+          <FormHelperText error>{errors?.title && errors.title?.message}</FormHelperText>
           <StyledTextFieldWrapTitle
             id="title"
             label="Title"
@@ -263,9 +240,7 @@ export default function NoticeAdd() {
           />
         </Grid>
         <Grid item xs={12}>
-          <FormHelperText error>
-            {errors?.body && errors.body?.message}
-          </FormHelperText>
+          <FormHelperText error>{errors?.body && errors.body?.message}</FormHelperText>
           <StyledTextFieldWrap
             id="message"
             label="Message - Markdown準拠"
@@ -352,10 +327,7 @@ export default function NoticeAdd() {
                 control={control}
                 name="everyone"
                 render={({ field: { onChange } }) => (
-                  <Checkbox
-                    color="primary"
-                    onChange={(e) => onChange(e.target.checked)}
-                  />
+                  <Checkbox color="primary" onChange={(e) => onChange(e.target.checked)} />
                 )}
               />
             }
@@ -376,12 +348,12 @@ export default function NoticeAdd() {
                 className="basic-multi-select"
                 classNamePrefix="user"
                 onChange={(event) => {
-                  const tmpData: number[] = []
+                  const tmpData: number[] = [];
                   for (const tmp of event) {
-                    tmpData.push(tmp.value)
+                    tmpData.push(tmp.value);
                   }
-                  setInputUserID(tmpData)
-                  setEmail(getEMail())
+                  setInputUserID(tmpData);
+                  setEmail(getEMail());
                 }}
               />
               <h3>グループ</h3>
@@ -392,12 +364,12 @@ export default function NoticeAdd() {
                 className="basic-multi-select"
                 classNamePrefix="group"
                 onChange={(event) => {
-                  const tmpData: number[] = []
+                  const tmpData: number[] = [];
                   for (const tmp of event) {
-                    tmpData.push(tmp.value)
+                    tmpData.push(tmp.value);
                   }
-                  setInputGroupID(tmpData)
-                  setEmail(getEMail())
+                  setInputGroupID(tmpData);
+                  setEmail(getEMail());
                 }}
               />
               <h3>NOC</h3>
@@ -408,12 +380,12 @@ export default function NoticeAdd() {
                 className="basic-multi-select"
                 classNamePrefix="noc"
                 onChange={(event) => {
-                  const tmpData: number[] = []
+                  const tmpData: number[] = [];
                   for (const tmp of event) {
-                    tmpData.push(tmp.value)
+                    tmpData.push(tmp.value);
                   }
-                  setInputNOCID(tmpData)
-                  setEmail(getEMail())
+                  setInputNOCID(tmpData);
+                  setEmail(getEMail());
                 }}
               />
             </div>
@@ -427,10 +399,7 @@ export default function NoticeAdd() {
                 control={control}
                 name="important"
                 render={({ field: { onChange } }) => (
-                  <Checkbox
-                    color="primary"
-                    onChange={(e) => onChange(e.target.checked)}
-                  />
+                  <Checkbox color="primary" onChange={(e) => onChange(e.target.checked)} />
                 )}
               />
             }
@@ -443,10 +412,7 @@ export default function NoticeAdd() {
                 control={control}
                 name="info"
                 render={({ field: { onChange } }) => (
-                  <Checkbox
-                    color="primary"
-                    onChange={(e) => onChange(e.target.checked)}
-                  />
+                  <Checkbox color="primary" onChange={(e) => onChange(e.target.checked)} />
                 )}
               />
             }
@@ -459,10 +425,7 @@ export default function NoticeAdd() {
                 control={control}
                 name="fault"
                 render={({ field: { onChange } }) => (
-                  <Checkbox
-                    color="primary"
-                    onChange={(e) => onChange(e.target.checked)}
-                  />
+                  <Checkbox color="primary" onChange={(e) => onChange(e.target.checked)} />
                 )}
               />
             }
@@ -480,9 +443,7 @@ export default function NoticeAdd() {
           </Button>
           <Button
             variant="outlined"
-            onClick={() =>
-              enqueueSnackbar('E-Mail: ' + getEMail(), { variant: 'info' })
-            }
+            onClick={() => enqueueSnackbar('E-Mail: ' + getEMail(), { variant: 'info' })}
           >
             送信メールアドレスの確認
           </Button>
@@ -492,10 +453,10 @@ export default function NoticeAdd() {
         setOpen={setOpenMailSendDialog}
         open={openMailSendDialog}
         mails={email}
-        template={template?.mail_template}
+        template={catalog?.mail_template}
         title={title}
         body={body}
       />
     </Dashboard>
-  )
+  );
 }

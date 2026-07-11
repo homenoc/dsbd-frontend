@@ -1,9 +1,8 @@
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import {
   Button,
   CardContent,
-  Chip,
   Checkbox,
+  Chip,
   FormControl,
   FormControlLabel,
   Grid,
@@ -11,17 +10,24 @@ import {
   MenuItem,
   Select,
   Stack,
-} from '@mui/material'
+} from '@mui/material';
+import { enqueueSnackbar, useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Update } from '../../../api/Connection';
+import { Get, Put } from '../../../api/Connection';
+import { GetConnectionWithTemplate, GetServiceWithTemplate } from '../../../api/Tool';
+import Dashboard from '../../../components/Dashboard/Dashboard';
+import { Open } from '../../../components/Dashboard/Open/Open';
+import { GenServiceCode } from '../../../components/Tool';
+import { useBGPRouters, useGatewayIPs } from '../../../hooks/useResources';
+import { useTemplate } from '../../../hooks/useTemplate';
 import {
-  BGPRouterDetailData,
-  ConnectionDetailData,
+  type BGPRouterDetailData,
+  type ConnectionDetailData,
   DefaultConnectionDetailData,
-  TunnelEndPointRouterIPTemplateData,
-} from '../../../interface'
-import classes from './ConnectionDialog.module.scss'
-import { enqueueSnackbar, useSnackbar } from 'notistack'
-import { Update } from '../../../api/Connection'
-import { Open } from '../../../components/Dashboard/Open/Open'
+  type TunnelEndPointRouterIPTemplateData,
+} from '../../../interface';
 import {
   StyledButton1,
   StyledCardRoot3,
@@ -31,36 +37,28 @@ import {
   StyledFormControlFormMedium,
   StyledTextFieldLong,
   StyledTextFieldMedium,
-} from '../../../style'
-import {
-  GetConnectionWithTemplate,
-  GetServiceWithTemplate,
-} from '../../../api/Tool'
-import { useTemplate } from '../../../hooks/useTemplate'
-import Dashboard from '../../../components/Dashboard/Dashboard'
-import { Get, Put } from '../../../api/Connection'
-import { useNavigate, useParams } from 'react-router-dom'
-import { GenServiceCode } from '../../../components/Tool'
+} from '../../../style';
+import classes from './ConnectionDialog.module.scss';
 
 export default function ConnectionDetail() {
-  const { data: template } = useTemplate()
-  const [reload, setReload] = useState(true)
-  const [connection, setConnection] = useState(DefaultConnectionDetailData)
-  const { enqueueSnackbar } = useSnackbar()
-  const { id } = useParams()
+  const { data: template } = useTemplate();
+  const [reload, setReload] = useState(true);
+  const [connection, setConnection] = useState(DefaultConnectionDetailData);
+  const { enqueueSnackbar } = useSnackbar();
+  const { id } = useParams();
 
   useEffect(() => {
     if (reload) {
       Get(Number(id)).then((res) => {
         if (res.error !== '') {
-          enqueueSnackbar('' + res.error, { variant: 'error' })
-          return
+          enqueueSnackbar('' + res.error, { variant: 'error' });
+          return;
         }
-        setConnection(res.data)
-        setReload(false)
-      })
+        setConnection(res.data);
+        setReload(false);
+      });
     }
-  }, [template, reload])
+  }, [template, reload]);
 
   return (
     <Dashboard title="Connection Detail">
@@ -72,53 +70,42 @@ export default function ConnectionDetail() {
           <ConnectionEtc key={'connectionETC'} connection={connection} />
         </Grid>
         <Grid item xs={12} lg={6}>
-          <ConnectionOpen
-            key={'connection_open'}
-            connection={connection}
-            setReload={setReload}
-          />
+          <ConnectionOpen key={'connection_open'} connection={connection} setReload={setReload} />
         </Grid>
         <Grid item xs={12}>
-          <ConnectionUserDisplay
-            key={'connection_user_display'}
-            connection={connection}
-          />
+          <ConnectionUserDisplay key={'connection_user_display'} connection={connection} />
         </Grid>
         <Grid item xs={12}>
-          <ConnectionEtc2
-            key={'connection_etc2'}
-            connection={connection}
-            setReload={setReload}
-          />
+          <ConnectionEtc2 key={'connection_etc2'} connection={connection} setReload={setReload} />
         </Grid>
       </Grid>
     </Dashboard>
-  )
+  );
 }
 
 export function ConnectionOpenButton(props: {
-  connection: ConnectionDetailData
-  lock: boolean
-  setReload: Dispatch<SetStateAction<boolean>>
+  connection: ConnectionDetailData;
+  lock: boolean;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { connection, lock, setReload } = props
-  const { enqueueSnackbar } = useSnackbar()
+  const { connection, lock, setReload } = props;
+  const { enqueueSnackbar } = useSnackbar();
 
   // Update Service Information
   const updateInfo = (open: boolean) => {
-    connection.open = open
-    connection.bgp_router = undefined
-    connection.tunnel_endpoint_router_ip = undefined
+    connection.open = open;
+    connection.bgp_router = undefined;
+    connection.tunnel_endpoint_router_ip = undefined;
     Update(connection).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   if (!connection.open) {
     return (
@@ -131,7 +118,7 @@ export function ConnectionOpenButton(props: {
       >
         開通
       </Button>
-    )
+    );
   }
   return (
     <Button
@@ -143,38 +130,39 @@ export function ConnectionOpenButton(props: {
     >
       未開通
     </Button>
-  )
+  );
 }
 
 export function ConnectionOpen(props: {
-  connection: ConnectionDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  connection: ConnectionDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { connection: original_connection, setReload } = props
-  const { data: template } = useTemplate()
-  const [connection, setConnection] = useState(original_connection)
-  const [lock, setLock] = React.useState(true)
+  const { connection: original_connection, setReload } = props;
+  const { data: bgpRouters } = useBGPRouters();
+  const { data: gatewayIPs } = useGatewayIPs();
+  const [connection, setConnection] = useState(original_connection);
+  const [lock, setLock] = React.useState(true);
 
   const clickLockInfo = () => {
-    setLock(!lock)
-  }
+    setLock(!lock);
+  };
   const resetAction = () => {
-    setConnection(original_connection)
-    setLock(true)
-  }
+    setConnection(original_connection);
+    setLock(true);
+  };
   const updateInfo = () => {
-    connection.bgp_router = undefined
-    connection.tunnel_endpoint_router_ip = undefined
+    connection.bgp_router = undefined;
+    connection.tunnel_endpoint_router_ip = undefined;
     Update(connection).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   return (
     <div>
@@ -202,7 +190,7 @@ export function ConnectionOpen(props: {
                   setConnection((prev) => ({
                     ...prev,
                     rfc8950: event.target.checked,
-                  }))
+                  }));
                 }}
                 disabled={lock}
               />
@@ -228,18 +216,18 @@ export function ConnectionOpen(props: {
               type="number"
             >
               <MenuItem value={0}>なし(初期値)</MenuItem>
-              {template.bgp_router?.filter((router) => router.enable === true).map((row: BGPRouterDetailData) => (
-                <MenuItem key={row.ID + row.hostname} value={row.ID}>
-                  {row.hostname}
-                </MenuItem>
-              ))}
+              {bgpRouters
+                .filter((router) => router.enable === true)
+                .map((row: BGPRouterDetailData) => (
+                  <MenuItem key={row.ID + row.hostname} value={row.ID}>
+                    {row.hostname}
+                  </MenuItem>
+                ))}
             </Select>
           </StyledFormControlFormMedium>
           <br />
           <StyledFormControlFormLong variant="outlined">
-            <InputLabel id="tunnel_endpoint_router_ip_input">
-              Tunnel EndPoint Router IP
-            </InputLabel>
+            <InputLabel id="tunnel_endpoint_router_ip_input">Tunnel EndPoint Router IP</InputLabel>
             <Select
               labelId="tunnel_endpoint_router_ip"
               id="tunnel_endpoint_router_ip"
@@ -257,35 +245,25 @@ export function ConnectionOpen(props: {
               type="number"
             >
               <MenuItem value={0}>なし(初期値)</MenuItem>
-              {template.tunnel_endpoint_router_ip?.filter((ip) => ip.enable === true).map(
-                (row: TunnelEndPointRouterIPTemplateData) => (
+              {gatewayIPs
+                .filter((ip) => ip.enable === true)
+                .map((row: TunnelEndPointRouterIPTemplateData) => (
                   <MenuItem key={row.ID + row.ip} value={row.ID}>
                     {row.tunnel_endpoint_router.hostname}
                     <b>({row.ip})</b>
                   </MenuItem>
-                )
-              )}
+                ))}
             </Select>
           </StyledFormControlFormLong>
           <br />
           <Stack direction="row" spacing={1}>
-            <Button
-              size="small"
-              color="secondary"
-              disabled={!lock}
-              onClick={clickLockInfo}
-            >
+            <Button size="small" color="secondary" disabled={!lock} onClick={clickLockInfo}>
               ロック解除
             </Button>
             <Button size="small" disabled={lock} onClick={resetAction}>
               Reset
             </Button>
-            <Button
-              size="small"
-              color="primary"
-              disabled={lock}
-              onClick={() => updateInfo()}
-            >
+            <Button size="small" color="primary" disabled={lock} onClick={() => updateInfo()}>
               保存
             </Button>
             <ConnectionOpenButton
@@ -298,18 +276,18 @@ export function ConnectionOpen(props: {
         </CardContent>
       </StyledCardRoot3>
     </div>
-  )
+  );
 }
 
 export function ConnectionOpenVPN(props: {
-  connection: ConnectionDetailData
-  setConnection: Dispatch<SetStateAction<ConnectionDetailData>>
-  lock: boolean
+  connection: ConnectionDetailData;
+  setConnection: Dispatch<SetStateAction<ConnectionDetailData>>;
+  lock: boolean;
 }) {
-  const { connection, setConnection, lock } = props
+  const { connection, setConnection, lock } = props;
 
   if (connection.connection_type === '') {
-    return null
+    return null;
   }
   return (
     <div>
@@ -323,29 +301,27 @@ export function ConnectionOpenVPN(props: {
         value={connection.term_ip ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({ ...connection, term_ip: event.target.value })
+          setConnection({ ...connection, term_ip: event.target.value });
         }}
       />
       <br />
     </div>
-  )
+  );
 }
 
 export function ConnectionOpenL3User(props: {
-  connection: ConnectionDetailData
-  setConnection: Dispatch<SetStateAction<ConnectionDetailData>>
-  lock: boolean
+  connection: ConnectionDetailData;
+  setConnection: Dispatch<SetStateAction<ConnectionDetailData>>;
+  lock: boolean;
 }) {
-  const { connection, setConnection, lock } = props
-  const { data: template } = useTemplate()
+  const { connection, setConnection, lock } = props;
+  const { data: template } = useTemplate();
 
   if (
     connection.service === undefined ||
-    !template.services?.find(
-      (ser) => ser.type === connection.service?.service_type
-    )?.need_route
+    !template.services?.find((ser) => ser.type === connection.service?.service_type)?.need_route
   ) {
-    return null
+    return null;
   }
   return (
     <div>
@@ -361,7 +337,7 @@ export function ConnectionOpenL3User(props: {
             value={connection.link_v4_our ?? ''}
             variant="outlined"
             onChange={(event) => {
-              setConnection({ ...connection, link_v4_our: event.target.value })
+              setConnection({ ...connection, link_v4_our: event.target.value });
             }}
           />
           <StyledTextFieldMedium
@@ -374,7 +350,7 @@ export function ConnectionOpenL3User(props: {
             value={connection.link_v4_your ?? ''}
             variant="outlined"
             onChange={(event) => {
-              setConnection({ ...connection, link_v4_your: event.target.value })
+              setConnection({ ...connection, link_v4_your: event.target.value });
             }}
           />
         </>
@@ -390,7 +366,7 @@ export function ConnectionOpenL3User(props: {
         value={connection.link_v6_our ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({ ...connection, link_v6_our: event.target.value })
+          setConnection({ ...connection, link_v6_our: event.target.value });
         }}
       />
       <StyledTextFieldMedium
@@ -403,18 +379,18 @@ export function ConnectionOpenL3User(props: {
         value={connection.link_v6_your ?? ''}
         variant="outlined"
         onChange={(event) => {
-          setConnection({ ...connection, link_v6_your: event.target.value })
+          setConnection({ ...connection, link_v6_your: event.target.value });
         }}
       />
     </div>
-  )
+  );
 }
 
 export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
-  const { connection } = props
-  const serviceCode = GenServiceCode(connection)
-  const createDate = '作成日: ' + connection.CreatedAt
-  const updateDate = '更新日: ' + connection.UpdatedAt
+  const { connection } = props;
+  const serviceCode = GenServiceCode(connection);
+  const createDate = '作成日: ' + connection.CreatedAt;
+  const updateDate = '更新日: ' + connection.UpdatedAt;
 
   return (
     <StyledCardRoot3>
@@ -427,30 +403,19 @@ export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
             <StyledChip2
               size="small"
               color="primary"
-              label={
-                GetConnectionWithTemplate(connection.connection_type)?.name ??
-                ''
-              }
+              label={GetConnectionWithTemplate(connection.connection_type)?.name ?? ''}
             />
           </Grid>
           <Grid item xs={6}>
             <h3>BGP IPv4</h3>
             {connection.ipv4_route !== '' && (
-              <Chip
-                size="small"
-                color="primary"
-                label={connection.ipv4_route}
-              />
+              <Chip size="small" color="primary" label={connection.ipv4_route} />
             )}
           </Grid>
           <Grid item xs={6}>
             <h3>BGP IPv6</h3>
             {connection.ipv6_route !== '' && (
-              <Chip
-                size="small"
-                color="primary"
-                label={connection.ipv6_route}
-              />
+              <Chip size="small" color="primary" label={connection.ipv6_route} />
             )}
           </Grid>
           {connection.ix && (
@@ -458,18 +423,10 @@ export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
               <h3>IX接続</h3>
               <StyledChip2 size="small" color="primary" label={connection.ix} />
               {connection.ix_peer_type && (
-                <Chip
-                  size="small"
-                  color="primary"
-                  label={connection.ix_peer_type}
-                />
+                <Chip size="small" color="primary" label={connection.ix_peer_type} />
               )}
               {connection.ix_peer_type === 'PI/CUG' && connection.ix_vlan_id && (
-                <Chip
-                  size="small"
-                  color="secondary"
-                  label={`VLAN: ${connection.ix_vlan_id}`}
-                />
+                <Chip size="small" color="secondary" label={`VLAN: ${connection.ix_vlan_id}`} />
               )}
             </Grid>
           )}
@@ -481,14 +438,13 @@ export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
         </Grid>
       </CardContent>
     </StyledCardRoot3>
-  )
+  );
 }
 
 export function ConnectionEtc(props: { connection: ConnectionDetailData }) {
-  const { connection } = props
-  const navigate = useNavigate()
-  const clickGroupPage = () =>
-    navigate('/dashboard/group/' + connection.service?.group_id)
+  const { connection } = props;
+  const navigate = useNavigate();
+  const clickGroupPage = () => navigate('/dashboard/group/' + connection.service?.group_id);
 
   return (
     <StyledCardRoot3>
@@ -502,11 +458,7 @@ export function ConnectionEtc(props: { connection: ConnectionDetailData }) {
           </Grid>
           <Grid item xs={4}>
             <h3>希望接続</h3>
-            <Chip
-              size="small"
-              color="primary"
-              label={connection.preferred_ap}
-            />
+            <Chip size="small" color="primary" label={connection.preferred_ap} />
           </Grid>
           <Grid item xs={8}>
             <h3>設置場所</h3>
@@ -514,10 +466,7 @@ export function ConnectionEtc(props: { connection: ConnectionDetailData }) {
           </Grid>
           <Grid item xs={12}>
             <h3>監視要求</h3>
-            <ConnectionMonitorDisplay
-              key={'ConnectionMonitor'}
-              monitor={connection.monitor}
-            />
+            <ConnectionMonitorDisplay key={'ConnectionMonitor'} monitor={connection.monitor} />
           </Grid>
           <Grid item xs={12}>
             <Stack direction="row" spacing={1}>
@@ -534,35 +483,35 @@ export function ConnectionEtc(props: { connection: ConnectionDetailData }) {
         </Grid>
       </CardContent>
     </StyledCardRoot3>
-  )
+  );
 }
 
 export function ConnectionMonitorDisplay(props: { monitor: boolean }) {
-  const { monitor } = props
+  const { monitor } = props;
 
   if (monitor) {
-    return <Chip size="small" color="primary" label="必要" />
+    return <Chip size="small" color="primary" label="必要" />;
   }
-  return <Chip size="small" color="secondary" label="不必要" />
+  return <Chip size="small" color="secondary" label="不必要" />;
 }
 
 export function ConnectionUserDisplay(props: {
-  connection: ConnectionDetailData
+  connection: ConnectionDetailData;
 }) {
-  const { connection } = props
+  const { connection } = props;
 
   const distinctionIPAssign = (our: boolean) => {
     if (our) {
-      return <td>当団体からアドレスを割当</td>
+      return <td>当団体からアドレスを割当</td>;
     }
-    return <td>貴団体からアドレスを割当</td>
-  }
+    return <td>貴団体からアドレスを割当</td>;
+  };
   const getNOCName = () => {
     if (connection.bgp_router_id === 0 || connection.bgp_router === undefined) {
-      return '希望NOCなし'
+      return '希望NOCなし';
     }
-    return connection.bgp_router?.noc.name
-  }
+    return connection.bgp_router?.noc.name;
+  };
 
   return (
     <div className={classes.contract}>
@@ -577,10 +526,7 @@ export function ConnectionUserDisplay(props: {
               </tr>
               <tr>
                 <th>サービス種別</th>
-                <td>
-                  {GetConnectionWithTemplate(connection.connection_type)
-                    ?.name ?? ''}
-                </td>
+                <td>{GetConnectionWithTemplate(connection.connection_type)?.name ?? ''}</td>
               </tr>
               <tr>
                 <th>利用料金</th>
@@ -589,8 +535,8 @@ export function ConnectionUserDisplay(props: {
               <tr>
                 <th>当団体からのIPアドレスの割当</th>
                 {distinctionIPAssign(
-                  GetServiceWithTemplate(connection.service?.service_type ?? '')
-                    ?.need_jpnic ?? false
+                  GetServiceWithTemplate(connection.service?.service_type ?? '')?.need_jpnic ??
+                    false,
                 )}
               </tr>
             </thead>
@@ -604,8 +550,7 @@ export function ConnectionUserDisplay(props: {
               <tr>
                 <th>接続方式</th>
                 <td colSpan={2}>
-                  {GetConnectionWithTemplate(connection.connection_type)
-                    ?.name ?? ''}
+                  {GetConnectionWithTemplate(connection.connection_type)?.name ?? ''}
                 </td>
               </tr>
               {connection.connection_type !== 'IXP' && (
@@ -658,20 +603,12 @@ export function ConnectionUserDisplay(props: {
               </tr>
               <tr>
                 <th>当団体側</th>
-                <td>
-                  {connection.rfc8950
-                    ? 'RFC8950利用のため無し'
-                    : connection.link_v4_our}
-                </td>
+                <td>{connection.rfc8950 ? 'RFC8950利用のため無し' : connection.link_v4_our}</td>
                 <td>{connection.link_v6_our}</td>
               </tr>
               <tr>
                 <th>貴団体側</th>
-                <td>
-                  {connection.rfc8950
-                    ? 'RFC8950利用のため無し'
-                    : connection.link_v4_your}
-                </td>
+                <td>{connection.rfc8950 ? 'RFC8950利用のため無し' : connection.link_v4_your}</td>
                 <td>{connection.link_v6_your}</td>
               </tr>
             </thead>
@@ -679,40 +616,40 @@ export function ConnectionUserDisplay(props: {
         </CardContent>
       </StyledCardRoot3>
     </div>
-  )
+  );
 }
 
 export function ConnectionEtc2(props: {
-  connection: ConnectionDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  connection: ConnectionDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { connection: original_connection, setReload } = props
-  const [lock, setLockInfo] = React.useState(true)
-  const [connection, setConnection] = useState(original_connection)
-  const { enqueueSnackbar } = useSnackbar()
-  const { data: template } = useTemplate()
+  const { connection: original_connection, setReload } = props;
+  const [lock, setLockInfo] = React.useState(true);
+  const [connection, setConnection] = useState(original_connection);
+  const { enqueueSnackbar } = useSnackbar();
+  const { data: template } = useTemplate();
 
   const clickLockInfo = () => {
-    setLockInfo(!lock)
-  }
+    setLockInfo(!lock);
+  };
   const resetAction = () => {
-    setConnection(original_connection)
-    setLockInfo(true)
-  }
+    setConnection(original_connection);
+    setLockInfo(true);
+  };
 
   // Update Group Information
   const updateInfo = () => {
     Put(connection.ID, connection).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        setLockInfo(true)
+        enqueueSnackbar('Request Success', { variant: 'success' });
+        setLockInfo(true);
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   return (
     <StyledCardRoot3>
@@ -737,9 +674,7 @@ export function ConnectionEtc2(props: {
           </Grid>
           <Grid item xs={12}>
             <FormControl fullWidth>
-              <InputLabel id={'connection_type_label'}>
-                接続タイプ(注意)
-              </InputLabel>
+              <InputLabel id={'connection_type_label'}>接続タイプ(注意)</InputLabel>
               <Select
                 labelId="connection_type_label"
                 id="connection_type"
@@ -748,7 +683,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     connection_type: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.connection_type}
                 inputProps={{
@@ -756,10 +691,7 @@ export function ConnectionEtc2(props: {
                 }}
               >
                 {template.connections?.map((connect_type, index) => (
-                  <MenuItem
-                    key={'connection_template' + index}
-                    value={connect_type.type}
-                  >
+                  <MenuItem key={'connection_template' + index} value={connect_type.type}>
                     {connect_type.name}({connect_type.comment})
                   </MenuItem>
                 ))}
@@ -769,9 +701,7 @@ export function ConnectionEtc2(props: {
           <br />
           <Grid item xs={6}>
             <FormControl fullWidth>
-              <InputLabel id="ipv4_route_select_labellabel">
-                IPv4 BGP広報経路
-              </InputLabel>
+              <InputLabel id="ipv4_route_select_labellabel">IPv4 BGP広報経路</InputLabel>
               <Select
                 labelId="ipv4_route_select_label"
                 id="ipv4_route_select"
@@ -781,7 +711,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     ipv4_route: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.ipv4_route ?? ''}
                 inputProps={{
@@ -801,9 +731,7 @@ export function ConnectionEtc2(props: {
           </Grid>
           <Grid item xs={6}>
             <FormControl fullWidth>
-              <InputLabel id="ipv6_route_select_labellabel">
-                IPv6 BGP広報経路
-              </InputLabel>
+              <InputLabel id="ipv6_route_select_labellabel">IPv6 BGP広報経路</InputLabel>
               <Select
                 labelId="ipv6_route_select_label"
                 id="ipv6_route_select"
@@ -813,7 +741,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     ipv6_route: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.ipv6_route ?? ''}
                 inputProps={{
@@ -845,7 +773,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     address: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.address ?? ''}
               />
@@ -862,7 +790,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     preferred_ap: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.preferred_ap ?? ''}
                 inputProps={{
@@ -889,7 +817,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     ntt: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.ntt ?? ''}
                 inputProps={{
@@ -919,7 +847,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     monitor: Number(event.target.value) === 1,
-                  })
+                  });
                 }}
                 value={connection.monitor ? 1 : 0}
                 inputProps={{
@@ -950,7 +878,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     ix: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.ix ?? ''}
                 inputProps={{
@@ -979,7 +907,7 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     ix_peer_type: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.ix_peer_type ?? ''}
                 inputProps={{
@@ -1011,35 +939,25 @@ export function ConnectionEtc2(props: {
                   setConnection({
                     ...connection,
                     ix_vlan_id: event.target.value,
-                  })
+                  });
                 }}
                 value={connection.ix_vlan_id ?? ''}
               />
             </FormControl>
           </Grid>
           <Grid item xs={12}>
-            <Button
-              size="small"
-              color="secondary"
-              disabled={!lock}
-              onClick={clickLockInfo}
-            >
+            <Button size="small" color="secondary" disabled={!lock} onClick={clickLockInfo}>
               ロック解除
             </Button>
             <Button size="small" onClick={resetAction} disabled={lock}>
               Reset
             </Button>
-            <Button
-              size="small"
-              color="primary"
-              disabled={lock}
-              onClick={updateInfo}
-            >
+            <Button size="small" color="primary" disabled={lock} onClick={updateInfo}>
               Apply
             </Button>
           </Grid>
         </Grid>
       </CardContent>
     </StyledCardRoot3>
-  )
+  );
 }

@@ -341,21 +341,18 @@ export interface MemoData {
   message: string
 }
 
+// Catalog payload (GET /catalog): type registry + config option lists. Entity
+// lists (nocs/bgp_router/tunnel_endpoint_router_ip/user/group) are no longer
+// here — fetched via per-resource queries (hooks/useResources).
 export interface TemplateData {
-  bgp_router?: BGPRouterDetailData[]
   connections?: ConnectionTemplateData[]
   services?: ServiceTemplateData[]
   ipv4?: string[]
   ipv6?: string[]
-  nocs?: NocTemplateData[]
   ntts?: string[]
-  tunnel_endpoint_router?: TunnelEndPointRouterTemplateData[]
-  tunnel_endpoint_router_ip?: TunnelEndPointRouterIPTemplateData[]
   ipv4_route?: string[]
   ipv6_route?: string[]
   preferred_ap?: string[]
-  user?: UserDetailData[]
-  group?: GroupDetailData[]
   mail_template?: MailTemplateData[]
   member_type?: MemberTypeTemplateData[]
   payment_membership?: PaymentMembershipTemplate[]
@@ -606,18 +603,17 @@ export interface JPNICGetHandleData {
 }
 
 export const DefaultTemplateData: TemplateData = {
-  bgp_router: undefined,
   connections: undefined,
   services: undefined,
   ipv4: undefined,
   ipv6: undefined,
-  nocs: undefined,
   ntts: undefined,
-  tunnel_endpoint_router: undefined,
-  tunnel_endpoint_router_ip: undefined,
-  user: undefined,
-  group: undefined,
+  ipv4_route: undefined,
+  ipv6_route: undefined,
+  preferred_ap: undefined,
+  mail_template: undefined,
   member_type: undefined,
+  payment_membership: undefined,
   ix: undefined,
 }
 

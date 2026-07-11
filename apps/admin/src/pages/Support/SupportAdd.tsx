@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react'
 import {
   Box,
   Button,
@@ -12,73 +11,61 @@ import {
   Select,
   Stack,
   Typography,
-} from '@mui/material'
-import {
-  DefaultTemplateData,
-  DefaultTicketAddData,
-  TemplateData,
-} from '../../interface'
-import Dashboard from '../../components/Dashboard/Dashboard'
-import { useSnackbar } from 'notistack'
-import { Post } from '../../api/Support'
-import { GetTemplate } from '../../api/Group'
-import { MailAutoSendDialogs } from '../Group/Mail'
-import { StyledTextFieldVeryLong } from '../Dashboard/styles'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { useNavigate } from 'react-router-dom'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
+import remarkGfm from 'remark-gfm';
+import { Post } from '../../api/Support';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import { useGroups, useUsers } from '../../hooks/useResources';
+import { DefaultTicketAddData } from '../../interface';
+import { StyledTextFieldVeryLong } from '../Dashboard/styles';
+import { MailAutoSendDialogs } from '../Group/Mail';
 
 export default function SupportAdd() {
-  const [data, setData] = React.useState(DefaultTicketAddData)
-  const [template, setTemplate] = React.useState(DefaultTemplateData)
-  const { enqueueSnackbar } = useSnackbar()
-  const [openMailAutoSendDialog, setOpenMailAutoSendDialog] = useState('')
-  const [sendAutoEmail, setSendAutoEmail] = useState('')
-  const [name, setName] = useState('')
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    GetTemplate().then((res) => {
-      if (res.error === '') {
-        setTemplate(res.data)
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
-      }
-    })
-  }, [])
+  const [data, setData] = React.useState(DefaultTicketAddData);
+  const { data: users } = useUsers();
+  const { data: groups } = useGroups();
+  const { enqueueSnackbar } = useSnackbar();
+  const [openMailAutoSendDialog, setOpenMailAutoSendDialog] = useState('');
+  const [sendAutoEmail, setSendAutoEmail] = useState('');
+  const [name, setName] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (name !== '' && !openMailAutoSendDialog) {
-      navigate('/dashboard/support')
+      navigate('/dashboard/support');
     }
-  }, [openMailAutoSendDialog])
+  }, [openMailAutoSendDialog]);
 
   const request = () => {
     if (data.is_group && data.group_id === 0) {
-      enqueueSnackbar('Groupが指定されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('Groupが指定されていません。', { variant: 'error' });
+      return;
     }
     if (!data.is_group && data.user_id === 0) {
-      enqueueSnackbar('Userが指定されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('Userが指定されていません。', { variant: 'error' });
+      return;
     }
     if (data.title === '') {
-      enqueueSnackbar('タイトルが入力されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('タイトルが入力されていません。', { variant: 'error' });
+      return;
     }
     if (data.data === '') {
-      enqueueSnackbar('本文が入力されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('本文が入力されていません。', { variant: 'error' });
+      return;
     }
 
     Post(data).then((res) => {
       if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' })
-        setOpenMailAutoSendDialog('new_ticket_from_admin')
+        enqueueSnackbar('OK', { variant: 'success' });
+        setOpenMailAutoSendDialog('new_ticket_from_admin');
       }
-      enqueueSnackbar(res.error, { variant: 'error' })
-    })
-  }
+      enqueueSnackbar(res.error, { variant: 'error' });
+    });
+  };
 
   return (
     <Dashboard title="Support Add">
@@ -98,7 +85,7 @@ export default function SupportAdd() {
             name="position"
             defaultValue="group"
             onChange={(event) => {
-              setData({ ...data, is_group: event.target.value === 'group' })
+              setData({ ...data, is_group: event.target.value === 'group' });
             }}
           >
             <FormControlLabel
@@ -113,9 +100,7 @@ export default function SupportAdd() {
             />
           </RadioGroup>
           <br />
-          <Typography variant="inherit">
-            このチャットはMarkdownに準拠しております。
-          </Typography>
+          <Typography variant="inherit">このチャットはMarkdownに準拠しております。</Typography>
           <br />
           {data.is_group && (
             <FormControl sx={{ minWidth: 300 }}>
@@ -124,25 +109,23 @@ export default function SupportAdd() {
                 labelId="group_id"
                 id="group_id"
                 onChange={(event) => {
-                  const grp = template.group?.filter(
-                    (res) => res.ID === Number(event.target.value)
-                  )
+                  const grp = groups.filter((res) => res.ID === Number(event.target.value));
                   if (grp !== undefined) {
-                    setName(grp[0].org)
-                    let mails = ''
+                    setName(grp[0].org);
+                    let mails = '';
                     if (grp[0].users !== undefined) {
                       for (const user of grp[0].users) {
                         if (user.level < 3) {
-                          mails += user.email + ','
+                          mails += user.email + ',';
                         }
                       }
                     }
-                    setSendAutoEmail(mails)
+                    setSendAutoEmail(mails);
                   }
-                  setData({ ...data, group_id: Number(event.target.value) })
+                  setData({ ...data, group_id: Number(event.target.value) });
                 }}
               >
-                {template.group?.map((row, index) => (
+                {groups.map((row, index) => (
                   <MenuItem key={index} value={row.ID}>
                     {row.ID}: {row.org}
                   </MenuItem>
@@ -157,17 +140,15 @@ export default function SupportAdd() {
                 labelId="user_id"
                 id="user_id"
                 onChange={(event) => {
-                  const usr = template.user?.filter(
-                    (res) => res.ID === Number(event.target.value)
-                  )
+                  const usr = users.filter((res) => res.ID === Number(event.target.value));
                   if (usr !== undefined) {
-                    setName(usr[0].name)
-                    setSendAutoEmail(usr[0].email)
+                    setName(usr[0].name);
+                    setSendAutoEmail(usr[0].email);
                   }
-                  setData({ ...data, user_id: Number(event.target.value) })
+                  setData({ ...data, user_id: Number(event.target.value) });
                 }}
               >
-                {template.user?.map((row, index) => (
+                {users.map((row, index) => (
                   <MenuItem key={index} value={row.ID}>
                     {row.ID}: {row.name}
                   </MenuItem>
@@ -183,9 +164,7 @@ export default function SupportAdd() {
             multiline
             rows={1}
             value={data.title}
-            onChange={(event) =>
-              setData({ ...data, title: event.target.value })
-            }
+            onChange={(event) => setData({ ...data, title: event.target.value })}
             variant="outlined"
           />
           <br />
@@ -221,5 +200,5 @@ export default function SupportAdd() {
         </Stack>
       </Box>
     </Dashboard>
-  )
+  );
 }

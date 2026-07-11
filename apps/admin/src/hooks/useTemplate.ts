@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DefaultTemplateData, type TemplateData } from '../interface';
 import { api } from '../lib/api';
 
-export const templateQueryKey = ['template'] as const;
+export const templateQueryKey = ['catalog'] as const;
 
 export interface UseTemplateResult {
   data: TemplateData;
@@ -22,7 +22,7 @@ export interface UseTemplateResult {
 export function useTemplate(): UseTemplateResult {
   const query = useQuery({
     queryKey: templateQueryKey,
-    queryFn: () => api.get<TemplateData>('/template'),
+    queryFn: () => api.get<TemplateData>('/catalog'),
     staleTime: 5 * 60 * 1000,
   });
   return {
