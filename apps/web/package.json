@@ -1,0 +1,101 @@
+{
+  "name": "dsbd-web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@hookform/resolvers": "^3.10.0",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.18.0",
+    "@mui/x-date-pickers": "^6.20.2",
+    "@redux-devtools/extension": "^3.3.0",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^14.3.1",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^15.14.9",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "@types/react-router-dom": "^5.3.3",
+    "@types/redux-logger": "^3.0.13",
+    "@types/sha.js": "^2.4.4",
+    "axios": "^1.13.2",
+    "buffer": "^6.0.3",
+    "date-fns": "^2.30.0",
+    "js-cookie": "^3.0.5",
+    "moment": "^2.30.1",
+    "notistack": "^3.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.71.1",
+    "react-markdown": "^8.0.7",
+    "react-redux": "^8.1.3",
+    "react-router-dom": "^6.30.3",
+    "react-use-websocket": "^4.13.0",
+    "redux": "^4.2.1",
+    "redux-logger": "^3.0.6",
+    "remark-gfm": "^3.0.1",
+    "sha.js": "^2.4.12",
+    "typescript": "~5.0.4",
+    "web-vitals": "^3.5.2",
+    "yup": "^1.7.1"
+  },
+  "scripts": {
+    "start": "vite --mode development",
+    "start-prod": "vite --mode production",
+    "build": "vite build --mode development",
+    "build-staging": "vite build --mode staging",
+    "build-prod": "vite build",
+    "test": "jest",
+    "eject": "vite eject",
+    "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}'",
+    "lint:fix": "eslint --fix 'src/**/*.{js,jsx,ts,tsx}'",
+    "lint:conflict": "eslint --print-config .eslintrc.js | eslint-config-prettier-check"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^8.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "lint-staged": "^13.3.0",
+    "prettier": "^2.8.8",
+    "sass": "^1.97.2",
+    "stylelint": "^14.16.1",
+    "stylelint-config-prettier": "^9.0.5",
+    "stylelint-prettier": "^3.0.0",
+    "vite": "^4.5.14",
+    "vite-plugin-pwa": "^0.15.2",
+    "vite-tsconfig-paths": "^4.3.2"
+  }
+}
