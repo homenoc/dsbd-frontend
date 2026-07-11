@@ -52,6 +52,16 @@
 - **何をした**: B5 で `/template`→`/catalog` に repoint したが、churn 抑制のため hook 名 `useTemplate`・型名 `TemplateData` を据え置き。
 - **あるべき姿**: `useCatalog`/`CatalogData` にリネーム。
 
+### 11. useInfo 解体後、消費ページが InfoData 形状を useMemo で再組立て
+- **場所**: `apps/web/src/pages/**`（Dashboard/Procedure/Add/Payment/SupportDetail 等）
+- **何をした**: B6 で `/info` を per-resource 化。churn 抑制のため各ページで per-resource hook を呼び、`useMemo` で旧 `InfoData` 形状（`undefined`→ロード後 stable）に再組立てして下流コードを据え置いた。
+- **あるべき姿**: 消費側を直接 hook の `data` 読みに書き換え、`InfoData` 組立てシムを撤去。
+
+### 12. invalidateAllInfo は全リソースキーを一括 invalidate
+- **場所**: `apps/web/src/hooks/useInfo.ts` `invalidateAllInfo`、`api/Info.ts` `Get()`
+- **何をした**: 旧「blob 丸ごと refetch」の挙動保存のため、mutation 後は 8 キー全て invalidate。
+- **あるべき姿**: 変更したリソースのキーだけ invalidate（例: connection 追加なら connection/info/service のみ）。
+
 ### 8. 各 API ファイル（Service.ts 等）の共有クライアント移行は未完
 - **場所**: `apps/web/src/api/*`, `apps/admin/src/api/*`
 - **何をした**: 共有 `createApiClient` は用意し info/template は移行したが、命令的 API（Service.Post 等）は旧 axios のまま。
