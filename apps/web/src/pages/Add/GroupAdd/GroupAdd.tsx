@@ -1,9 +1,4 @@
-import React, { Fragment, useEffect } from 'react'
-import DashboardComponent from '../../../components/Dashboard/Dashboard'
-import { useSnackbar } from 'notistack'
-import { useNavigate } from 'react-router-dom'
-import { useInfo, infoQueryKey } from '../../../hooks/useInfo'
-import { queryClient } from '../../../lib/queryClient'
+import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Box,
   Button,
@@ -17,52 +12,60 @@ import {
   RadioGroup,
   TextField,
   Typography,
-} from '@mui/material'
-import { useForm, Controller } from 'react-hook-form'
-import * as Yup from 'yup'
-import { yupResolver } from '@hookform/resolvers/yup'
+} from '@mui/material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useSnackbar } from 'notistack';
+import React, { Fragment, useEffect, useMemo } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import * as Yup from 'yup';
+import { Post } from '../../../api/Group';
+import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import { invalidateAllInfo, useMe } from '../../../hooks/useInfo';
+import type { InfoData } from '../../../interface';
+import { queryClient } from '../../../lib/queryClient';
 import {
   StyledTextFieldLong,
   StyledTextFieldMedium,
   StyledTextFieldShort,
   StyledTextFieldVeryLong,
   StyledTextFieldVeryShort1,
-} from '../../../style'
-import {
-  LocalizationProvider,
-  DatePicker,
-} from '@mui/x-date-pickers'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { Post } from '../../../api/Group'
+} from '../../../style';
 
 export default function GroupAdd() {
-  const { enqueueSnackbar } = useSnackbar()
-  const navigate = useNavigate()
-  const { data: infoData, error } = useInfo()
+  const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
+  const meQ = useMe();
+  const error = meQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (meQ.isLoading) return undefined;
+    return {
+      user: meQ.data,
+    };
+  }, [meQ.data, meQ.isLoading]);
 
-  const privacyPolicyURL = 'https://www.homenoc.ad.jp/about/privacy/'
-  const usageURL = 'https://www.homenoc.ad.jp/usage/'
-  const feeURL = 'https://www.homenoc.ad.jp/about/membership/'
+  const privacyPolicyURL = 'https://www.homenoc.ad.jp/about/privacy/';
+  const usageURL = 'https://www.homenoc.ad.jp/usage/';
+  const feeURL = 'https://www.homenoc.ad.jp/about/membership/';
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData != null && infoData.user?.group_id !== 0) {
-      navigate('/dashboard/add')
+      navigate('/dashboard/add');
     }
-  }, [infoData, navigate])
+  }, [infoData, navigate]);
 
   const validationSchema = Yup.object().shape({
     agree: Yup.bool().oneOf([true], '利用の規約に同意しないと次へ進めません。'),
     isMember: Yup.bool(),
-    org: Yup.string()
-      .required('Org is required')
-      .max(255, 'Org must not exceed 255 characters'),
+    org: Yup.string().required('Org is required').max(255, 'Org must not exceed 255 characters'),
     org_en: Yup.string()
       .required('Org(English) is required')
       .max(255, 'Org(English) must not exceed 255 characters'),
@@ -92,30 +95,22 @@ export default function GroupAdd() {
     question1: Yup.string().when('isMember', {
       is: (isMember: boolean) => !isMember,
       then: (value) =>
-        value
-          .required('question1 is required')
-          .min(20, 'question1 must be at least 20 characters'),
+        value.required('question1 is required').min(20, 'question1 must be at least 20 characters'),
     }),
     question2: Yup.string().when('isMember', {
       is: (isMember: boolean) => !isMember,
       then: (value) =>
-        value
-          .required('question2 is required')
-          .min(20, 'question2 must be at least 20 characters'),
+        value.required('question2 is required').min(20, 'question2 must be at least 20 characters'),
     }),
     question3: Yup.string().when('isMember', {
       is: (isMember: boolean) => !isMember,
-      then: (value) =>
-        value
-          .required('question3 is required')
+      then: (value) => value.required('question3 is required'),
     }),
     question4: Yup.string().when('isMember', {
       is: (isMember: boolean) => !isMember,
-      then: (value) =>
-        value
-          .required('question4 is required')
+      then: (value) => value.required('question4 is required'),
     }),
-  })
+  });
 
   const {
     register,
@@ -143,18 +138,18 @@ export default function GroupAdd() {
       is_student: false,
       student_expired: new Date(),
     },
-  })
-  const isMember = watch('isMember')
-  const is_student = watch('is_student')
+  });
+  const isMember = watch('isMember');
+  const is_student = watch('is_student');
   const onSubmit = (data: any, e: any) => {
     const studentDate =
       data.student_expired.getFullYear() +
       '-' +
       ('00' + (data.student_expired.getMonth() + 1)).slice(-2) +
       '-' +
-      data.student_expired.getDate()
+      data.student_expired.getDate();
     // check question item
-    let question: string
+    let question: string;
     const request: any = {
       agree: data.agree,
       student: data.is_student,
@@ -167,10 +162,10 @@ export default function GroupAdd() {
       country: data.country,
       contract: data.contract,
       student_expired: data.student_expired,
-    }
+    };
 
     if (data.isExist) {
-      question = '---------既存ユーザ---------\n\n' + data.question1
+      question = '---------既存ユーザ---------\n\n' + data.question1;
     } else {
       question =
         '1. どこで当団体のことを知りましたか？\n' +
@@ -183,26 +178,26 @@ export default function GroupAdd() {
         data.question3 +
         '\n\n' +
         '4. 情報発信しているSNS(Twitter,Facebook)やWebサイト、GitHub、成果物などがありましたら教えてください。\n' +
-        data.question4
+        data.question4;
     }
-    request.question = question
-    request.student_expired = studentDate
+    request.question = question;
+    request.student_expired = studentDate;
 
     Post(request).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        queryClient.invalidateQueries({ queryKey: infoQueryKey })
-        navigate('/dashboard/add')
+        enqueueSnackbar('Request Success', { variant: 'success' });
+        invalidateAllInfo(queryClient);
+        navigate('/dashboard/add');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console
-    console.log('error', errors)
-    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' })
-  }
+    console.log('error', errors);
+    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' });
+  };
 
   return (
     <DashboardComponent title="Group情報の申請">
@@ -248,10 +243,7 @@ export default function GroupAdd() {
                     control={control}
                     name="agree"
                     render={({ field: { onChange } }) => (
-                      <Checkbox
-                        color="primary"
-                        onChange={(e) => onChange(e.target.checked)}
-                      />
+                      <Checkbox color="primary" onChange={(e) => onChange(e.target.checked)} />
                     )}
                   />
                 }
@@ -285,7 +277,7 @@ export default function GroupAdd() {
                       <Checkbox
                         color="primary"
                         onChange={(e) => {
-                          onChange(e.target.checked)
+                          onChange(e.target.checked);
                         }}
                       />
                     )}
@@ -312,9 +304,7 @@ export default function GroupAdd() {
                     {...register('question1')}
                     error={!!errors.question1}
                   />
-                  <FormHelperText error>
-                    {errors.question1?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.question1?.message}</FormHelperText>
                 </FormControl>
                 <br />
                 <FormControl component="fieldset">
@@ -322,8 +312,7 @@ export default function GroupAdd() {
                     1.2. どのような用途で当団体のネットワークに接続しますか？ [20文字以上]
                   </FormLabel>
                   <Typography variant="subtitle1" gutterBottom component="div">
-                    例)
-                    研究目的、勉強、自宅サーバ用途（商用利用は不可）
+                    例) 研究目的、勉強、自宅サーバ用途（商用利用は不可）
                   </Typography>
                   <StyledTextFieldVeryLong
                     id="question2"
@@ -334,15 +323,11 @@ export default function GroupAdd() {
                     {...register('question2')}
                     error={!!errors.question2}
                   />
-                  <FormHelperText error>
-                    {errors.question2?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.question2?.message}</FormHelperText>
                 </FormControl>
                 <br />
                 <FormControl component="fieldset">
-                  <FormLabel>
-                    1.3. アドレスを当団体から割り当てる必要はありますか？
-                  </FormLabel>
+                  <FormLabel>1.3. アドレスを当団体から割り当てる必要はありますか？</FormLabel>
                   <Typography variant="subtitle1" gutterBottom component="div">
                     PIアドレスやAS番号をお持ちの方は、それらをご利用いただくことも可能です。
                   </Typography>
@@ -355,9 +340,7 @@ export default function GroupAdd() {
                     {...register('question3')}
                     error={!!errors.question3}
                   />
-                  <FormHelperText error>
-                    {errors.question3?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.question3?.message}</FormHelperText>
                 </FormControl>
                 <br />
                 <FormControl component="fieldset">
@@ -377,17 +360,13 @@ export default function GroupAdd() {
                     {...register('question4')}
                     error={!!errors.question4}
                   />
-                  <FormHelperText error>
-                    {errors.question4?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.question4?.message}</FormHelperText>
                 </FormControl>
               </div>
             )}{' '}
             {isMember && (
               <FormControl component="fieldset">
-                <FormLabel>
-                  1.1. 登録者の名前と既存のサービスコードを記入してください
-                </FormLabel>
+                <FormLabel>1.1. 登録者の名前と既存のサービスコードを記入してください</FormLabel>
                 <Typography variant="subtitle1" gutterBottom component="div">
                   登録者の名前と既存のサービスコードを記入してください。
                 </Typography>
@@ -401,9 +380,7 @@ export default function GroupAdd() {
                   {...register('question1')}
                   error={!!errors.question1}
                 />
-                <FormHelperText error>
-                  {errors.question1?.message}
-                </FormHelperText>
+                <FormHelperText error>{errors.question1?.message}</FormHelperText>
               </FormControl>
             )}
             <br />
@@ -435,9 +412,7 @@ export default function GroupAdd() {
                     {...register('org_en')}
                     error={!!errors.org_en}
                   />
-                  <FormHelperText error>
-                    {errors.org_en?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.org_en?.message}</FormHelperText>
                 </Grid>
               </Grid>
               <StyledTextFieldVeryShort1
@@ -466,9 +441,7 @@ export default function GroupAdd() {
                 {...register('address_en')}
                 error={!!errors.address_en}
               />
-              <FormHelperText error>
-                {errors.address_en?.message}
-              </FormHelperText>
+              <FormHelperText error>{errors.address_en?.message}</FormHelperText>
               <StyledTextFieldMedium
                 id="tel"
                 label="電話番号"
@@ -496,9 +469,7 @@ export default function GroupAdd() {
                 第26条2（書面の交付義務）に基づき、
                 ご利用内容をお知らせいたしますので、ご希望の交付方法をお知らせください。
               </Typography>
-              <FormHelperText error>
-                {errors?.contract && errors?.contract.message}
-              </FormHelperText>
+              <FormHelperText error>{errors?.contract && errors?.contract.message}</FormHelperText>
               <Controller
                 name="contract"
                 control={control}
@@ -506,7 +477,7 @@ export default function GroupAdd() {
                   <RadioGroup
                     aria-label="gender"
                     onChange={(e) => {
-                      field.onChange(e.target.value)
+                      field.onChange(e.target.value);
                     }}
                     value={field.value === undefined ? '' : field.value}
                   >
@@ -537,10 +508,7 @@ export default function GroupAdd() {
                     control={control}
                     name="is_student"
                     render={({ field: { onChange } }) => (
-                      <Checkbox
-                        color="primary"
-                        onChange={(e) => onChange(e.target.checked)}
-                      />
+                      <Checkbox color="primary" onChange={(e) => onChange(e.target.checked)} />
                     )}
                   />
                 }
@@ -591,5 +559,5 @@ export default function GroupAdd() {
         </Box>
       </Fragment>
     </DashboardComponent>
-  )
+  );
 }

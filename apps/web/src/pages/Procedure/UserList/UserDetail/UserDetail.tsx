@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react'
 import {
   AppBar,
   Box,
@@ -10,31 +9,32 @@ import {
   Tabs,
   Typography,
   useTheme,
-} from '@mui/material'
-import { useNavigate, useParams } from 'react-router-dom'
-import { UserData } from '../../../../interface'
-import { useSnackbar } from 'notistack'
-import { queryClient } from '../../../../lib/queryClient'
-import { useInfo, infoQueryKey } from '../../../../hooks/useInfo'
-import Dashboard from '../../../../components/Dashboard/Dashboard'
-import { Delete, Put } from '../../../../api/User'
-import shaJS from 'sha.js'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import shaJS from 'sha.js';
+import { Delete, Put } from '../../../../api/User';
+import Dashboard from '../../../../components/Dashboard/Dashboard';
+import { invalidateAllInfo, useGroup, useMe } from '../../../../hooks/useInfo';
+import type { InfoData, UserData } from '../../../../interface';
+import { queryClient } from '../../../../lib/queryClient';
 import {
   StyledCardRoot3,
   StyledTextFieldMedium,
   StyledTextFieldShort,
   StyledTypographyTitle,
-} from '../../../../style'
+} from '../../../../style';
 
 interface TabPanelProps {
-  children?: React.ReactNode
-  dir?: string
-  index: any
-  value: any
+  children?: React.ReactNode;
+  dir?: string;
+  index: any;
+  value: any;
 }
 
 function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props
+  const { children, value, index, ...other } = props;
 
   return (
     <div
@@ -50,126 +50,131 @@ function TabPanel(props: TabPanelProps) {
         </Box>
       )}
     </div>
-  )
+  );
 }
 
 function a11yProps(index: any) {
   return {
     id: `full-width-tab-${index}`,
     'aria-controls': `full-width-tabpanel-${index}`,
-  }
+  };
 }
 
 export default function UserDetail() {
-  const theme = useTheme()
-  const [loginUserID, setLoginUserID] = useState<number>()
-  const [user, setUser] = useState<UserData>()
-  const { data: infoData, error } = useInfo()
-  const navigate = useNavigate()
-  const { id } = useParams()
-  const { enqueueSnackbar } = useSnackbar()
-  const [value, setValue] = React.useState(0)
-  const [email, setEmail] = React.useState({ email: '', email_verify: '' })
+  const theme = useTheme();
+  const [loginUserID, setLoginUserID] = useState<number>();
+  const [user, setUser] = useState<UserData>();
+  const meQ = useMe();
+  const groupQ = useGroup();
+  const error = meQ.error ?? groupQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (meQ.isLoading || groupQ.isLoading) return undefined;
+    return {
+      user: meQ.data,
+      user_list: groupQ.userList,
+    };
+  }, [meQ.data, meQ.isLoading, groupQ.userList, groupQ.isLoading]);
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const { enqueueSnackbar } = useSnackbar();
+  const [value, setValue] = React.useState(0);
+  const [email, setEmail] = React.useState({ email: '', email_verify: '' });
   const [password, setPassword] = React.useState({
     password: '',
     password_verify: '',
-  })
-  const [name, setName] = React.useState({ name: '', name_en: '' })
-  const [reload, setReload] = React.useState(false)
+  });
+  const [name, setName] = React.useState({ name: '', name_en: '' });
+  const [reload, setReload] = React.useState(false);
 
   useEffect(() => {
     if (reload) {
-      queryClient.invalidateQueries({ queryKey: infoQueryKey })
-      setReload(false)
+      invalidateAllInfo(queryClient);
+      setReload(false);
     }
-  }, [reload])
+  }, [reload]);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData?.user_list != null) {
-      const tmpUser = infoData.user_list.filter(
-        (user: UserData) => user.id === Number(id),
-      )
-      setUser(tmpUser[0])
+      const tmpUser = infoData.user_list.filter((user: UserData) => user.id === Number(id));
+      setUser(tmpUser[0]);
       if (infoData.user != null) {
-        setLoginUserID(infoData.user.id)
+        setLoginUserID(infoData.user.id);
       }
     }
-  }, [infoData, id])
+  }, [infoData, id]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const handleChange = (event: React.ChangeEvent<any>, newValue: number) => {
-    setValue(newValue)
-  }
+    setValue(newValue);
+  };
 
   const handleChangeIndex = (index: number) => {
-    setValue(index)
-  }
+    setValue(index);
+  };
 
   const clickDeleteUser = () => {
     Delete(Number(id)).then((res) => {
       if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' })
-        queryClient.invalidateQueries({ queryKey: infoQueryKey })
-        navigate('/dashboard/procedure/user')
+        enqueueSnackbar('OK', { variant: 'success' });
+        invalidateAllInfo(queryClient);
+        navigate('/dashboard/procedure/user');
       } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
+        enqueueSnackbar(res.error, { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const clickUpdateUser = () => {
-    let data: any
+    let data: any;
 
     if (value === 0) {
       // check e-mail
       if (email.email !== email.email_verify) {
         enqueueSnackbar('E-MailとE-Mail(確認用)が異なります。', {
           variant: 'error',
-        })
-        return
+        });
+        return;
       }
       if (!~email.email.indexOf('@')) {
         enqueueSnackbar('メールアドレスが正しくありません。', {
           variant: 'error',
-        })
-        return
+        });
+        return;
       }
-      data = { email: email.email }
+      data = { email: email.email };
     } else if (value === 1) {
       // check password
       if (password.password !== password.password_verify) {
         enqueueSnackbar('PasswordとPassword(確認用)が異なります。', {
           variant: 'error',
-        })
-        return
+        });
+        return;
       }
-      const passHash: string = shaJS('sha256')
-        .update(password.password)
-        .digest('hex')
+      const passHash: string = shaJS('sha256').update(password.password).digest('hex');
 
-      data = { pass: passHash }
+      data = { pass: passHash };
     } else if (value === 2) {
-      data = { name: name.name, name_en: name.name_en }
+      data = { name: name.name, name_en: name.name_en };
     } else {
-      enqueueSnackbar('Tabのステータスが不正です。', { variant: 'error' })
-      return
+      enqueueSnackbar('Tabのステータスが不正です。', { variant: 'error' });
+      return;
     }
 
     Put(Number(id), data).then((res) => {
       if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' })
-        setReload(true)
+        enqueueSnackbar('OK', { variant: 'success' });
+        setReload(true);
       } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
+        enqueueSnackbar(res.error, { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   return (
     <Dashboard title={'ユーザ情報 (ID: ' + id + ')'}>
@@ -189,19 +194,12 @@ export default function UserDetail() {
             <br />
             <br />
             &nbsp;&nbsp;
-            <MailVerify
-              key={'mail_verify_' + id}
-              mailVerify={user.mail_verify}
-            />
+            <MailVerify key={'mail_verify_' + id} mailVerify={user.mail_verify} />
             <br />
             <br />
             <br />
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tabs
-                value={value}
-                onChange={handleChange}
-                aria-label="basic tabs example"
-              >
+              <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
                 <Tab label="メールアドレスの変更" {...a11yProps(0)} />
                 <Tab label="パスワードの変更" {...a11yProps(1)} />
                 <Tab label="ユーザ情報の変更" {...a11yProps(2)} />
@@ -216,9 +214,7 @@ export default function UserDetail() {
                 id="email"
                 label="E-Mail Address"
                 value={email.email}
-                onChange={(event) =>
-                  setEmail({ ...email, email: event.target.value })
-                }
+                onChange={(event) => setEmail({ ...email, email: event.target.value })}
                 autoFocus
               />
               <StyledTextFieldMedium
@@ -229,9 +225,7 @@ export default function UserDetail() {
                 id="email_verify"
                 label="E-Mail Address(確認用)"
                 value={email.email_verify}
-                onChange={(event) =>
-                  setEmail({ ...email, email_verify: event.target.value })
-                }
+                onChange={(event) => setEmail({ ...email, email_verify: event.target.value })}
                 autoFocus
               />
             </TabPanel>
@@ -245,9 +239,7 @@ export default function UserDetail() {
                 type={'password'}
                 label="Password"
                 value={password.password}
-                onChange={(event) =>
-                  setPassword({ ...password, password: event.target.value })
-                }
+                onChange={(event) => setPassword({ ...password, password: event.target.value })}
                 autoFocus
               />
               <StyledTextFieldMedium
@@ -277,9 +269,7 @@ export default function UserDetail() {
                 id="name"
                 label="Name"
                 value={name.name}
-                onChange={(event) =>
-                  setName({ ...name, name: event.target.value })
-                }
+                onChange={(event) => setName({ ...name, name: event.target.value })}
                 autoFocus
               />
               <StyledTextFieldShort
@@ -290,9 +280,7 @@ export default function UserDetail() {
                 id="name_en"
                 label="Name(English)"
                 value={name.name_en}
-                onChange={(event) =>
-                  setName({ ...name, name_en: event.target.value })
-                }
+                onChange={(event) => setName({ ...name, name_en: event.target.value })}
                 autoFocus
               />
             </TabPanel>
@@ -314,13 +302,13 @@ export default function UserDetail() {
         </StyledCardRoot3>
       )}
     </Dashboard>
-  )
+  );
 }
 
 function MailVerify(props: { mailVerify: boolean }): any {
-  const { mailVerify } = props
+  const { mailVerify } = props;
   if (mailVerify) {
-    return <Chip size="small" color="primary" label="メール確認済" />
+    return <Chip size="small" color="primary" label="メール確認済" />;
   }
-  return <Chip size="small" color="secondary" label="メール未確認" />
+  return <Chip size="small" color="secondary" label="メール未確認" />;
 }

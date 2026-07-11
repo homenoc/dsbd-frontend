@@ -1,60 +1,61 @@
-import React, { useEffect, useState } from 'react'
-import {
-  Button,
-  CardActions,
-  CardContent,
-  Chip,
-  Typography,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { UserData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../../hooks/useInfo'
-import Dashboard from '../../../components/Dashboard/Dashboard'
+import { Button, CardActions, CardContent, Chip, Typography } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Dashboard from '../../../components/Dashboard/Dashboard';
+import { useGroup } from '../../../hooks/useInfo';
+import type { InfoData, UserData } from '../../../interface';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
   StyledSearchInput,
   StyledTypographyTitle,
-} from '../../../style'
+} from '../../../style';
 
 export default function UserList() {
-  const [users, setUsers] = useState<UserData[]>([])
-  const [initUsers, setInitUsers] = useState<UserData[]>([])
-  const { data: infoData, error } = useInfo()
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [initUsers, setInitUsers] = useState<UserData[]>([]);
+  const groupQ = useGroup();
+  const error = groupQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (groupQ.isLoading) return undefined;
+    return {
+      user_list: groupQ.userList,
+    };
+  }, [groupQ.userList, groupQ.isLoading]);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData?.user_list != null) {
-      setInitUsers(infoData.user_list)
-      setUsers(infoData.user_list)
+      setInitUsers(infoData.user_list);
+      setUsers(infoData.user_list);
     }
-  }, [infoData])
+  }, [infoData]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const handleFilter = (search: string) => {
-    let tmp: UserData[]
+    let tmp: UserData[];
     if (search === '') {
-      tmp = initUsers
+      tmp = initUsers;
     } else {
       tmp = initUsers.filter((user: UserData) => {
-        const name = user.name + user.name_en
-        return name.toLowerCase().includes(search.toLowerCase())
-      })
+        const name = user.name + user.name_en;
+        return name.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setUsers(tmp)
-  }
+    setUsers(tmp);
+  };
 
   const clickDetailPage = (id: number) => {
-    navigate('/dashboard/procedure/user/' + id)
-  }
+    navigate('/dashboard/procedure/user/' + id);
+  };
 
   return (
     <Dashboard title="ユーザ一覧">
@@ -63,7 +64,7 @@ export default function UserList() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
@@ -80,10 +81,7 @@ export default function UserList() {
               </Typography>
               <br />
               &nbsp;&nbsp;
-              <MailVerify
-                key={'mail_verify_' + index}
-                mailVerify={user.mail_verify}
-              />
+              <MailVerify key={'mail_verify_' + index} mailVerify={user.mail_verify} />
               <br />
             </CardContent>
             <CardActions>
@@ -104,13 +102,13 @@ export default function UserList() {
           </StyledCardRoot3>
         ))}
     </Dashboard>
-  )
+  );
 }
 
 function MailVerify(props: { mailVerify: boolean }): any {
-  const { mailVerify } = props
+  const { mailVerify } = props;
   if (mailVerify) {
-    return <Chip size="small" color="primary" label="メール確認済" />
+    return <Chip size="small" color="primary" label="メール確認済" />;
   }
-  return <Chip size="small" color="secondary" label="メール未確認" />
+  return <Chip size="small" color="secondary" label="メール未確認" />;
 }

@@ -1,51 +1,58 @@
-import React, { useEffect, useState } from 'react'
-import { CardActions, CardContent, Typography } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { InfosData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../../hooks/useInfo'
-import Dashboard from '../../../components/Dashboard/Dashboard'
-import { ConnectionListDeleteDialog } from './ConnectionListDeleteDialog'
-import { ConnectionListChangeDialog } from './ConnectionListChangeDialog'
+import { CardActions, CardContent, Typography } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Dashboard from '../../../components/Dashboard/Dashboard';
+import { useInfoSummary } from '../../../hooks/useInfo';
+import type { InfoData, InfosData } from '../../../interface';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
   StyledSearchInput,
   StyledTypographyTitle,
-} from '../../../style'
+} from '../../../style';
+import { ConnectionListChangeDialog } from './ConnectionListChangeDialog';
+import { ConnectionListDeleteDialog } from './ConnectionListDeleteDialog';
 
 export default function ConnectionList() {
-  const [infos, setInfos] = useState<InfosData[]>([])
-  const [initInfos, setInitInfos] = useState<InfosData[]>([])
-  const { data: infoData, error } = useInfo()
-  const { enqueueSnackbar } = useSnackbar()
+  const [infos, setInfos] = useState<InfosData[]>([]);
+  const [initInfos, setInitInfos] = useState<InfosData[]>([]);
+  const infoQ = useInfoSummary();
+  const error = infoQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (infoQ.isLoading) return undefined;
+    return {
+      info: infoQ.data,
+    };
+  }, [infoQ.data, infoQ.isLoading]);
+  const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData?.info != null) {
-      setInitInfos(infoData.info)
-      setInfos(infoData.info)
+      setInitInfos(infoData.info);
+      setInfos(infoData.info);
     }
-  }, [infoData])
+  }, [infoData]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const handleFilter = (search: string) => {
-    let tmp: InfosData[]
+    let tmp: InfosData[];
     if (search === '') {
-      tmp = initInfos
+      tmp = initInfos;
     } else {
       tmp = initInfos.filter((tmpInfo: InfosData) => {
-        const serviceId = tmpInfo.service_id
-        return serviceId.toLowerCase().includes(search.toLowerCase())
-      })
+        const serviceId = tmpInfo.service_id;
+        return serviceId.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setInfos(tmp)
-  }
+    setInfos(tmp);
+  };
 
   return (
     <Dashboard title="接続変更/廃止手続き">
@@ -62,7 +69,7 @@ export default function ConnectionList() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
@@ -82,17 +89,11 @@ export default function ConnectionList() {
               <br />
             </CardContent>
             <CardActions>
-              <ConnectionListChangeDialog
-                key={'connection_list_change_dialog'}
-                info={tmpInfo}
-              />
-              <ConnectionListDeleteDialog
-                key={'connection_list_delete_dialog'}
-                info={tmpInfo}
-              />
+              <ConnectionListChangeDialog key={'connection_list_change_dialog'} info={tmpInfo} />
+              <ConnectionListDeleteDialog key={'connection_list_delete_dialog'} info={tmpInfo} />
             </CardActions>
           </StyledCardRoot3>
         ))}
     </Dashboard>
-  )
+  );
 }

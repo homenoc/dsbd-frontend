@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react'
-import DashboardComponent from '../../components/Dashboard/Dashboard'
-import { Button, Grid, Step, StepLabel, Stepper } from '@mui/material'
-import { ConnectionData, InfoData, ServiceData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../hooks/useInfo'
-import { useNavigate } from 'react-router-dom'
+import { Button, Grid, Step, StepLabel, Stepper } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardComponent from '../../components/Dashboard/Dashboard';
+import { useConnections, useGroup, useMe, useServices } from '../../hooks/useInfo';
+import type { ConnectionData, InfoData, ServiceData } from '../../interface';
 
 function getSteps() {
   return [
@@ -14,58 +14,78 @@ function getSteps() {
     '審査中',
     '接続情報の登録',
     '開通作業中',
-  ]
+  ];
 }
 
 export default function Add() {
-  const [data, setData] = React.useState<InfoData>()
-  const { data: infoData, error } = useInfo()
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
-  const [activeStep, setActiveStep] = React.useState(0)
-  const steps = getSteps()
+  const [data, setData] = React.useState<InfoData>();
+  const meQ = useMe();
+  const groupQ = useGroup();
+  const serviceQ = useServices();
+  const connectionsQ = useConnections();
+  const error = meQ.error ?? groupQ.error ?? serviceQ.error ?? connectionsQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (meQ.isLoading || groupQ.isLoading || serviceQ.isLoading || connectionsQ.isLoading)
+      return undefined;
+    return {
+      user: meQ.data,
+      group: groupQ.data,
+      service: serviceQ.data,
+      connection: connectionsQ.data,
+    };
+  }, [
+    meQ.data,
+    meQ.isLoading,
+    groupQ.data,
+    groupQ.isLoading,
+    serviceQ.data,
+    serviceQ.isLoading,
+    connectionsQ.data,
+    connectionsQ.isLoading,
+  ]);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const [activeStep, setActiveStep] = React.useState(0);
+  const steps = getSteps();
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    if (infoData == null) return
-    if (
-      infoData.user?.group_id !== 0 &&
-      infoData.group?.expired_status !== 0
-    ) {
-      navigate('/dashboard')
+    if (infoData == null) return;
+    if (infoData.user?.group_id !== 0 && infoData.group?.expired_status !== 0) {
+      navigate('/dashboard');
     }
-    setData(infoData)
+    setData(infoData);
     if (infoData.user?.group_id === 0) {
-      setActiveStep(0)
+      setActiveStep(0);
     } else if (!infoData.group?.pass) {
-      setActiveStep(1)
+      setActiveStep(1);
     } else if (infoData.group?.add_allow) {
-      setActiveStep(2)
+      setActiveStep(2);
     } else if (
       infoData.service != null &&
       infoData.service?.filter((value: ServiceData) => !value.pass).length > 0
     ) {
-      setActiveStep(3)
+      setActiveStep(3);
     } else if (
       infoData.service != null &&
       infoData.service?.filter((value: ServiceData) => value.add_allow).length > 0
     ) {
-      setActiveStep(4)
+      setActiveStep(4);
     } else if (
       infoData.connection != null &&
       infoData.connection?.filter((value: ConnectionData) => !value.open).length > 0
     ) {
-      setActiveStep(5)
+      setActiveStep(5);
     } else {
-      setActiveStep(6)
+      setActiveStep(6);
     }
-  }, [infoData, navigate])
+  }, [infoData, navigate]);
 
   return (
     <DashboardComponent title="申請手続き">
@@ -144,5 +164,5 @@ export default function Add() {
         </Grid>
       </Grid>
     </DashboardComponent>
-  )
+  );
 }

@@ -1,83 +1,86 @@
-import React, { useEffect } from 'react'
-import DashboardComponent from '../../components/Dashboard/Dashboard'
-import {
-  Button,
-  Card,
-  CardActions,
-  CardContent,
-  Container,
-  Grid,
-  Typography,
-} from '@mui/material'
-import { StyledCardHeader1, StyledDivCardPricing } from './styles'
-import { InfoData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../hooks/useInfo'
-import { useTemplate } from '../../hooks/useTemplate'
-import { useNavigate } from 'react-router-dom'
-import './payment.scss'
-import { StyledContainer1 } from '../../style'
-import { restfulApiConfig } from '../../api/Config'
-import { GetPayment, PostSubscribe } from '../../api/payment'
+import { Button, Card, CardActions, CardContent, Container, Grid, Typography } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardComponent from '../../components/Dashboard/Dashboard';
+import { useGroup, useInfoSummary, useMe } from '../../hooks/useInfo';
+import { useTemplate } from '../../hooks/useTemplate';
+import type { InfoData } from '../../interface';
+import { StyledCardHeader1, StyledDivCardPricing } from './styles';
+import './payment.scss';
+import { restfulApiConfig } from '../../api/Config';
+import { GetPayment, PostSubscribe } from '../../api/payment';
+import { StyledContainer1 } from '../../style';
 
 export default function Payment() {
-  const [data, setData] = React.useState<InfoData>()
-  const { data: infoData, error } = useInfo()
-  const { data: template } = useTemplate()
-  const navigate = useNavigate()
-  const [isStatus, setIsStatus] = React.useState(0)
-  const { enqueueSnackbar } = useSnackbar()
+  const [data, setData] = React.useState<InfoData>();
+  const meQ = useMe();
+  const groupQ = useGroup();
+  const infoQ = useInfoSummary();
+  const error = meQ.error ?? groupQ.error ?? infoQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (meQ.isLoading || groupQ.isLoading || infoQ.isLoading) return undefined;
+    return {
+      user: meQ.data,
+      group: groupQ.data,
+      info: infoQ.data,
+    };
+  }, [meQ.data, meQ.isLoading, groupQ.data, groupQ.isLoading, infoQ.data, infoQ.isLoading]);
+  const { data: template } = useTemplate();
+  const navigate = useNavigate();
+  const [isStatus, setIsStatus] = React.useState(0);
+  const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    if (infoData == null) return
+    if (infoData == null) return;
     if (infoData.group?.expired_status !== 0) {
-      navigate('/dashboard')
+      navigate('/dashboard');
     }
-    setData(infoData)
+    setData(infoData);
 
     if (infoData.user?.group_id == null) {
-      setIsStatus(1)
+      setIsStatus(1);
     } else if ((infoData.group?.member_type_id ?? 0) >= 50) {
-      setIsStatus(2)
+      setIsStatus(2);
     } else if (infoData.info?.length == null) {
-      setIsStatus(3)
+      setIsStatus(3);
     } else if (infoData.group?.is_stripe_id && infoData.group?.is_expired) {
-      setIsStatus(4)
+      setIsStatus(4);
     } else if (!infoData.group?.is_expired) {
-      setIsStatus(5)
+      setIsStatus(5);
     }
-  }, [infoData, navigate])
+  }, [infoData, navigate]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const subscribe = (plan: string) => {
     PostSubscribe(plan).then((res) => {
       if (res.error === '') {
-        window.open(res.data, '_blank')
+        window.open(res.data, '_blank');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const getPayment = () => {
     GetPayment().then((res) => {
       if (res.error === '') {
-        window.open(res.data, '_blank')
+        window.open(res.data, '_blank');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const DonatePage = () => {
-    window.open(restfulApiConfig.donateURL, '_blank')
-  }
+    window.open(restfulApiConfig.donateURL, '_blank');
+  };
 
   return (
     <DashboardComponent title="Payment">
@@ -85,41 +88,26 @@ export default function Payment() {
         {/*<Typography component="h1" variant="h2" align="center" color="textPrimary" gutterBottom>*/}
         {/*    Payment*/}
         {/*</Typography>*/}
-        <Typography
-          variant="h5"
-          align="center"
-          color="textSecondary"
-          component="p"
-        >
+        <Typography variant="h5" align="center" color="textSecondary" component="p">
           当団体ではネットワーク接続などをご利用頂いている皆様に「会費」として運営費用の一部を負担して頂くことになりました。
           {/*今後も継続して活動を続けていくために、運営費用の一部を利用者の皆様に負担していただく予定です。*/}
         </Typography>
       </StyledContainer1>
-      {data?.group?.coupon_id !== '' && (
-        <h2>クーポンID：{data?.group?.coupon_id}</h2>
-      )}
+      {data?.group?.coupon_id !== '' && <h2>クーポンID：{data?.group?.coupon_id}</h2>}
       {isStatus === 1 && <h2>グループ未登録のため、この操作は出来ません。</h2>}
-      {isStatus === 2 && (
-        <h2>{data?.group?.member_type}のため、費用は免除されます。</h2>
-      )}
+      {isStatus === 2 && <h2>{data?.group?.member_type}のため、費用は免除されます。</h2>}
       {isStatus === 3 && <h2>開通処理後、会費の支払いを行ってください。</h2>}
       {isStatus === 4 && (
         <div>
           <h3>期限切れ</h3>
-          <p>
-            以下の「支払い履歴/情報/プラン変更」から支払い状況を確認してください
-          </p>
-          <p>
-            ご不明な場合などがありましたら、Supportチャットにてご連絡のほどお願いいたします。
-          </p>
+          <p>以下の「支払い履歴/情報/プラン変更」から支払い状況を確認してください</p>
+          <p>ご不明な場合などがありましたら、Supportチャットにてご連絡のほどお願いいたします。</p>
           <Button variant={'contained'} color="primary" onClick={getPayment}>
             支払い履歴/情報/プラン変更
           </Button>
           <h3>会員種別: {data?.group?.member_type}</h3>
           {data?.group?.member_expired != null && (
-            <h3>
-              有効期限: {data?.group?.member_expired.split('T')[0] ?? '---'}
-            </h3>
+            <h3>有効期限: {data?.group?.member_expired.split('T')[0] ?? '---'}</h3>
           )}
         </div>
       )}
@@ -136,9 +124,7 @@ export default function Payment() {
           </Button>
           <h3>会員種別: {data?.group?.member_type}</h3>
           {data?.group?.member_expired != null && (
-            <h3>
-              有効期限: {data?.group?.member_expired.split('T')[0] ?? '---'}
-            </h3>
+            <h3>有効期限: {data?.group?.member_expired.split('T')[0] ?? '---'}</h3>
           )}
         </div>
       )}
@@ -146,9 +132,7 @@ export default function Payment() {
         <Container maxWidth="md" component="main">
           <h3>会員種別: {data?.group?.member_type}</h3>
           {data?.group?.member_expired != null && (
-            <h3>
-              失効期限: {data?.group?.member_expired.split('T')[0] ?? '---'}
-            </h3>
+            <h3>失効期限: {data?.group?.member_expired.split('T')[0] ?? '---'}</h3>
           )}
           <h3>支払いを行うと自動定期支払いになりますので、ご注意ください。</h3>
           <Grid container spacing={5} alignItems="flex-end">
@@ -164,11 +148,7 @@ export default function Payment() {
                   />
                   <CardContent>
                     <StyledDivCardPricing>
-                      <Typography
-                        component="h2"
-                        variant="h3"
-                        color="textPrimary"
-                      >
+                      <Typography component="h2" variant="h3" color="textPrimary">
                         {membership.fee}円
                       </Typography>
                       <Typography variant="h6" color="textSecondary">
@@ -204,5 +184,5 @@ export default function Payment() {
 
       <h5>決済システムとして、stripeを使用しております。</h5>
     </DashboardComponent>
-  )
+  );
 }

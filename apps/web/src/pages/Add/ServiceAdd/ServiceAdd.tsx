@@ -1,11 +1,4 @@
-import React, { Fragment, useEffect } from 'react'
-import DashboardComponent from '../../../components/Dashboard/Dashboard'
-import { DefaultTemplateData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { useNavigate } from 'react-router-dom'
-import { useInfo, infoQueryKey } from '../../../hooks/useInfo'
-import { useTemplate } from '../../../hooks/useTemplate'
-import { queryClient } from '../../../lib/queryClient'
+import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Box,
   Button,
@@ -26,10 +19,20 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from '@mui/material'
-import { useForm, Controller, useFieldArray } from 'react-hook-form'
-import * as Yup from 'yup'
-import { yupResolver } from '@hookform/resolvers/yup'
+} from '@mui/material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useSnackbar } from 'notistack';
+import React, { Fragment, useEffect, useMemo } from 'react';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import * as Yup from 'yup';
+import { Post } from '../../../api/Service';
+import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import { invalidateAllInfo, useGroup } from '../../../hooks/useInfo';
+import { useTemplate } from '../../../hooks/useTemplate';
+import { DefaultTemplateData, type InfoData } from '../../../interface';
+import { queryClient } from '../../../lib/queryClient';
 import {
   StyledRootForm,
   StyledRootForm1,
@@ -40,65 +43,64 @@ import {
   StyledTextFieldTooVeryShort,
   StyledTextFieldVeryLong,
   StyledTextFieldVeryShort1,
-} from '../../../style'
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from '../reg'
-import { Post } from '../../../api/Service'
+} from '../../../style';
+import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from '../reg';
 
 export default function ServiceAdd() {
-  const { data: template = DefaultTemplateData } = useTemplate()
-  const { data: infoData, error } = useInfo()
-  const { enqueueSnackbar } = useSnackbar()
-  const navigate = useNavigate()
-  const today = new Date()
-  const start_date = new Date()
-  const end_date = new Date()
-  const [isIpv4, setIsIpv4] = React.useState(false)
-  const [ipv4Prefix, setIpv4Prefix] = React.useState('None')
-  const [isIpv6, setIsIpv6] = React.useState(false)
-  const [ipv6Prefix, setIpv6Prefix] = React.useState('None')
-  const [isPermanent, setIsPermanent] = React.useState(false)
-  const [isTrafficAs, setIsTrafficAs] = React.useState(false)
+  const { data: template = DefaultTemplateData } = useTemplate();
+  const groupQ = useGroup();
+  const error = groupQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (groupQ.isLoading) return undefined;
+    return {
+      group: groupQ.data,
+    };
+  }, [groupQ.data, groupQ.isLoading]);
+  const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
+  const today = new Date();
+  const start_date = new Date();
+  const end_date = new Date();
+  const [isIpv4, setIsIpv4] = React.useState(false);
+  const [ipv4Prefix, setIpv4Prefix] = React.useState('None');
+  const [isIpv6, setIsIpv6] = React.useState(false);
+  const [ipv6Prefix, setIpv6Prefix] = React.useState('None');
+  const [isPermanent, setIsPermanent] = React.useState(false);
+  const [isTrafficAs, setIsTrafficAs] = React.useState(false);
   const [ipv4Calc, setIpv4Calc] = React.useState({
     after: 0,
     half_year: 0,
     one_year: 0,
-  })
-  const [ipv4Count, setIpv4Count] = React.useState(0)
-  start_date.setDate(start_date.getDate() + 7)
-  end_date.setDate(today.getDate() + 30)
+  });
+  const [ipv4Count, setIpv4Count] = React.useState(0);
+  start_date.setDate(start_date.getDate() + 7);
+  end_date.setDate(today.getDate() + 30);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData != null && !infoData.group?.add_allow) {
-      navigate('/dashboard/add')
+      navigate('/dashboard/add');
     }
-  }, [infoData, navigate])
+  }, [infoData, navigate]);
 
   const isNeedJPNIC = (service_type: string) =>
-    template.services?.find(
-      (serviceTemplate) => serviceTemplate.type === service_type
-    )?.need_jpnic ?? false
+    template.services?.find((serviceTemplate) => serviceTemplate.type === service_type)
+      ?.need_jpnic ?? false;
 
   const isGlobalAS = () =>
-    template.services?.find(
-      (serviceTemplate) => serviceTemplate.type === serviceType
-    )?.need_global_as ?? false
-  const isTransitUser = (service_type: string) => service_type === 'IP3B'
+    template.services?.find((serviceTemplate) => serviceTemplate.type === serviceType)
+      ?.need_global_as ?? false;
+  const isTransitUser = (service_type: string) => service_type === 'IP3B';
 
   const validationSchema = Yup.object().shape({
     service_type: Yup.string().min(1).required('service template is required'),
-    acceptTerms: Yup.bool().oneOf(
-      [true],
-      '利用の規約に同意しないと次へ進めません。'
-    ),
+    acceptTerms: Yup.bool().oneOf([true], '利用の規約に同意しないと次へ進めません。'),
     start_date: Yup.date().required('利用開始日を入力してください'),
     end_date: Yup.date(),
     avg_upstream: Yup.number()
@@ -120,9 +122,7 @@ export default function ServiceAdd() {
     org: Yup.string().when('service_type', {
       is: (value: string) => isNeedJPNIC(value),
       then: (value) =>
-        value
-          .required('Org is required')
-          .max(255, 'Org must not exceed 255 characters'),
+        value.required('Org is required').max(255, 'Org must not exceed 255 characters'),
     }),
     org_en: Yup.string().when('service_type', {
       is: (value: string) => isNeedJPNIC(value),
@@ -193,15 +193,9 @@ export default function ServiceAdd() {
             .min(1, 'name(English) must be at least 6 characters')
             .max(255, 'name(English) must not exceed 255 characters'),
           dept: Yup.string().max(255, 'dept must not exceed 255 characters'),
-          dept_en: Yup.string().max(
-            255,
-            'dept(English) must not exceed 255 characters'
-          ),
+          dept_en: Yup.string().max(255, 'dept(English) must not exceed 255 characters'),
           title: Yup.string().max(255, 'title must not exceed 255 characters'),
-          title_en: Yup.string().max(
-            255,
-            'title(English) must not exceed 255 characters'
-          ),
+          title_en: Yup.string().max(255, 'title(English) must not exceed 255 characters'),
           country: Yup.string()
             .required('居住国を入力してください')
             .min(2, 'Country must be at least 2 characters')
@@ -245,24 +239,13 @@ export default function ServiceAdd() {
               .min(1, 'name must be at least 6 characters')
               .max(255, 'name must not exceed 255 characters'),
             name_en: Yup.string()
-              .required(
-                'グループ名(English) or 氏名(English)を入力してください'
-              )
+              .required('グループ名(English) or 氏名(English)を入力してください')
               .min(1, 'name(English) must be at least 6 characters')
               .max(255, 'name(English) must not exceed 255 characters'),
             dept: Yup.string().max(255, 'dept must not exceed 255 characters'),
-            dept_en: Yup.string().max(
-              255,
-              'dept(English) must not exceed 255 characters'
-            ),
-            title: Yup.string().max(
-              255,
-              'title must not exceed 255 characters'
-            ),
-            title_en: Yup.string().max(
-              255,
-              'title(English) must not exceed 255 characters'
-            ),
+            dept_en: Yup.string().max(255, 'dept(English) must not exceed 255 characters'),
+            title: Yup.string().max(255, 'title must not exceed 255 characters'),
+            title_en: Yup.string().max(255, 'title(English) must not exceed 255 characters'),
             country: Yup.string()
               .required('居住国を入力してください')
               .min(2, 'Country must be at least 2 characters')
@@ -271,7 +254,7 @@ export default function ServiceAdd() {
               .required('電話番号を入力してください')
               .matches(phoneRegExp, '電話番号の形式に誤りがあります'),
             fax: Yup.string(),
-          })
+          }),
         ),
     }),
     // Transit AS
@@ -282,21 +265,19 @@ export default function ServiceAdd() {
     asn: Yup.number().when('service_type', {
       is: (value: string) => isTransitUser(value),
       then: (value) =>
-        value
-          .required(`入力してください`)
-          .moreThan(0, '正しいAS番号を入力してください'),
+        value.required(`入力してください`).moreThan(0, '正しいAS番号を入力してください'),
     }),
     // is_ipv4
     route_v4: Yup.string()
       .test(
         'route_v4_required',
         'ネットワーク名を入力してください',
-        (value) => !isIpv4 || (value !== undefined && value !== '')
+        (value) => !isIpv4 || (value !== undefined && value !== ''),
       )
       .test(
         'route_v4_format',
         '文字形式に誤りがあります。（大文字英数字とハイフンのみ、最大12文字）',
-        (value) => !isIpv4 || !value || (value.length <= 12 && v4NetworkNameRegExp.test(value))
+        (value) => !isIpv4 || !value || (value.length <= 12 && v4NetworkNameRegExp.test(value)),
       ),
     // L2, L3 Static, L3 BGP, CoLocation
     plan: Yup.array().when('service_type', {
@@ -308,7 +289,7 @@ export default function ServiceAdd() {
             after: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
             half_year: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
             one_year: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
-          })
+          }),
         ),
     }),
 
@@ -317,14 +298,14 @@ export default function ServiceAdd() {
       .test(
         'route_v6_required',
         'ネットワーク名を入力してください',
-        (value) => !isIpv6 || (value !== undefined && value !== '')
+        (value) => !isIpv6 || (value !== undefined && value !== ''),
       )
       .test(
         'route_v6_format',
         '文字形式に誤りがあります。（大文字英数字とハイフンのみ、最大12文字）',
-        (value) => !isIpv6 || !value || (value.length <= 12 && v6NetworkNameRegExp.test(value))
+        (value) => !isIpv6 || !value || (value.length <= 12 && v6NetworkNameRegExp.test(value)),
       ),
-  })
+  });
 
   const {
     register,
@@ -395,7 +376,7 @@ export default function ServiceAdd() {
       comment: '',
       bgp_comment: '',
     },
-  })
+  });
 
   const {
     fields: fieldsPlan,
@@ -404,7 +385,7 @@ export default function ServiceAdd() {
   } = useFieldArray({
     name: 'plan',
     control,
-  })
+  });
   const {
     fields: fieldsJpnicTech,
     append: appendJpnicTech,
@@ -412,55 +393,55 @@ export default function ServiceAdd() {
   } = useFieldArray({
     name: 'jpnic_tech',
     control,
-  })
+  });
 
-  const planFieldArray = watch('plan')
+  const planFieldArray = watch('plan');
   const controlledPlanFields = fieldsPlan.map((field, index) => {
     return {
       ...field,
       ...planFieldArray[index],
-    }
-  })
-  const jpnicAdmin = watch('jpnic_admin')
+    };
+  });
+  const jpnicAdmin = watch('jpnic_admin');
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
       // Plan計算
       if (name?.match(/plan./)) {
-        let after = 0
-        let half_year = 0
-        let one_year = 0
+        let after = 0;
+        let half_year = 0;
+        let one_year = 0;
 
         for (const plan of value.plan!) {
           if (plan?.after !== undefined) {
-            after += Number(plan?.after)
+            after += Number(plan?.after);
           }
           if (plan?.half_year !== undefined) {
-            half_year += Number(plan?.half_year)
+            half_year += Number(plan?.half_year);
           }
           if (plan?.one_year !== undefined) {
-            one_year += Number(plan?.one_year)
+            one_year += Number(plan?.one_year);
           }
         }
-        setIpv4Calc({ after: after, half_year: half_year, one_year: one_year })
+        setIpv4Calc({ after: after, half_year: half_year, one_year: one_year });
       }
-    })
-    return () => subscription.unsubscribe()
-  }, [planFieldArray])
+    });
+    return () => subscription.unsubscribe();
+  }, [planFieldArray]);
 
-  const jpnicTechFieldArray = watch('jpnic_tech')
+  const jpnicTechFieldArray = watch('jpnic_tech');
   const controlledJpnicTechFields = fieldsJpnicTech.map((field, index) => {
     return {
       ...field,
       ...jpnicTechFieldArray[index],
-    }
-  })
+    };
+  });
 
   const getBool = (dataBool: boolean | undefined) => {
-    return !!dataBool
-  }
+    return !!dataBool;
+  };
 
-  const serviceType = watch('service_type')
+  const serviceType = watch('service_type');
 
   const onSubmit = (data: any, e: any) => {
     const start_date =
@@ -468,19 +449,19 @@ export default function ServiceAdd() {
       '-' +
       ('00' + (data.start_date.getMonth() + 1)).slice(-2) +
       '-' +
-      ('00' + data.start_date.getDate()).slice(-2)
-    let end_date = undefined
+      ('00' + data.start_date.getDate()).slice(-2);
+    let end_date = undefined;
     if (!isPermanent) {
       end_date =
         data.end_date.getFullYear() +
         '-' +
         ('00' + (data.end_date.getMonth() + 1)).slice(-2) +
         '-' +
-        ('00' + data.end_date.getDate()).slice(-2)
+        ('00' + data.end_date.getDate()).slice(-2);
       // error process
       if (data.start_date >= data.end_date) {
-        enqueueSnackbar('終了時間を修正してください。', { variant: 'error' })
-        return
+        enqueueSnackbar('終了時間を修正してください。', { variant: 'error' });
+        return;
       }
     }
 
@@ -500,60 +481,60 @@ export default function ServiceAdd() {
       comment: data.comment,
       start_date,
       end_date,
-    }
+    };
     if (isTrafficAs) {
-      request.max_bandwidth_as = data.max_bandwidth_as
+      request.max_bandwidth_as = data.max_bandwidth_as;
     }
 
     // error process
-    const base_start_date = new Date()
-    base_start_date.setDate(base_start_date.getDate() + 7)
+    const base_start_date = new Date();
+    base_start_date.setDate(base_start_date.getDate() + 7);
     if (data.start_date < base_start_date) {
-      enqueueSnackbar('開始時間を修正してください。', { variant: 'error' })
-      return
+      enqueueSnackbar('開始時間を修正してください。', { variant: 'error' });
+      return;
     }
 
     // L2, L3 Static, L3 BGP, CoLocation
     if (isNeedJPNIC(serviceType)) {
-      request.jpnic_admin = data.jpnic_admin
-      request.jpnic_tech = data.jpnic_tech
-      const ip: any[] = []
+      request.jpnic_admin = data.jpnic_admin;
+      request.jpnic_tech = data.jpnic_tech;
+      const ip: any[] = [];
 
       // plan check
       // after
       if (ipv4Count - 2 < ipv4Calc.after) {
         enqueueSnackbar('直後のアドレス数が超えています。', {
           variant: 'error',
-        })
-        return
+        });
+        return;
       }
       if (ipv4Calc.after < ipv4Count / 4) {
-        enqueueSnackbar('直後のアドレス数が少ないです。', { variant: 'error' })
-        return
+        enqueueSnackbar('直後のアドレス数が少ないです。', { variant: 'error' });
+        return;
       }
       // half_year
       if (ipv4Count - 2 < ipv4Calc.half_year) {
         enqueueSnackbar('半年後のアドレス数が超えています。', {
           variant: 'error',
-        })
-        return
+        });
+        return;
       }
       if (ipv4Calc.half_year < ipv4Count / 4) {
         enqueueSnackbar('半年後のアドレス数が少ないです。', {
           variant: 'error',
-        })
-        return
+        });
+        return;
       }
       // one_year
       if (ipv4Count - 2 < ipv4Calc.one_year) {
         enqueueSnackbar('1年後のアドレス数が超えています。', {
           variant: 'error',
-        })
-        return
+        });
+        return;
       }
       if (ipv4Calc.one_year < ipv4Count / 4) {
-        enqueueSnackbar('1年後のアドレス数が少ないです。', { variant: 'error' })
-        return
+        enqueueSnackbar('1年後のアドレス数が少ないです。', { variant: 'error' });
+        return;
       }
 
       // ipv4
@@ -565,7 +546,7 @@ export default function ServiceAdd() {
           name: data.route_v4,
           start_date: start_date,
           end_date: end_date,
-        })
+        });
       }
 
       // ipv6
@@ -576,33 +557,33 @@ export default function ServiceAdd() {
           name: data.route_v6,
           start_date: start_date,
           end_date: end_date,
-        })
+        });
       }
 
-      request.ip = ip
+      request.ip = ip;
     }
 
     // Transit AS
     if (isGlobalAS()) {
-      request.bgp_comment = data.bgp_comment
+      request.bgp_comment = data.bgp_comment;
     }
 
     Post(request).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        queryClient.invalidateQueries({ queryKey: infoQueryKey })
-        navigate('/dashboard/add')
+        enqueueSnackbar('Request Success', { variant: 'success' });
+        invalidateAllInfo(queryClient);
+        navigate('/dashboard/add');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console
-    console.log('error', errors)
+    console.log('error', errors);
 
-    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' })
-  }
+    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' });
+  };
 
   return (
     // eslint-disable-next-line react/jsx-no-undef
@@ -611,10 +592,7 @@ export default function ServiceAdd() {
         <Grid container spacing={3}>
           <br />
           <Grid item xs={12}>
-            <FormControl
-              component="fieldset"
-              error={errors?.hasOwnProperty('service_type')}
-            >
+            <FormControl component="fieldset" error={errors?.hasOwnProperty('service_type')}>
               <FormLabel>1. ご希望のサービスをお選びください</FormLabel>
               <FormHelperText error>
                 {errors?.service_type && errors.service_type?.message}
@@ -626,7 +604,7 @@ export default function ServiceAdd() {
                   <RadioGroup
                     aria-label="gender"
                     onChange={(e) => {
-                      field.onChange(e.target.value)
+                      field.onChange(e.target.value);
                     }}
                     value={field.value === undefined ? '' : field.value}
                   >
@@ -650,9 +628,7 @@ export default function ServiceAdd() {
               <Typography variant="subtitle1" gutterBottom component="div">
                 Abuse通知用のメールアドレスを記入してください。
               </Typography>
-              <FormHelperText error>
-                {errors?.abuse && errors.abuse?.message}
-              </FormHelperText>
+              <FormHelperText error>{errors?.abuse && errors.abuse?.message}</FormHelperText>
               <StyledTextFieldLong
                 id="abuse"
                 label="Abuse"
@@ -665,9 +641,7 @@ export default function ServiceAdd() {
           {getBool(isNeedJPNIC(serviceType)) && (
             <Grid item xs={12}>
               <FormControl component="fieldset">
-                <FormLabel>
-                  1.1.1. 割り当てを希望するIPアドレスをお知らせください
-                </FormLabel>
+                <FormLabel>1.1.1. 割り当てを希望するIPアドレスをお知らせください</FormLabel>
                 {/*    IPv4*/}
                 <FormControlLabel
                   control={
@@ -682,25 +656,23 @@ export default function ServiceAdd() {
                 />
                 {isIpv4 && getBool(isNeedJPNIC(serviceType)) && (
                   <div>
-                    <p>
-                      (英大文字, 数字, "-" (ハイフン) のみを用いて12文字以内)
-                    </p>
+                    <p>(英大文字, 数字, "-" (ハイフン) のみを用いて12文字以内)</p>
                     <Box sx={{ minWidth: 20 }}>
                       <Select
                         aria-label="gender"
                         id="ipv4_subnet"
                         value={ipv4Prefix}
                         onChange={(event) => {
-                          setIpv4Prefix(event.target.value)
+                          setIpv4Prefix(event.target.value);
                           const tmpPrefix = template.ipv4?.find(
-                            (item) => item === event.target.value
-                          )
+                            (item) => item === event.target.value,
+                          );
                           if (tmpPrefix != null) {
                             const addressCount = Math.pow(
                               2,
-                              32 - parseInt(tmpPrefix.substr(1), 10)
-                            )
-                            setIpv4Count(addressCount)
+                              32 - Number.parseInt(tmpPrefix.substr(1), 10),
+                            );
+                            setIpv4Count(addressCount);
                           }
                         }}
                       >
@@ -741,9 +713,7 @@ export default function ServiceAdd() {
                 <br />
                 {isIpv6 && getBool(isNeedJPNIC(serviceType)) && (
                   <div>
-                    <p>
-                      (英大文字, 数字, "-" (ハイフン) のみを用いて12文字以内)
-                    </p>
+                    <p>(英大文字, 数字, "-" (ハイフン) のみを用いて12文字以内)</p>
                     <Box sx={{ minWidth: 20 }}>
                       <Select
                         aria-label="gender"
@@ -777,9 +747,7 @@ export default function ServiceAdd() {
               <br />
               {isIpv4 && getBool(isNeedJPNIC(serviceType)) && (
                 <FormControl component="fieldset">
-                  <FormLabel>
-                    1.1.2. IPv4のネットワークプランをお知らせください
-                  </FormLabel>
+                  <FormLabel>1.1.2. IPv4のネットワークプランをお知らせください</FormLabel>
                   <div>
                     {' '}
                     IPv4アドレスの割り当てには、JPNICの定めるIPアドレスの利用率を満たして頂く必要がございます。
@@ -787,17 +755,11 @@ export default function ServiceAdd() {
                   <div>
                     最低でも割り当てから3カ月以内に25%、6カ月以内に25%、1年以内に50％をご利用いただく必要があります。
                   </div>
-                  <div>
-                    以下のフォームにIPアドレスの利用計画をご記入ください。
-                  </div>
+                  <div>以下のフォームにIPアドレスの利用計画をご記入ください。</div>
                   <br />
                   {controlledPlanFields.map((field, index) => {
                     return (
-                      <StyledRootForm1
-                        noValidate
-                        autoComplete="off"
-                        key={'plan_' + index}
-                      >
+                      <StyledRootForm1 noValidate autoComplete="off" key={'plan_' + index}>
                         <StyledTextFieldMedium
                           required
                           key={'name_' + index}
@@ -853,7 +815,7 @@ export default function ServiceAdd() {
                           </Button>
                         )}
                       </StyledRootForm1>
-                    )
+                    );
                   })}
                   <br />
                   <Box sx={{ width: 100 }}>
@@ -1075,17 +1037,12 @@ export default function ServiceAdd() {
                       control={control}
                       name="jpnic_admin.is_group"
                       render={({ field: { onChange } }) => (
-                        <Checkbox
-                          color="primary"
-                          onChange={(e) => onChange(e.target.checked)}
-                        />
+                        <Checkbox color="primary" onChange={(e) => onChange(e.target.checked)} />
                       )}
                     />
                   }
                   label={
-                    <Typography
-                      color={errors.jpnic_admin?.is_group ? 'error' : 'inherit'}
-                    >
+                    <Typography color={errors.jpnic_admin?.is_group ? 'error' : 'inherit'}>
                       グループハンドルで登録する
                     </Typography>
                   }
@@ -1136,9 +1093,7 @@ export default function ServiceAdd() {
                     error={!!errors.jpnic_admin?.name_en?.message}
                   />
                   <br />
-                  <FormHelperText error>
-                    {errors.jpnic_admin?.postcode?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.jpnic_admin?.postcode?.message}</FormHelperText>
                   <StyledTextFieldVeryShort1
                     id="postcode"
                     label="郵便番号"
@@ -1148,9 +1103,7 @@ export default function ServiceAdd() {
                     error={!!errors.jpnic_admin?.postcode?.message}
                   />
                   <br />
-                  <FormHelperText error>
-                    {errors.jpnic_admin?.address?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.jpnic_admin?.address?.message}</FormHelperText>
                   <StyledTextFieldLong
                     id="address"
                     label="住所(日本語)"
@@ -1160,9 +1113,7 @@ export default function ServiceAdd() {
                     error={!!errors.jpnic_admin?.address?.message}
                   />
                   <br />
-                  <FormHelperText error>
-                    {errors.jpnic_admin?.address_en?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.jpnic_admin?.address_en?.message}</FormHelperText>
                   <StyledTextFieldLong
                     id="address_en"
                     label="住所(英語)"
@@ -1238,9 +1189,7 @@ export default function ServiceAdd() {
                     error={!!errors.jpnic_admin?.fax?.message}
                   />
                   <br />
-                  <FormHelperText error>
-                    {errors.jpnic_admin?.mail?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.jpnic_admin?.mail?.message}</FormHelperText>
                   <StyledTextFieldLong
                     id="email"
                     label="E-Mail"
@@ -1250,9 +1199,7 @@ export default function ServiceAdd() {
                     error={!!errors.jpnic_admin?.mail?.message}
                   />
                   <br />
-                  <FormHelperText error>
-                    {errors.jpnic_admin?.country?.message}
-                  </FormHelperText>
+                  <FormHelperText error>{errors.jpnic_admin?.country?.message}</FormHelperText>
                   <StyledTextFieldMedium
                     id="country"
                     label="居住地"
@@ -1273,11 +1220,7 @@ export default function ServiceAdd() {
                 <div>（注意：郵便番号はハイフンを入力してください。）</div>
                 {controlledJpnicTechFields.map((field, index) => {
                   return (
-                    <StyledRootForm1
-                      noValidate
-                      autoComplete="off"
-                      key={`jpnic_tech.${index}`}
-                    >
+                    <StyledRootForm1 noValidate autoComplete="off" key={`jpnic_tech.${index}`}>
                       <FormControlLabel
                         control={
                           <Controller
@@ -1293,11 +1236,7 @@ export default function ServiceAdd() {
                         }
                         label={
                           <Typography
-                            color={
-                              errors.jpnic_tech?.[index]?.is_group
-                                ? 'error'
-                                : 'inherit'
-                            }
+                            color={errors.jpnic_tech?.[index]?.is_group ? 'error' : 'inherit'}
                           >
                             グループハンドルで登録する
                           </Typography>
@@ -1382,9 +1321,7 @@ export default function ServiceAdd() {
                         multiline
                         variant="outlined"
                         {...register(`jpnic_tech.${index}.address_en`)}
-                        error={
-                          !!errors.jpnic_tech?.[index]?.address_en?.message
-                        }
+                        error={!!errors.jpnic_tech?.[index]?.address_en?.message}
                       />
                       <br />
                       <FormHelperText error>
@@ -1484,7 +1421,7 @@ export default function ServiceAdd() {
                           variant="contained"
                           color="primary"
                           onClick={() => {
-                            setValue('jpnic_tech.0', jpnicAdmin)
+                            setValue('jpnic_tech.0', jpnicAdmin);
                           }}
                         >
                           JPNIC管理者連絡窓口をコピー
@@ -1503,7 +1440,7 @@ export default function ServiceAdd() {
                         </Button>
                       )}
                     </StyledRootForm1>
-                  )
+                  );
                 })}
                 <br />
                 <Box sx={{ width: 100 }}>
@@ -1615,13 +1552,8 @@ export default function ServiceAdd() {
               <div>
                 本接続で利用する帯域をお知らせください。また、特定のASに対する大量通信がある場合は詳細をお知らせください。
               </div>
-              <div>
-                利用帯域が分からない場合は申し込み時点での想定をご記入ください。
-              </div>
-              <div>
-                {' '}
-                設備都合などによりご希望の帯域を提供できない場合がございます。
-              </div>
+              <div>利用帯域が分からない場合は申し込み時点での想定をご記入ください。</div>
+              <div> 設備都合などによりご希望の帯域を提供できない場合がございます。</div>
               <br />
               <StyledRootForm noValidate autoComplete="off">
                 <StyledTextFieldVeryShort1
@@ -1666,9 +1598,7 @@ export default function ServiceAdd() {
           </Grid>
           <Grid item xs={12}>
             <FormControl component="fieldset">
-              <FormLabel>
-                3.1. 特定のASに対する大量の通信があるか教えてください
-              </FormLabel>
+              <FormLabel>3.1. 特定のASに対する大量の通信があるか教えてください</FormLabel>
               <StyledRootForm>
                 <FormControlLabel
                   control={
@@ -1695,10 +1625,7 @@ export default function ServiceAdd() {
                   </div>
                 )}
                 <br />
-                <b>
-                  ※
-                  大量の通信とは平均20Mbps程度の通信が常時発生する状況を指します
-                </b>
+                <b>※ 大量の通信とは平均20Mbps程度の通信が常時発生する状況を指します</b>
               </StyledRootForm>
             </FormControl>
           </Grid>
@@ -1729,5 +1656,5 @@ export default function ServiceAdd() {
         </Box>
       </Fragment>
     </DashboardComponent>
-  )
+  );
 }

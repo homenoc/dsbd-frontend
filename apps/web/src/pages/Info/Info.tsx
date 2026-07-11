@@ -1,48 +1,55 @@
-import React, { useEffect, useState } from 'react'
-import DashboardComponent from '../../components/Dashboard/Dashboard'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../hooks/useInfo'
-import { InfosData } from '../../interface'
-import {Box, CardContent, Typography} from '@mui/material'
-import classesCSS from './style.module.scss'
+import { Box, CardContent, Typography } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo, useState } from 'react';
+import DashboardComponent from '../../components/Dashboard/Dashboard';
+import { useInfoSummary } from '../../hooks/useInfo';
+import type { InfoData, InfosData } from '../../interface';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
   StyledSearchInput,
   StyledTypographyTitle,
-} from '../../style'
+} from '../../style';
+import classesCSS from './style.module.scss';
 
 export default function Info() {
-  const [infos, setInfos] = useState<InfosData[]>([])
-  const [initInfos, setInitInfos] = useState<InfosData[]>([])
-  const { data, error } = useInfo()
-  const { enqueueSnackbar } = useSnackbar()
+  const [infos, setInfos] = useState<InfosData[]>([]);
+  const [initInfos, setInitInfos] = useState<InfosData[]>([]);
+  const infoQ = useInfoSummary();
+  const error = infoQ.error;
+  const data = useMemo<InfoData | undefined>(() => {
+    if (infoQ.isLoading) return undefined;
+    return {
+      info: infoQ.data,
+    };
+  }, [infoQ.data, infoQ.isLoading]);
+  const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (data?.info != null) {
-      setInitInfos(data.info)
-      setInfos(data.info)
+      setInitInfos(data.info);
+      setInfos(data.info);
     }
-  }, [data])
+  }, [data]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const handleFilter = (search: string) => {
-    let tmp: InfosData[]
+    let tmp: InfosData[];
     if (search === '') {
-      tmp = initInfos
+      tmp = initInfos;
     } else {
       tmp = initInfos.filter((info: InfosData) => {
-        return info.service.toLowerCase().includes(search.toLowerCase())
-      })
+        return info.service.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setInfos(tmp)
-  }
+    setInfos(tmp);
+  };
 
   return (
     <DashboardComponent title="Info">
@@ -51,13 +58,11 @@ export default function Info() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
-      {(infos == null || infos.length === 0) && (
-        <h3>現在、開通しているサービスがありません。</h3>
-      )}
+      {(infos == null || infos.length === 0) && <h3>現在、開通しているサービスがありません。</h3>}
       {infos != null &&
         infos.map((info: InfosData, index) => (
           <StyledCardRoot3 key={'info_' + index}>
@@ -150,24 +155,19 @@ export default function Info() {
                     </tr>
                     <tr>
                       <th>HomeNOC側</th>
-                      <td>
-                        {info.rfc8950 ? 'RFC8950利用のため無し' : info.link_v4_our}
-                      </td>
+                      <td>{info.rfc8950 ? 'RFC8950利用のため無し' : info.link_v4_our}</td>
                       <td>{info.link_v6_our}</td>
                     </tr>
                     <tr>
                       <th>貴団体側</th>
-                      <td>
-                        {info.rfc8950 ? 'RFC8950利用のため無し' : info.link_v4_your}
-                      </td>
+                      <td>{info.rfc8950 ? 'RFC8950利用のため無し' : info.link_v4_your}</td>
                       <td>{info.link_v6_your}</td>
                     </tr>
                   </thead>
                 </table>
                 <br />
                 <Typography component={'span'} variant={'subtitle1'}>
-                  本ページは電気通信事業法
-                  第26条2（書面の交付義務）に基づく書面となります。
+                  本ページは電気通信事業法 第26条2（書面の交付義務）に基づく書面となります。
                 </Typography>
                 <Typography component={'span'} variant={'subtitle1'}>
                   なお、郵送での書面交付をご希望頂いた方は、お送りします書面が正式書面となり、本画面の表示は参考情報となります。
@@ -180,5 +180,5 @@ export default function Info() {
           </StyledCardRoot3>
         ))}
     </DashboardComponent>
-  )
+  );
 }

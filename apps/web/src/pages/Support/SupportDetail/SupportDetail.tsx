@@ -1,18 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { TicketData, UserData } from '../../../interface'
-import { restfulApiConfig } from '../../../api/Config'
-import useWebSocket from 'react-use-websocket'
-import { MessageLeft, MessageRight } from './Message'
-import { TextInput } from './TextInput'
-import { useSnackbar } from 'notistack'
-import { useParams } from 'react-router-dom'
-import Cookies from 'js-cookie'
-import { useInfo } from '../../../hooks/useInfo'
-import DashboardComponent from '../../../components/Dashboard/Dashboard'
-import { StyledPaperMessage } from '../styles'
+import Cookies from 'js-cookie';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import useWebSocket from 'react-use-websocket';
+import { restfulApiConfig } from '../../../api/Config';
+import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import { useGroup, useMe, useRequests, useTickets } from '../../../hooks/useInfo';
+import type { InfoData, TicketData, UserData } from '../../../interface';
+import { StyledPaperMessage } from '../styles';
+import { MessageLeft, MessageRight } from './Message';
+import { TextInput } from './TextInput';
 
 export default function SupportDetail() {
-  const { id } = useParams()
+  const { id } = useParams();
   const { sendMessage, lastMessage } = useWebSocket(
     restfulApiConfig.wsURL +
       '/support' +
@@ -23,58 +23,76 @@ export default function SupportDetail() {
       '&access_token=' +
       Cookies.get('access_token'),
     {
-      onOpen: () =>
-        enqueueSnackbar('WebSocket接続確立', { variant: 'success' }),
+      onOpen: () => enqueueSnackbar('WebSocket接続確立', { variant: 'success' }),
       onClose: () => enqueueSnackbar('WebSocket切断', { variant: 'error' }),
       shouldReconnect: () => true,
-    }
-  )
-  const { enqueueSnackbar } = useSnackbar()
-  const [inputChatData, setInputChatData] = useState('')
-  const [ticket, setTicket] = useState<TicketData>()
-  const [userList, setUserList] = useState<UserData[]>()
-  const { data: infoData, error } = useInfo()
-  const [sendPush, setSendPush] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+    },
+  );
+  const { enqueueSnackbar } = useSnackbar();
+  const [inputChatData, setInputChatData] = useState('');
+  const [ticket, setTicket] = useState<TicketData>();
+  const [userList, setUserList] = useState<UserData[]>();
+  const meQ = useMe();
+  const groupQ = useGroup();
+  const ticketsQ = useTickets();
+  const requestsQ = useRequests();
+  const error = meQ.error ?? groupQ.error ?? ticketsQ.error ?? requestsQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (meQ.isLoading || groupQ.isLoading || ticketsQ.isLoading || requestsQ.isLoading)
+      return undefined;
+    return {
+      user: meQ.data,
+      user_list: groupQ.userList,
+      ticket: ticketsQ.data,
+      request: requestsQ.data,
+    };
+  }, [
+    meQ.data,
+    meQ.isLoading,
+    groupQ.userList,
+    groupQ.isLoading,
+    ticketsQ.data,
+    ticketsQ.isLoading,
+    requestsQ.data,
+    requestsQ.isLoading,
+  ]);
+  const [sendPush, setSendPush] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    ref.current?.scrollIntoView()
-  }, [ticket])
+    ref.current?.scrollIntoView();
+  }, [ticket]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    if (infoData == null) return
+    if (infoData == null) return;
     if (infoData.user_list != null) {
-      setUserList(infoData.user_list)
+      setUserList(infoData.user_list);
     }
     if (infoData.ticket != null) {
-      const ticketOne = infoData.ticket.filter(
-        (ticket: TicketData) => ticket.id === Number(id)
-      )
+      const ticketOne = infoData.ticket.filter((ticket: TicketData) => ticket.id === Number(id));
       if (ticketOne.length !== 0) {
-        setTicket(ticketOne[0])
+        setTicket(ticketOne[0]);
       }
     }
     if (infoData.request != null) {
-      const requestOne = infoData.request.filter(
-        (ticket: TicketData) => ticket.id === Number(id)
-      )
+      const requestOne = infoData.request.filter((ticket: TicketData) => ticket.id === Number(id));
       if (requestOne.length !== 0) {
-        setTicket(requestOne[0])
+        setTicket(requestOne[0]);
       }
     }
-    ref.current?.scrollIntoView()
-  }, [infoData, id])
+    ref.current?.scrollIntoView();
+  }, [infoData, id]);
 
   useEffect(() => {
     if (lastMessage !== null) {
-      const obj = JSON.parse(lastMessage?.data)
+      const obj = JSON.parse(lastMessage?.data);
 
       if (ticket?.chat != null) {
         setTicket({
@@ -90,16 +108,16 @@ export default function SupportDetail() {
               user_name: obj.username,
             },
           ],
-        })
+        });
       }
       if (obj.user_id === infoData?.user?.id) {
-        enqueueSnackbar('送信しました', { variant: 'success' })
+        enqueueSnackbar('送信しました', { variant: 'success' });
       } else {
-        enqueueSnackbar('新規メッセージがあります', { variant: 'success' })
+        enqueueSnackbar('新規メッセージがあります', { variant: 'success' });
       }
-      ref.current?.scrollIntoView()
+      ref.current?.scrollIntoView();
     }
-  }, [lastMessage])
+  }, [lastMessage]);
 
   useEffect(() => {
     if (sendPush) {
@@ -108,19 +126,19 @@ export default function SupportDetail() {
           access_token: Cookies.get('access_token'),
           user_token: Cookies.get('user_token'),
           message: inputChatData,
-        })
-      )
-      setSendPush(false)
+        }),
+      );
+      setSendPush(false);
     }
-  }, [sendPush])
+  }, [sendPush]);
 
   const getUser = (id: number) => {
-    const result = userList?.filter((user) => user.id === id)
+    const result = userList?.filter((user) => user.id === id);
     if (result === undefined) {
-      return '不明'
+      return '不明';
     }
-    return result[0].name
-  }
+    return result[0].name;
+  };
 
   return (
     <>
@@ -157,7 +175,7 @@ export default function SupportDetail() {
                   timestamp={chat.created_at}
                   displayName={'運営'}
                 />
-              )
+              ),
             )}
             <div ref={ref} />
           </StyledPaperMessage>
@@ -170,5 +188,5 @@ export default function SupportDetail() {
         </DashboardComponent>
       )}
     </>
-  )
+  );
 }

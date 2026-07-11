@@ -1,48 +1,49 @@
-import React, { useEffect } from 'react'
+import AddIcon from '@mui/icons-material/Add';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import ChatIcon from '@mui/icons-material/Chat';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import FeedbackIcon from '@mui/icons-material/Feedback';
+import MenuIcon from '@mui/icons-material/Menu';
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
+import PaymentIcon from '@mui/icons-material/Payment';
+import PermIdentityIcon from '@mui/icons-material/PermIdentity';
+import TocIcon from '@mui/icons-material/Toc';
 import {
-  ThemeProvider,
+  Box,
+  type CSSObject,
   CssBaseline,
   Divider,
+  Fade,
   IconButton,
+  List,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
-  MenuItem,
   Menu,
-  Fade,
-  styled,
+  MenuItem,
+  type Theme,
+  ThemeProvider,
   Toolbar,
-  CSSObject,
-  Theme,
-  Box,
   Typography,
-  ListItemButton,
-  List,
-} from '@mui/material'
-import MuiDrawer from '@mui/material/Drawer'
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar'
-import MenuIcon from '@mui/icons-material/Menu'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined'
-import TocIcon from '@mui/icons-material/Toc'
-import AddIcon from '@mui/icons-material/Add'
-import AutorenewIcon from '@mui/icons-material/Autorenew'
-import ChatIcon from '@mui/icons-material/Chat'
-import FeedbackIcon from '@mui/icons-material/Feedback'
-import PermIdentityIcon from '@mui/icons-material/PermIdentity'
-import PaymentIcon from '@mui/icons-material/Payment'
-import { StyledDivDashboardRoot, StyledDivDashboardToolBarIcon } from './styles'
-import { useNavigate } from 'react-router-dom'
-import { Logout } from '../../api/Auth'
-import Cookies from 'js-cookie'
-import { queryClient } from '../../lib/queryClient'
-import { useInfo, infoQueryKey } from '../../hooks/useInfo'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import { restfulApiConfig } from '../../api/Config'
-import { muiColorTheme } from '../Theme'
-import useMediaQuery from '@mui/material/useMediaQuery'
-import { AntisocialAgreementDialog } from '../AntisocialAgreementDialog'
+  styled,
+} from '@mui/material';
+import MuiAppBar, { type AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
+import MuiDrawer from '@mui/material/Drawer';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import Cookies from 'js-cookie';
+import React, { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Logout } from '../../api/Auth';
+import { restfulApiConfig } from '../../api/Config';
+import { invalidateAllInfo, useMe } from '../../hooks/useInfo';
+import type { InfoData } from '../../interface';
+import { queryClient } from '../../lib/queryClient';
+import { AntisocialAgreementDialog } from '../AntisocialAgreementDialog';
+import { muiColorTheme } from '../Theme';
+import { StyledDivDashboardRoot, StyledDivDashboardToolBarIcon } from './styles';
 
-const drawerWidth = 240
+const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
@@ -51,7 +52,7 @@ const openedMixin = (theme: Theme): CSSObject => ({
     duration: theme.transitions.duration.enteringScreen,
   }),
   overflowX: 'hidden',
-})
+});
 
 const closedMixin = (theme: Theme): CSSObject => ({
   transition: theme.transitions.create('width', {
@@ -65,10 +66,10 @@ const closedMixin = (theme: Theme): CSSObject => ({
   // [theme.breakpoints.up('sm')]: {
   //  width: `calc(${theme.spacing(9)} + 1px)`,
   // },
-})
+});
 
 interface AppBarProps extends MuiAppBarProps {
-  open?: boolean
+  open?: boolean;
 }
 
 const AppBar = styled(MuiAppBar, {
@@ -87,7 +88,7 @@ const AppBar = styled(MuiAppBar, {
       duration: theme.transitions.duration.enteringScreen,
     }),
   }),
-}))
+}));
 
 const Drawer = styled(MuiDrawer, {
   shouldForwardProp: (prop) => prop !== 'open',
@@ -104,47 +105,53 @@ const Drawer = styled(MuiDrawer, {
     ...closedMixin(theme),
     '& .MuiDrawer-paper': closedMixin(theme),
   }),
-}))
+}));
 
 interface DashboardProps {
-  title?: string
-  children?: React.ReactNode
-  sx?: CSSObject
-  forceDrawerClosed?: boolean
+  title?: string;
+  children?: React.ReactNode;
+  sx?: CSSObject;
+  forceDrawerClosed?: boolean;
 }
 
 export default function Dashboard(props: DashboardProps) {
-  const navigate = useNavigate()
-  const { data: infoData } = useInfo()
-  const userData = infoData?.user
-  const showAntisocialDialog = userData && userData.antisocial_check !== true
+  const navigate = useNavigate();
+  const meQ = useMe();
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (meQ.isLoading) return undefined;
+    return {
+      user: meQ.data,
+    };
+  }, [meQ.data, meQ.isLoading]);
+  const userData = infoData?.user;
+  const showAntisocialDialog = userData && userData.antisocial_check !== true;
   // Menu Bar
   // useMediaQuery("(min-width:800px)")でmobileかどうかを判定
-  const [open, setOpen] = React.useState(useMediaQuery('(min-width:600px)'))
+  const [open, setOpen] = React.useState(useMediaQuery('(min-width:600px)'));
 
   // 画面サイズが変わったときにopenを変更
   // closeが強制されているときは、openをfalseにする
-  const isMobile = !useMediaQuery('(min-width:600px)')
+  const isMobile = !useMediaQuery('(min-width:600px)');
   useEffect(() => {
     if (props.forceDrawerClosed) {
-      setOpen(false)
+      setOpen(false);
     } else if (isMobile) {
-      setOpen(false)
+      setOpen(false);
     } else {
-      setOpen(true)
+      setOpen(true);
     }
-  }, [isMobile, props.forceDrawerClosed])
+  }, [isMobile, props.forceDrawerClosed]);
 
-  const handleDrawerOpen = () => setOpen(true)
-  const handleDrawerClose = () => setOpen(false)
-  const reloadClick = () => queryClient.invalidateQueries({ queryKey: infoQueryKey })
-  const DashboardPage = () => navigate('/dashboard')
-  const InfoPage = () => navigate('/dashboard/info')
-  const AddPage = () => navigate('/dashboard/add')
-  const PaymentPage = () => navigate('/dashboard/payment')
-  const SupportPage = () => navigate('/dashboard/support')
-  const ProcedurePage = () => navigate('/dashboard/procedure')
-  const FeedbackPage = () => navigate('/dashboard/feedback')
+  const handleDrawerOpen = () => setOpen(true);
+  const handleDrawerClose = () => setOpen(false);
+  const reloadClick = () => invalidateAllInfo(queryClient);
+  const DashboardPage = () => navigate('/dashboard');
+  const InfoPage = () => navigate('/dashboard/info');
+  const AddPage = () => navigate('/dashboard/add');
+  const PaymentPage = () => navigate('/dashboard/payment');
+  const SupportPage = () => navigate('/dashboard/support');
+  const ProcedurePage = () => navigate('/dashboard/procedure');
+  const FeedbackPage = () => navigate('/dashboard/feedback');
 
   return (
     <ThemeProvider theme={muiColorTheme}>
@@ -246,30 +253,30 @@ export default function Dashboard(props: DashboardProps) {
         </Box>
       </Box>
     </ThemeProvider>
-  )
+  );
 }
 
 export function UserMenu() {
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
-  const navigate = useNavigate()
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const navigate = useNavigate();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
+    setAnchorEl(event.currentTarget);
+  };
 
   const handleClose = () => {
-    setAnchorEl(null)
-  }
+    setAnchorEl(null);
+  };
 
   const clickLogout = () => {
     Logout().then((res) => {
-      Cookies.remove('user_token')
-      Cookies.remove('access_token')
-      queryClient.clear()
-      navigate('/login')
-    })
-  }
+      Cookies.remove('user_token');
+      Cookies.remove('access_token');
+      queryClient.clear();
+      navigate('/login');
+    });
+  };
 
   return (
     <StyledDivDashboardRoot>
@@ -293,5 +300,5 @@ export function UserMenu() {
         <MenuItem onClick={clickLogout}>Logout</MenuItem>
       </Menu>
     </StyledDivDashboardRoot>
-  )
+  );
 }

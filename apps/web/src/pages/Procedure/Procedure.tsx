@@ -1,5 +1,3 @@
-import React, { useEffect } from 'react'
-import DashboardComponent from '../../components/Dashboard/Dashboard'
 import {
   Box,
   Button,
@@ -15,52 +13,83 @@ import {
   TablePagination,
   TableRow,
   Typography,
-} from '@mui/material'
-import { InfoData, TicketData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../hooks/useInfo'
-import { useNavigate } from 'react-router-dom'
-import { UserAddDialog } from './UserAddDialog/UserAddDialog'
-import { RequestAddDialog } from './RequestAddDialog/RequestAddDialog'
-import { GroupChangeDialog } from './Group/GroupChangeDialog'
-import { StyledCardRoot3, StyledTable2 } from '../../style'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardComponent from '../../components/Dashboard/Dashboard';
+import { useConnections, useGroup, useMe, useRequests, useServices } from '../../hooks/useInfo';
+import type { InfoData, TicketData } from '../../interface';
+import { StyledCardRoot3, StyledTable2 } from '../../style';
+import { GroupChangeDialog } from './Group/GroupChangeDialog';
+import { RequestAddDialog } from './RequestAddDialog/RequestAddDialog';
+import { UserAddDialog } from './UserAddDialog/UserAddDialog';
 
 export default function Procedure() {
-  const [data, setData] = React.useState<InfoData>()
-  const { data: infoData, error } = useInfo()
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const [data, setData] = React.useState<InfoData>();
+  const meQ = useMe();
+  const groupQ = useGroup();
+  const serviceQ = useServices();
+  const connectionsQ = useConnections();
+  const requestsQ = useRequests();
+  const error =
+    meQ.error ?? groupQ.error ?? serviceQ.error ?? connectionsQ.error ?? requestsQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (
+      meQ.isLoading ||
+      groupQ.isLoading ||
+      serviceQ.isLoading ||
+      connectionsQ.isLoading ||
+      requestsQ.isLoading
+    )
+      return undefined;
+    return {
+      user: meQ.data,
+      group: groupQ.data,
+      service: serviceQ.data,
+      connection: connectionsQ.data,
+      request: requestsQ.data,
+    };
+  }, [
+    meQ.data,
+    meQ.isLoading,
+    groupQ.data,
+    groupQ.isLoading,
+    serviceQ.data,
+    serviceQ.isLoading,
+    connectionsQ.data,
+    connectionsQ.isLoading,
+    requestsQ.data,
+    requestsQ.isLoading,
+  ]);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData != null) {
-      setData(infoData)
+      setData(infoData);
     }
-  }, [infoData])
+  }, [infoData]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
-  const UserListPage = () => navigate('/dashboard/procedure/user')
-  const ServiceListPage = () => navigate('/dashboard/procedure/service')
-  const ConnectionListPage = () => navigate('/dashboard/procedure/connection')
+  const UserListPage = () => navigate('/dashboard/procedure/user');
+  const ServiceListPage = () => navigate('/dashboard/procedure/service');
+  const ConnectionListPage = () => navigate('/dashboard/procedure/connection');
 
   return (
     <DashboardComponent title="各種手続き">
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <h3>申請状況</h3>
-          {data != null && data?.request == null && (
-            <h2>申請履歴がありません</h2>
-          )}
+          {data != null && data?.request == null && <h2>申請履歴がありません</h2>}
           {data != null && data.request != null && (
-            <StatusTable
-              key={'status_table'}
-              request={data?.request.sort((a, b) => b.id - a.id)}
-            />
+            <StatusTable key={'status_table'} request={data?.request.sort((a, b) => b.id - a.id)} />
           )}
         </Grid>
         <Grid item xs={12}>
@@ -106,10 +135,7 @@ export default function Procedure() {
                   グループ情報の変更を希望される方はお選びください。
                 </CardContent>
                 <CardActions>
-                  <GroupChangeDialog
-                    key={'request_abolished_group'}
-                    group={data.group}
-                  />
+                  <GroupChangeDialog key={'request_abolished_group'} group={data.group} />
                 </CardActions>
               </StyledCardRoot3>
             )}
@@ -123,10 +149,7 @@ export default function Procedure() {
                 サービス情報の追加を希望される方はお選びください。
               </CardContent>
               <CardActions>
-                <RequestAddDialog
-                  key={'request_add_service'}
-                  title={'[追加] サービス情報申請'}
-                />
+                <RequestAddDialog key={'request_add_service'} title={'[追加] サービス情報申請'} />
               </CardActions>
             </StyledCardRoot3>
           )}
@@ -164,10 +187,7 @@ export default function Procedure() {
                   接続情報の追加を希望される方はお選びください。
                 </CardContent>
                 <CardActions>
-                  <RequestAddDialog
-                    key={'request_add_connection'}
-                    title={'[追加] 接続情報申請'}
-                  />
+                  <RequestAddDialog key={'request_add_connection'} title={'[追加] 接続情報申請'} />
                 </CardActions>
               </StyledCardRoot3>
             )}
@@ -213,33 +233,29 @@ export default function Procedure() {
         </Grid>
       </Grid>
     </DashboardComponent>
-  )
+  );
 }
 
 export function StatusTable(props: { request: TicketData[] }) {
-  const { request } = props
-  const navigate = useNavigate()
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(5)
+  const { request } = props;
+  const navigate = useNavigate();
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, request.length - page * rowsPerPage)
+  const emptyRows = rowsPerPage - Math.min(rowsPerPage, request.length - page * rowsPerPage);
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage)
-  }
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPage(newPage);
+  };
 
   const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-  const ChatPage = (id: number) => navigate('/dashboard/support/' + id)
+  const ChatPage = (id: number) => navigate('/dashboard/support/' + id);
 
   return (
     <Box>
@@ -255,10 +271,7 @@ export function StatusTable(props: { request: TicketData[] }) {
           </TableHead>
           <TableBody>
             {(rowsPerPage > 0
-              ? request.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
+              ? request.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               : request
             ).map((row) => (
               <TableRow key={row.id}>
@@ -269,9 +282,7 @@ export function StatusTable(props: { request: TicketData[] }) {
                   {row.created_at}
                 </TableCell>
                 <TableCell style={{ width: 160 }} align="right">
-                  {row.reject && (
-                    <Chip size="small" color="secondary" label="却下" />
-                  )}
+                  {row.reject && <Chip size="small" color="secondary" label="却下" />}
                   {!row.reject && !row.solved && (
                     <Chip size="small" color="primary" label="申請中" />
                   )}
@@ -280,11 +291,7 @@ export function StatusTable(props: { request: TicketData[] }) {
                   )}
                 </TableCell>
                 <TableCell style={{ width: 100 }} align="right">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => ChatPage(row.id)}
-                  >
+                  <Button size="small" variant="outlined" onClick={() => ChatPage(row.id)}>
                     Chat
                   </Button>
                 </TableCell>
@@ -308,5 +315,5 @@ export function StatusTable(props: { request: TicketData[] }) {
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
     </Box>
-  )
+  );
 }

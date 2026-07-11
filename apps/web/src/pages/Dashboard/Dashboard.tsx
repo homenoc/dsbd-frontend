@@ -1,64 +1,89 @@
-import React, { useEffect } from 'react'
-import DashboardComponent from '../../components/Dashboard/Dashboard'
-import {
-  Box,
-  Button,
-  CardActions,
-  CardContent,
-  Chip,
-  Grid,
-  Typography,
-} from '@mui/material'
-import { InfoData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../hooks/useInfo'
-import { useNavigate } from 'react-router-dom'
-import { restfulApiConfig } from '../../api/Config'
-import { StyledCardRoot3, StyledTypographyTitle } from '../../style'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { Box, Button, CardActions, CardContent, Chip, Grid, Typography } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
+import remarkGfm from 'remark-gfm';
+import { restfulApiConfig } from '../../api/Config';
+import DashboardComponent from '../../components/Dashboard/Dashboard';
+import { useGroup, useInfoSummary, useMe, useNotices, useServices } from '../../hooks/useInfo';
+import type { InfoData } from '../../interface';
+import { StyledCardRoot3, StyledTypographyTitle } from '../../style';
 
 export default function Dashboard() {
-  const [data, setData] = React.useState<InfoData>()
-  const { data: infoData, error } = useInfo()
-  const [status, setStatus] = React.useState(3)
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const [data, setData] = React.useState<InfoData>();
+  const meQ = useMe();
+  const groupQ = useGroup();
+  const serviceQ = useServices();
+  const infoQ = useInfoSummary();
+  const noticesQ = useNotices();
+  const error = meQ.error ?? groupQ.error ?? serviceQ.error ?? infoQ.error ?? noticesQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (
+      meQ.isLoading ||
+      groupQ.isLoading ||
+      serviceQ.isLoading ||
+      infoQ.isLoading ||
+      noticesQ.isLoading
+    )
+      return undefined;
+    return {
+      user: meQ.data,
+      group: groupQ.data,
+      service: serviceQ.data,
+      info: infoQ.data,
+      notice: noticesQ.data,
+    };
+  }, [
+    meQ.data,
+    meQ.isLoading,
+    groupQ.data,
+    groupQ.isLoading,
+    serviceQ.data,
+    serviceQ.isLoading,
+    infoQ.data,
+    infoQ.isLoading,
+    noticesQ.data,
+    noticesQ.isLoading,
+  ]);
+  const [status, setStatus] = React.useState(3);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    if (infoData == null) return
-    setData(infoData)
+    if (infoData == null) return;
+    setData(infoData);
     if (infoData.user?.group_id === 0) {
-      setStatus(0)
+      setStatus(0);
     } else if (infoData.group?.add_allow) {
-      setStatus(1)
+      setStatus(1);
     } else if (infoData.service != null) {
-      let addAllow = false
+      let addAllow = false;
       for (const tmpService of infoData.service) {
         if (tmpService.add_allow) {
-          addAllow = true
-          break
+          addAllow = true;
+          break;
         }
       }
       if (addAllow) {
-        setStatus(2)
+        setStatus(2);
       }
     } else {
-      setStatus(3)
+      setStatus(3);
     }
-  }, [infoData])
+  }, [infoData]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const getStringFromDate = (before: string): string => {
-    let str = '無期限'
+    let str = '無期限';
     if (!before.match(/9999-12-31/)) {
-      const date = new Date(Date.parse(before))
+      const date = new Date(Date.parse(before));
       str =
         date.getFullYear() +
         '-' +
@@ -70,18 +95,18 @@ export default function Dashboard() {
         ':' +
         ('0' + date.getMinutes()).slice(-2) +
         ':' +
-        ('0' + date.getSeconds()).slice(-2)
+        ('0' + date.getSeconds()).slice(-2);
     }
-    return str
-  }
+    return str;
+  };
 
   const moveAddPage = () => {
-    navigate('/dashboard/add')
-  }
+    navigate('/dashboard/add');
+  };
 
   const movePaymentPage = () => {
-    navigate('/dashboard/payment')
-  }
+    navigate('/dashboard/payment');
+  };
 
   return (
     <DashboardComponent title="Dashboard">
@@ -127,39 +152,29 @@ export default function Dashboard() {
                   以下の「会費のお支払いはこちらから」ボタンより手続きを進めてください
                 </CardContent>
                 <CardActions>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={movePaymentPage}
-                  >
+                  <Button size="small" variant="outlined" onClick={movePaymentPage}>
                     会費のお支払いはこちらから
                   </Button>
                 </CardActions>
               </StyledCardRoot3>
             )}
-          {!(data?.user?.group_id !== 0 && data?.group?.expired_status === 0) &&
-            status !== 3 && (
-              <StyledCardRoot3 key={'add_notice'}>
-                <CardContent>
-                  <Typography variant="h5" component="h2">
-                    申請手続きのお知らせ
-                  </Typography>
-                  <Chip
-                    size={'small'}
-                    label="重要"
-                    color="secondary"
-                    sx={{ marginRight: 1 }}
-                  />
-                  <br />
-                  以下の「申請ページはこちら」ボタンより手続きを進めてください
-                </CardContent>
-                <CardActions>
-                  <Button size="small" variant="outlined" onClick={moveAddPage}>
-                    申請ページはこちら
-                  </Button>
-                </CardActions>
-              </StyledCardRoot3>
-            )}
+          {!(data?.user?.group_id !== 0 && data?.group?.expired_status === 0) && status !== 3 && (
+            <StyledCardRoot3 key={'add_notice'}>
+              <CardContent>
+                <Typography variant="h5" component="h2">
+                  申請手続きのお知らせ
+                </Typography>
+                <Chip size={'small'} label="重要" color="secondary" sx={{ marginRight: 1 }} />
+                <br />
+                以下の「申請ページはこちら」ボタンより手続きを進めてください
+              </CardContent>
+              <CardActions>
+                <Button size="small" variant="outlined" onClick={moveAddPage}>
+                  申請ページはこちら
+                </Button>
+              </CardActions>
+            </StyledCardRoot3>
+          )}
           {data?.group?.expired_status === 0 &&
             data?.notice?.map((notice, index) => (
               <StyledCardRoot3 key={index}>
@@ -168,32 +183,16 @@ export default function Dashboard() {
                     {notice.title}
                   </Typography>
                   <StyledTypographyTitle color="textSecondary" gutterBottom>
-                    ({getStringFromDate(notice.start_time)} -{' '}
-                    {getStringFromDate(notice.end_time)})
+                    ({getStringFromDate(notice.start_time)} - {getStringFromDate(notice.end_time)})
                   </StyledTypographyTitle>
                   {notice.info && (
-                    <Chip
-                      size={'small'}
-                      label="情報"
-                      color="primary"
-                      sx={{ marginRight: 1 }}
-                    />
+                    <Chip size={'small'} label="情報" color="primary" sx={{ marginRight: 1 }} />
                   )}
                   {notice.important && (
-                    <Chip
-                      size={'small'}
-                      label="重要"
-                      color="secondary"
-                      sx={{ marginRight: 1 }}
-                    />
+                    <Chip size={'small'} label="重要" color="secondary" sx={{ marginRight: 1 }} />
                   )}
                   {notice.fault && (
-                    <Chip
-                      size={'small'}
-                      label="障害"
-                      color="secondary"
-                      sx={{ marginRight: 1 }}
-                    />
+                    <Chip size={'small'} label="障害" color="secondary" sx={{ marginRight: 1 }} />
                   )}
                   <br />
                   <ReactMarkdown skipHtml={true} remarkPlugins={[remarkGfm]}>
@@ -217,13 +216,10 @@ export default function Dashboard() {
                   <br />
                   {data?.group?.member_expired != null && (
                     <Typography component={'span'} variant={'subtitle1'}>
-                      失効期限:{' '}
-                      {data?.group?.member_expired.split('T')[0] ?? '---'}
+                      失効期限: {data?.group?.member_expired.split('T')[0] ?? '---'}
                     </Typography>
                   )}
-                  {data?.group?.is_expired && (
-                    <h2 color={'secondary'}>期限切れ</h2>
-                  )}
+                  {data?.group?.is_expired && <h2 color={'secondary'}>期限切れ</h2>}
                 </StyledTypographyTitle>
                 <br />
                 {data?.group?.is_expired && data?.info?.length == null && (
@@ -248,5 +244,5 @@ export default function Dashboard() {
         </Grid>
       </Grid>
     </DashboardComponent>
-  )
+  );
 }

@@ -1,52 +1,59 @@
-import React, { useEffect, useState } from 'react'
-import { CardActions, CardContent, Chip, Typography } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { ServiceData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { useInfo } from '../../../hooks/useInfo'
-import Dashboard from '../../../components/Dashboard/Dashboard'
-import { ServiceListChangeDialog } from './ServiceListChangeDialog'
-import { ServiceListDeleteDialog } from './ServiceListDeleteDialog'
+import { CardActions, CardContent, Chip, Typography } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Dashboard from '../../../components/Dashboard/Dashboard';
+import { useServices } from '../../../hooks/useInfo';
+import type { InfoData, ServiceData } from '../../../interface';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
   StyledSearchInput,
   StyledTypographyTitle,
-} from '../../../style'
+} from '../../../style';
+import { ServiceListChangeDialog } from './ServiceListChangeDialog';
+import { ServiceListDeleteDialog } from './ServiceListDeleteDialog';
 
 export default function ServiceList() {
-  const [services, setServices] = useState<ServiceData[]>([])
-  const [initServices, setInitServices] = useState<ServiceData[]>([])
-  const { data: infoData, error } = useInfo()
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const [services, setServices] = useState<ServiceData[]>([]);
+  const [initServices, setInitServices] = useState<ServiceData[]>([]);
+  const serviceQ = useServices();
+  const error = serviceQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (serviceQ.isLoading) return undefined;
+    return {
+      service: serviceQ.data,
+    };
+  }, [serviceQ.data, serviceQ.isLoading]);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData?.service != null) {
-      setInitServices(infoData.service)
-      setServices(infoData.service)
+      setInitServices(infoData.service);
+      setServices(infoData.service);
     }
-  }, [infoData])
+  }, [infoData]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const handleFilter = (search: string) => {
-    let tmp: ServiceData[]
+    let tmp: ServiceData[];
     if (search === '') {
-      tmp = initServices
+      tmp = initServices;
     } else {
       tmp = initServices.filter((service: ServiceData) => {
-        const name = service.service_id
-        return name.toLowerCase().includes(search.toLowerCase())
-      })
+        const name = service.service_id;
+        return name.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setServices(tmp)
-  }
+    setServices(tmp);
+  };
 
   return (
     <Dashboard title="サービス変更/廃止手続き">
@@ -63,7 +70,7 @@ export default function ServiceList() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
@@ -83,25 +90,19 @@ export default function ServiceList() {
               <br />
             </CardContent>
             <CardActions>
-              <ServiceListChangeDialog
-                key={'service_list_change_dialog'}
-                service={service}
-              />
-              <ServiceListDeleteDialog
-                key={'service_list_delete_dialog'}
-                service={service}
-              />
+              <ServiceListChangeDialog key={'service_list_change_dialog'} service={service} />
+              <ServiceListDeleteDialog key={'service_list_delete_dialog'} service={service} />
             </CardActions>
           </StyledCardRoot3>
         ))}
     </Dashboard>
-  )
+  );
 }
 
 function Pass(props: { pass: boolean }): any {
-  const { pass } = props
+  const { pass } = props;
   if (pass) {
-    return <Chip size="small" color="primary" label="審査済み" />
+    return <Chip size="small" color="primary" label="審査済み" />;
   }
-  return <Chip size="small" color="secondary" label="未審査" />
+  return <Chip size="small" color="secondary" label="未審査" />;
 }

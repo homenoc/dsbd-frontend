@@ -1,5 +1,3 @@
-import React, { useEffect, useState } from 'react'
-import Dashboard from '../../components/Dashboard/Dashboard'
 import {
   Button,
   CardActions,
@@ -10,79 +8,90 @@ import {
   Radio,
   RadioGroup,
   Typography,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { TicketData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { Solved } from '../../components/Dashboard/Solved/Open'
-import { queryClient } from '../../lib/queryClient'
-import { useInfo, infoQueryKey } from '../../hooks/useInfo'
-import { SupportAddDialog } from './SupportAddDialog'
-import { Put } from '../../api/Support'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Put } from '../../api/Support';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import { Solved } from '../../components/Dashboard/Solved/Open';
+import { invalidateAllInfo, useMe, useTickets } from '../../hooks/useInfo';
+import type { InfoData, TicketData } from '../../interface';
+import { queryClient } from '../../lib/queryClient';
 import {
   StyledCardRoot3,
   StyledPaperRootInput,
   StyledSearchInput,
   StyledTypographyTitle,
-} from '../../style'
+} from '../../style';
+import { SupportAddDialog } from './SupportAddDialog';
 
 export default function Support() {
-  const [tickets, setTickets] = useState<TicketData[]>([])
-  const [initTickets, setInitTickets] = useState<TicketData[]>([])
-  const [group, setGroupID] = useState(0)
-  const { data: infoData, error } = useInfo()
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
-  const [value, setValue] = React.useState(false)
+  const [tickets, setTickets] = useState<TicketData[]>([]);
+  const [initTickets, setInitTickets] = useState<TicketData[]>([]);
+  const [group, setGroupID] = useState(0);
+  const meQ = useMe();
+  const ticketsQ = useTickets();
+  const error = meQ.error ?? ticketsQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (meQ.isLoading || ticketsQ.isLoading) return undefined;
+    return {
+      user: meQ.data,
+      ticket: ticketsQ.data,
+    };
+  }, [meQ.data, meQ.isLoading, ticketsQ.data, ticketsQ.isLoading]);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const [value, setValue] = React.useState(false);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    if (infoData == null) return
+    if (infoData == null) return;
     if (infoData.ticket != null) {
-      setInitTickets(infoData.ticket)
-      setTickets(infoData.ticket)
+      setInitTickets(infoData.ticket);
+      setTickets(infoData.ticket);
     }
     if (infoData.user != null) {
-      setGroupID(infoData.user.group_id)
+      setGroupID(infoData.user.group_id);
     }
-  }, [infoData])
+  }, [infoData]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(event.target.value === 'true')
-  }
+    setValue(event.target.value === 'true');
+  };
 
   const handleFilter = (search: string) => {
-    let tmp: TicketData[]
+    let tmp: TicketData[];
     if (search === '') {
-      tmp = initTickets
+      tmp = initTickets;
     } else {
       tmp = initTickets.filter((grp: TicketData) => {
-        return grp.title.toLowerCase().includes(search.toLowerCase())
-      })
+        return grp.title.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setTickets(tmp)
-  }
+    setTickets(tmp);
+  };
 
   const clickSolvedStatus = (id: number, solved: boolean) => {
     Put(id, { solved }).then((res) => {
       if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' })
-        queryClient.invalidateQueries({ queryKey: infoQueryKey })
+        enqueueSnackbar('OK', { variant: 'success' });
+        invalidateAllInfo(queryClient);
       } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
+        enqueueSnackbar(res.error, { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const clickDetailPage = (id: number) => {
-    navigate('/dashboard/support/' + id)
-  }
+    navigate('/dashboard/support/' + id);
+  };
 
   return (
     <Dashboard title="Ticket Info">
@@ -93,33 +102,17 @@ export default function Support() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
       <FormControl component="fieldset">
-        <RadioGroup
-          row
-          aria-label="gender"
-          name="gender1"
-          value={value}
-          onChange={handleChange}
-        >
-          <FormControlLabel
-            value={false}
-            control={<Radio color="primary" />}
-            label="未解決"
-          />
-          <FormControlLabel
-            value={true}
-            control={<Radio color="primary" />}
-            label="解決済"
-          />
+        <RadioGroup row aria-label="gender" name="gender1" value={value} onChange={handleChange}>
+          <FormControlLabel value={false} control={<Radio color="primary" />} label="未解決" />
+          <FormControlLabel value={true} control={<Radio color="primary" />} label="解決済" />
         </RadioGroup>
       </FormControl>
-      {(tickets == null || tickets.length === 0) && (
-        <h3>現在、有効なチケットはありません。</h3>
-      )}
+      {(tickets == null || tickets.length === 0) && <h3>現在、有効なチケットはありません。</h3>}
       {tickets !== null &&
         tickets
           .filter((ticket) => ticket.solved === value)
@@ -142,9 +135,7 @@ export default function Support() {
                 &nbsp;&nbsp;
                 <Solved key={index} solved={ticket.solved} />
                 &nbsp;&nbsp;
-                {ticket.admin && (
-                  <Chip size="small" color="primary" label="管理者作成" />
-                )}
+                {ticket.admin && <Chip size="small" color="primary" label="管理者作成" />}
                 <br />
               </CardContent>
               <CardActions>
@@ -173,5 +164,5 @@ export default function Support() {
             </StyledCardRoot3>
           ))}
     </Dashboard>
-  )
+  );
 }

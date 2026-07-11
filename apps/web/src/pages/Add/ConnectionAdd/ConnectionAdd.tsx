@@ -1,11 +1,4 @@
-import React, { Fragment, useEffect } from 'react'
-import DashboardComponent from '../../../components/Dashboard/Dashboard'
-import { DefaultTemplateData, ServiceData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { useNavigate } from 'react-router-dom'
-import { useInfo, infoQueryKey } from '../../../hooks/useInfo'
-import { useTemplate } from '../../../hooks/useTemplate'
-import { queryClient } from '../../../lib/queryClient'
+import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Box,
   Button,
@@ -20,71 +13,80 @@ import {
   RadioGroup,
   Select,
   Typography,
-} from '@mui/material'
-import { useForm, Controller } from 'react-hook-form'
-import * as Yup from 'yup'
-import { yupResolver } from '@hookform/resolvers/yup'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { Fragment, useEffect, useMemo } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import * as Yup from 'yup';
+import { Post } from '../../../api/Connection';
+import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import { invalidateAllInfo, useServices } from '../../../hooks/useInfo';
+import { useTemplate } from '../../../hooks/useTemplate';
+import { DefaultTemplateData, type InfoData, type ServiceData } from '../../../interface';
+import { queryClient } from '../../../lib/queryClient';
 import {
   StyledFormControlFormSelect,
   StyledTextFieldLong,
   StyledTextFieldVeryLong,
-} from '../../../style'
-import { Post } from '../../../api/Connection'
+} from '../../../style';
 
 export default function ConnectionAdd() {
-  const { enqueueSnackbar } = useSnackbar()
-  const { data: template = DefaultTemplateData } = useTemplate()
-  const { data: infoData, error } = useInfo()
-  const navigate = useNavigate()
-  const [serviceType, setServiceType] = React.useState('')
-  const [serviceID, setServiceID] = React.useState(0)
+  const { enqueueSnackbar } = useSnackbar();
+  const { data: template = DefaultTemplateData } = useTemplate();
+  const serviceQ = useServices();
+  const error = serviceQ.error;
+  const infoData = useMemo<InfoData | undefined>(() => {
+    if (serviceQ.isLoading) return undefined;
+    return {
+      service: serviceQ.data,
+    };
+  }, [serviceQ.data, serviceQ.isLoading]);
+  const navigate = useNavigate();
+  const [serviceType, setServiceType] = React.useState('');
+  const [serviceID, setServiceID] = React.useState(0);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar((error as Error).message, { variant: 'error' })
+      enqueueSnackbar((error as Error).message, { variant: 'error' });
     }
-  }, [error, enqueueSnackbar])
+  }, [error, enqueueSnackbar]);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    if (infoData == null) return
+    if (infoData == null) return;
     const canAdd =
       infoData.service != null &&
-      infoData.service.filter((value: ServiceData) => value.add_allow).length > 0
+      infoData.service.filter((value: ServiceData) => value.add_allow).length > 0;
     if (!canAdd) {
-      navigate('/dashboard/add')
+      navigate('/dashboard/add');
     }
-  }, [infoData, navigate])
+  }, [infoData, navigate]);
 
   const isNeedComment = (value: string) =>
-    template.connections?.find((ct) => ct.type === value)?.need_comment ?? false
+    template.connections?.find((ct) => ct.type === value)?.need_comment ?? false;
   const isNeedInternet = (value: string) =>
-    template.connections?.find((ct) => ct.type === value)?.need_internet ??
-    false
-  const isIXConnection = (value: string) => value === 'IXP'
+    template.connections?.find((ct) => ct.type === value)?.need_internet ?? false;
+  const isIXConnection = (value: string) => value === 'IXP';
   const isCrossConnect = (value: string) =>
-    template.connections?.find((ct) => ct.type === value)?.need_cross_connect ??
-    false
+    template.connections?.find((ct) => ct.type === value)?.need_cross_connect ?? false;
   const isNeedBGP = () =>
-    template.services?.find(
-      (serviceTemplate) => serviceTemplate.type === serviceType
-    )?.need_bgp ?? false
+    template.services?.find((serviceTemplate) => serviceTemplate.type === serviceType)?.need_bgp ??
+    false;
   const isNeedRoute = () =>
-    template.services?.find(
-      (serviceTemplate) => serviceTemplate.type === serviceType
-    )?.need_route ?? false
+    template.services?.find((serviceTemplate) => serviceTemplate.type === serviceType)
+      ?.need_route ?? false;
   const isGlobalAS = () =>
-    template.services?.find(
-      (serviceTemplate) => serviceTemplate.type === serviceType
-    )?.need_global_as ?? false
+    template.services?.find((serviceTemplate) => serviceTemplate.type === serviceType)
+      ?.need_global_as ?? false;
   const isIPv4Route = () =>
     (infoData?.service
       ?.find((service) => service.id === serviceID)
-      ?.ip?.filter((ip) => ip.version === 4)?.length ?? 0) > 0 || isGlobalAS()
+      ?.ip?.filter((ip) => ip.version === 4)?.length ?? 0) > 0 || isGlobalAS();
   const isIPv6Route = () =>
     (infoData?.service
       ?.find((service) => service.id === serviceID)
-      ?.ip?.filter((ip) => ip.version === 6)?.length ?? 0) > 0 || isGlobalAS()
+      ?.ip?.filter((ip) => ip.version === 6)?.length ?? 0) > 0 || isGlobalAS();
 
   const validationSchema = Yup.object().shape({
     connection_type: Yup.string()
@@ -93,9 +95,7 @@ export default function ConnectionAdd() {
     preferred_ap: Yup.string().when('connection_type', {
       is: (value: string) => !isIXConnection(value) && !isCrossConnect(value),
       then: (value) =>
-        value
-          .required('希望接続場所を選択してください')
-          .min(1, '正しく選択してください'),
+        value.required('希望接続場所を選択してください').min(1, '正しく選択してください'),
     }),
     monitor: Yup.bool(),
     comment: Yup.string(),
@@ -109,9 +109,7 @@ export default function ConnectionAdd() {
     ntt: Yup.string().when('connection_type', {
       is: (value: string) => isNeedInternet(value),
       then: (value) =>
-        value
-          .required('接続情報(NTT)を選択してください')
-          .min(1, '正しく選択してください'),
+        value.required('接続情報(NTT)を選択してください').min(1, '正しく選択してください'),
     }),
     ntt_comment: Yup.string().when('connection_type', {
       is: (value: string) => isNeedInternet(value),
@@ -129,9 +127,7 @@ export default function ConnectionAdd() {
     ipv4_route: Yup.string().when([], {
       is: () => isNeedBGP() && isIPv4Route(),
       then: (value) =>
-        value
-          .required('IPv4経路広告方法を選択してください')
-          .min(1, '正しく選択してください'),
+        value.required('IPv4経路広告方法を選択してください').min(1, '正しく選択してください'),
     }),
     ipv4_route_comment: Yup.string().when([], {
       is: () => isNeedBGP() && isIPv4Route(),
@@ -141,9 +137,7 @@ export default function ConnectionAdd() {
     ipv6_route: Yup.string().when([], {
       is: () => isNeedBGP() && isIPv6Route(),
       then: (value) =>
-        value
-          .required('IPv6経路広告方法を選択してください')
-          .min(1, '正しく選択してください'),
+        value.required('IPv6経路広告方法を選択してください').min(1, '正しく選択してください'),
     }),
     ipv6_route_comment: Yup.string().when([], {
       is: () => isNeedBGP() && isIPv6Route(),
@@ -163,35 +157,21 @@ export default function ConnectionAdd() {
         isIXConnection(connectionType) && peerType === 'PI/CUG',
       then: (value) => value.required('VLAN-IDを入力してください'),
     }),
-    link_v4_your: Yup.string().when(
-      ['connection_type', 'ipv4_route', 'ix_peer_type', 'rfc8950'],
-      {
-        is: (
-          connectionType: string,
-          ipv4Route: string,
-          peerType: string,
-          rfc8950: boolean
-        ) =>
-          isIXConnection(connectionType) &&
-          ipv4Route &&
-          ipv4Route !== '' &&
-          peerType !== 'PI/CUG' &&
-          !rfc8950,
-        then: (value) => value.required('IPv4アドレスを入力してください'),
-      }
-    ),
-    link_v6_your: Yup.string().when(
-      ['connection_type', 'ipv6_route', 'ix_peer_type'],
-      {
-        is: (connectionType: string, ipv6Route: string, peerType: string) =>
-          isIXConnection(connectionType) &&
-          ipv6Route &&
-          ipv6Route !== '' &&
-          peerType !== 'PI/CUG',
-        then: (value) => value.required('IPv6アドレスを入力してください'),
-      }
-    ),
-  })
+    link_v4_your: Yup.string().when(['connection_type', 'ipv4_route', 'ix_peer_type', 'rfc8950'], {
+      is: (connectionType: string, ipv4Route: string, peerType: string, rfc8950: boolean) =>
+        isIXConnection(connectionType) &&
+        ipv4Route &&
+        ipv4Route !== '' &&
+        peerType !== 'PI/CUG' &&
+        !rfc8950,
+      then: (value) => value.required('IPv4アドレスを入力してください'),
+    }),
+    link_v6_your: Yup.string().when(['connection_type', 'ipv6_route', 'ix_peer_type'], {
+      is: (connectionType: string, ipv6Route: string, peerType: string) =>
+        isIXConnection(connectionType) && ipv6Route && ipv6Route !== '' && peerType !== 'PI/CUG',
+      then: (value) => value.required('IPv6アドレスを入力してください'),
+    }),
+  });
 
   const {
     register,
@@ -222,14 +202,14 @@ export default function ConnectionAdd() {
       link_v4_your: '',
       link_v6_your: '',
     },
-  })
+  });
 
-  const connectionType = watch('connection_type')
-  const ipv4Route = watch('ipv4_route')
-  const ipv6Route = watch('ipv6_route')
-  const ntt = watch('ntt')
-  const ixPeerType = watch('ix_peer_type')
-  const rfc8950 = watch('rfc8950')
+  const connectionType = watch('connection_type');
+  const ipv4Route = watch('ipv4_route');
+  const ipv6Route = watch('ipv6_route');
+  const ntt = watch('ntt');
+  const ixPeerType = watch('ix_peer_type');
+  const rfc8950 = watch('rfc8950');
 
   const onSubmit = (data: any, e: any) => {
     const request: any = {
@@ -238,94 +218,89 @@ export default function ConnectionAdd() {
       monitor: data.monitor,
       comment: data.comment,
       rfc8950: data.rfc8950 === true,
-    }
+    };
     if (data.comment_type) {
-      request.comment_type = data.comment_type
+      request.comment_type = data.comment_type;
     }
     if (data.ntt) {
-      request.ntt = data.ntt
+      request.ntt = data.ntt;
       if (data.ntt_comment) {
-        request.ntt = data.ntt_comment
+        request.ntt = data.ntt_comment;
       }
-      request.address = data.address
-      request.term_ip = data.term_ip
+      request.address = data.address;
+      request.term_ip = data.term_ip;
     }
     if (data.ipv4_route) {
-      request.ipv4_route = data.ipv4_route
+      request.ipv4_route = data.ipv4_route;
     }
     if (data.ipv4_route_comment) {
-      request.ipv4_route = data.ipv4_route_comment
+      request.ipv4_route = data.ipv4_route_comment;
     }
     if (data.ipv6_route) {
-      request.ipv6_route = data.ipv6_route
+      request.ipv6_route = data.ipv6_route;
     }
     if (data.ipv6_route_comment) {
-      request.ipv6_route = data.ipv6_route_comment
+      request.ipv6_route = data.ipv6_route_comment;
     }
     if (data.ix) {
-      request.ix = data.ix
+      request.ix = data.ix;
     }
     if (data.ix_peer_type) {
-      request.ix_peer_type = data.ix_peer_type
+      request.ix_peer_type = data.ix_peer_type;
     }
     if (data.ix_vlan_id) {
-      request.ix_vlan_id = data.ix_vlan_id
+      request.ix_vlan_id = data.ix_vlan_id;
     }
     if (data.link_v4_your && !data.rfc8950) {
-      request.link_v4_your = data.link_v4_your
+      request.link_v4_your = data.link_v4_your;
     }
     if (data.link_v6_your) {
-      request.link_v6_your = data.link_v6_your
+      request.link_v6_your = data.link_v6_your;
     }
 
     // check
     if (serviceID <= 0) {
-      enqueueSnackbar('サービスが指定されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('サービスが指定されていません。', { variant: 'error' });
+      return;
     }
 
     Post(serviceID, request).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        queryClient.invalidateQueries({ queryKey: infoQueryKey })
-        navigate('/dashboard/add')
+        enqueueSnackbar('Request Success', { variant: 'success' });
+        invalidateAllInfo(queryClient);
+        navigate('/dashboard/add');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console
-    console.log('error', errors)
-    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' })
-  }
+    console.log('error', errors);
+    enqueueSnackbar('入力した内容を確認してください。', { variant: 'error' });
+  };
 
   return (
     <DashboardComponent title="接続情報の追加">
       <Fragment>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            <FormControl
-              component="fieldset"
-              error={errors?.hasOwnProperty('service_code')}
-            >
+            <FormControl component="fieldset" error={errors?.hasOwnProperty('service_code')}>
               <FormLabel component="legend">
                 1. 接続情報を登録するサービスコードを選択してください。
               </FormLabel>
-              <div>
-                接続情報を登録するサービスコードを以下からお選びください。
-              </div>
+              <div>接続情報を登録するサービスコードを以下からお選びください。</div>
               <Select
                 labelId="service_code"
                 id="service_code"
                 onChange={(event) => {
                   const tmpService = infoData?.service?.filter(
-                    (data) => data.id === Number(event.target.value)
-                  )
+                    (data) => data.id === Number(event.target.value),
+                  );
                   if (tmpService != null) {
-                    setServiceType(tmpService[0].service_type)
-                    setServiceID(tmpService[0].id)
+                    setServiceType(tmpService[0].service_type);
+                    setServiceID(tmpService[0].id);
                   }
                 }}
               >
@@ -342,18 +317,12 @@ export default function ConnectionAdd() {
           {serviceID !== 0 &&
             isNeedBGP() &&
             !isGlobalAS() &&
-            infoData?.service?.find(
-              (service) => service.id === serviceID
-            )?.ip == null && (
-              <h1>
-                管理者側の設定に不備がありますので、チャットよりお問い合わせください
-              </h1>
+            infoData?.service?.find((service) => service.id === serviceID)?.ip == null && (
+              <h1>管理者側の設定に不備がありますので、チャットよりお問い合わせください</h1>
             )}
           {serviceID !== 0 &&
             isNeedBGP() &&
-            (infoData?.service?.find(
-              (service) => service.id === serviceID
-            )?.ip != null ||
+            (infoData?.service?.find((service) => service.id === serviceID)?.ip != null ||
               isGlobalAS()) && (
               <Grid item xs={12}>
                 <FormLabel component="legend">
@@ -372,15 +341,12 @@ export default function ConnectionAdd() {
                         <Select
                           aria-label="gender"
                           onChange={(e) => {
-                            field.onChange(e.target.value)
+                            field.onChange(e.target.value);
                           }}
                           value={field.value}
                         >
                           {template.ipv4_route?.map((v4Route, index) => (
-                            <MenuItem
-                              key={'ipv4_route_' + index}
-                              value={v4Route}
-                            >
+                            <MenuItem key={'ipv4_route_' + index} value={v4Route}>
                               {v4Route}
                             </MenuItem>
                           ))}
@@ -402,15 +368,12 @@ export default function ConnectionAdd() {
                         <Select
                           aria-label="gender"
                           onChange={(e) => {
-                            field.onChange(e.target.value)
+                            field.onChange(e.target.value);
                           }}
                           value={field.value}
                         >
                           {template.ipv6_route?.map((v6Route, index) => (
-                            <MenuItem
-                              key={'ipv6_route_' + index}
-                              value={v6Route}
-                            >
+                            <MenuItem key={'ipv6_route_' + index} value={v6Route}>
                               {v6Route}
                             </MenuItem>
                           ))}
@@ -423,13 +386,8 @@ export default function ConnectionAdd() {
             )}
           {ipv4Route === 'etc' && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('term_ip')}
-              >
-                <FormLabel component="legend">
-                  1.1.1. IPv4 BGP広報経路(その他)
-                </FormLabel>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('term_ip')}>
+                <FormLabel component="legend">1.1.1. IPv4 BGP広報経路(その他)</FormLabel>
                 <StyledTextFieldLong
                   key={'ipv4_route_comment'}
                   label="IPv4 BGP広報経路(その他)"
@@ -442,13 +400,8 @@ export default function ConnectionAdd() {
           )}
           {ipv6Route === 'etc' && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('term_ip')}
-              >
-                <FormLabel component="legend">
-                  1.1.2. IPv6 BGP広報経路(その他)
-                </FormLabel>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('term_ip')}>
+                <FormLabel component="legend">1.1.2. IPv6 BGP広報経路(その他)</FormLabel>
                 <StyledTextFieldLong
                   key={'ipv6_route_comment'}
                   label="IPv6 BGP広報経路(その他)"
@@ -461,14 +414,9 @@ export default function ConnectionAdd() {
           )}
           {serviceType !== '' && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('connection_type')}
-              >
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('connection_type')}>
                 <FormLabel>2. 接続方式をお選びください</FormLabel>
-                <div>
-                  接続情報を登録するサービスコードを以下からお選びください。
-                </div>
+                <div>接続情報を登録するサービスコードを以下からお選びください。</div>
                 <FormHelperText error>
                   {errors?.connection_type && errors.connection_type?.message}
                 </FormHelperText>
@@ -479,21 +427,20 @@ export default function ConnectionAdd() {
                     <RadioGroup
                       aria-label="gender"
                       onChange={(e) => {
-                        field.onChange(e.target.value)
+                        field.onChange(e.target.value);
                       }}
                       value={field.value}
                     >
                       {template.connections?.map(
                         (map) =>
-                          ((isNeedRoute() && map.is_l2) ||
-                            (isNeedRoute() && map.is_l3)) && (
+                          ((isNeedRoute() && map.is_l2) || (isNeedRoute() && map.is_l3)) && (
                             <FormControlLabel
                               key={'connection_type_' + map.type}
                               value={map.type}
                               control={<Radio />}
                               label={map.name + ': (' + map.comment + ')'}
                             />
-                          )
+                          ),
                       )}
                     </RadioGroup>
                   )}
@@ -505,9 +452,7 @@ export default function ConnectionAdd() {
             <Grid item xs={12}>
               <FormControl component="fieldset">
                 <FormLabel component="legend">2.1. RFC8950の利用</FormLabel>
-                <div>
-                  RFC8950利用の場合は、IPv6ピアにてIPv4の経路交換も行います。
-                </div>
+                <div>RFC8950利用の場合は、IPv6ピアにてIPv4の経路交換も行います。</div>
                 <FormControlLabel
                   control={
                     <Controller
@@ -529,18 +474,14 @@ export default function ConnectionAdd() {
           )}
           {isNeedComment(connectionType) && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('comment')}
-              >
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('comment')}>
                 <FormLabel component="legend">2.2. その他</FormLabel>
                 <div>
                   {' '}
                   直接接続を選択された方は以下のフォームに詳しい情報(ラック情報など)をご記入ください。
                 </div>
                 <FormHelperText error>
-                  {errors?.connection_comment &&
-                    errors.connection_comment?.message}
+                  {errors?.connection_comment && errors.connection_comment?.message}
                 </FormHelperText>
                 <StyledTextFieldLong
                   variant="outlined"
@@ -556,24 +497,14 @@ export default function ConnectionAdd() {
           )}
           {isIXConnection(connectionType) && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('ix')}
-              >
-                <FormLabel component="legend">
-                  2.3. 接続するIXを選択してください
-                </FormLabel>
-                <FormHelperText error>
-                  {errors?.ix && errors.ix?.message}
-                </FormHelperText>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('ix')}>
+                <FormLabel component="legend">2.3. 接続するIXを選択してください</FormLabel>
+                <FormHelperText error>{errors?.ix && errors.ix?.message}</FormHelperText>
                 <Controller
                   name="ix"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      onChange={(e) => field.onChange(e.target.value)}
-                      value={field.value}
-                    >
+                    <Select onChange={(e) => field.onChange(e.target.value)} value={field.value}>
                       {template.ix?.map((ix, index) => (
                         <MenuItem key={'ix_' + index} value={ix.name}>
                           {ix.name}
@@ -587,13 +518,8 @@ export default function ConnectionAdd() {
           )}
           {isIXConnection(connectionType) && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('ix_peer_type')}
-              >
-                <FormLabel component="legend">
-                  2.4. ピアリングタイプを選択してください
-                </FormLabel>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('ix_peer_type')}>
+                <FormLabel component="legend">2.4. ピアリングタイプを選択してください</FormLabel>
                 <FormHelperText error>
                   {errors?.ix_peer_type && errors.ix_peer_type?.message}
                 </FormHelperText>
@@ -605,11 +531,7 @@ export default function ConnectionAdd() {
                       onChange={(e) => field.onChange(e.target.value)}
                       value={field.value}
                     >
-                      <FormControlLabel
-                        value="パブリック"
-                        control={<Radio />}
-                        label="パブリック"
-                      />
+                      <FormControlLabel value="パブリック" control={<Radio />} label="パブリック" />
                       <FormControlLabel
                         value="PI/CUG"
                         control={<Radio />}
@@ -623,10 +545,7 @@ export default function ConnectionAdd() {
           )}
           {isIXConnection(connectionType) && ixPeerType === 'PI/CUG' && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('ix_vlan_id')}
-              >
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('ix_vlan_id')}>
                 <FormLabel component="legend">2.5. VLAN-ID</FormLabel>
                 <div>PI/CUGのVLAN-IDを入力してください</div>
                 <FormHelperText error>
@@ -647,13 +566,10 @@ export default function ConnectionAdd() {
               <FormControl
                 component="fieldset"
                 error={
-                  errors?.hasOwnProperty('link_v4_your') ||
-                  errors?.hasOwnProperty('link_v6_your')
+                  errors?.hasOwnProperty('link_v4_your') || errors?.hasOwnProperty('link_v6_your')
                 }
               >
-                <FormLabel component="legend">
-                  2.6. IX接続アドレス（貴団体側）
-                </FormLabel>
+                <FormLabel component="legend">2.6. IX接続アドレス（貴団体側）</FormLabel>
                 <div>IX接続で使用する貴団体側のIPアドレスを入力してください</div>
                 {!rfc8950 && (
                   <>
@@ -680,22 +596,15 @@ export default function ConnectionAdd() {
                   error={!!errors.link_v6_your}
                 />
                 {rfc8950 && (
-                  <FormHelperText>
-                    RFC8950利用のためIPv4アドレスは入力不要です。
-                  </FormHelperText>
+                  <FormHelperText>RFC8950利用のためIPv4アドレスは入力不要です。</FormHelperText>
                 )}
               </FormControl>
             </Grid>
           )}
           {!isIXConnection(connectionType) && !isCrossConnect(connectionType) && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('preferred_ap')}
-              >
-                <FormLabel component="legend">
-                  3.1. ご希望の接続終端場所をお選びください
-                </FormLabel>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('preferred_ap')}>
+                <FormLabel component="legend">3.1. ご希望の接続終端場所をお選びください</FormLabel>
                 <FormHelperText error>
                   {errors?.preferred_ap && errors.preferred_ap?.message}
                 </FormHelperText>
@@ -719,29 +628,17 @@ export default function ConnectionAdd() {
               </FormControl>
               <br />
               <div>
-                (当団体のNOC一覧は https://www.homenoc.ad.jp/en/tech/backbone/
-                をご覧ください)
+                (当団体のNOC一覧は https://www.homenoc.ad.jp/en/tech/backbone/ をご覧ください)
               </div>
-              <div>
-                NOCの収容率などにより、ご希望にお答えできない場合がございます。
-              </div>
+              <div>NOCの収容率などにより、ご希望にお答えできない場合がございます。</div>
             </Grid>
           )}
           {isNeedInternet(connectionType) && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('address')}
-              >
-                <FormLabel component="legend">
-                  3.2. 終端先ユーザの都道府県市町村
-                </FormLabel>
-                <div>
-                  都道府県と市町村のみ記入してください。例) 大阪府貝塚市
-                </div>
-                <FormHelperText error>
-                  {errors?.address && errors.address?.message}
-                </FormHelperText>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('address')}>
+                <FormLabel component="legend">3.2. 終端先ユーザの都道府県市町村</FormLabel>
+                <div>都道府県と市町村のみ記入してください。例) 大阪府貝塚市</div>
+                <FormHelperText error>{errors?.address && errors.address?.message}</FormHelperText>
                 <StyledTextFieldLong
                   key={'address'}
                   label="終端先ユーザの都道府県市町村"
@@ -754,19 +651,10 @@ export default function ConnectionAdd() {
           )}
           {isNeedInternet(connectionType) && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('term_ip')}
-              >
-                <FormLabel component="legend">
-                  3.3. トンネル終端IPアドレス
-                </FormLabel>
-                <div>
-                  トンネル接続をご希望の方はトンネル終端先のIPv6アドレスをご記入ください
-                </div>
-                <FormHelperText error>
-                  {errors?.term_ip && errors.term_ip?.message}
-                </FormHelperText>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('term_ip')}>
+                <FormLabel component="legend">3.3. トンネル終端IPアドレス</FormLabel>
+                <div>トンネル接続をご希望の方はトンネル終端先のIPv6アドレスをご記入ください</div>
+                <FormHelperText error>{errors?.term_ip && errors.term_ip?.message}</FormHelperText>
                 <StyledTextFieldLong
                   key={'term_ip'}
                   label="終端アドレス"
@@ -779,22 +667,15 @@ export default function ConnectionAdd() {
           )}
           {isNeedInternet(connectionType) && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('ntt_template_id')}
-              >
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('ntt_template_id')}>
                 <FormLabel component="legend">
                   3.4. 接続終端場所にNTTフレッツ光が利用可能かをお知らせください
                 </FormLabel>
-                <div>
-                  接続方式に構内接続をご希望の方は何も選択せず次の項目に進んでください
-                </div>
+                <div>接続方式に構内接続をご希望の方は何も選択せず次の項目に進んでください</div>
                 <div>
                   当団体ではトンネル接続を利用する場合、フレッツのIPoE(IPv6)接続をご利用頂くことを推奨しております。
                 </div>
-                <FormHelperText error>
-                  {errors?.ntt && errors.ntt?.message}
-                </FormHelperText>
+                <FormHelperText error>{errors?.ntt && errors.ntt?.message}</FormHelperText>
                 <Controller
                   name="ntt"
                   control={control}
@@ -802,7 +683,7 @@ export default function ConnectionAdd() {
                     <RadioGroup
                       aria-label="gender"
                       onChange={(e) => {
-                        field.onChange(e.target.value)
+                        field.onChange(e.target.value);
                       }}
                       value={field.value}
                     >
@@ -822,13 +703,8 @@ export default function ConnectionAdd() {
           )}
           {ntt === 'etc' && (
             <Grid item xs={12}>
-              <FormControl
-                component="fieldset"
-                error={errors?.hasOwnProperty('term_ip')}
-              >
-                <FormLabel component="legend">
-                  3.4.1. 接続終端場所の利用状況(その他)
-                </FormLabel>
+              <FormControl component="fieldset" error={errors?.hasOwnProperty('term_ip')}>
+                <FormLabel component="legend">3.4.1. 接続終端場所の利用状況(その他)</FormLabel>
                 <StyledTextFieldLong
                   key={'ntt_comment'}
                   label="NTT(その他)"
@@ -840,20 +716,13 @@ export default function ConnectionAdd() {
             </Grid>
           )}
           <Grid item xs={12}>
-            <FormControl
-              component="fieldset"
-              error={errors?.hasOwnProperty('monitor')}
-            >
+            <FormControl component="fieldset" error={errors?.hasOwnProperty('monitor')}>
               <FormLabel component="legend">4. ネットワーク監視</FormLabel>
-              <div>
-                当団体によるネットワーク監視をご希望の場合はチェックを入れて下さい
-              </div>
+              <div>当団体によるネットワーク監視をご希望の場合はチェックを入れて下さい</div>
               <div>
                 検証用などで頻繁に接続断が発生する予定の場合は当団体からの監視はお断りいたします
               </div>
-              <FormHelperText error>
-                {errors?.monitor && errors.monitor?.message}
-              </FormHelperText>
+              <FormHelperText error>{errors?.monitor && errors.monitor?.message}</FormHelperText>
               <FormControlLabel
                 control={
                   <Controller
@@ -863,7 +732,7 @@ export default function ConnectionAdd() {
                       <Checkbox
                         color="primary"
                         onChange={(e) => {
-                          onChange(e.target.checked)
+                          onChange(e.target.checked);
                         }}
                       />
                     )}
@@ -900,5 +769,5 @@ export default function ConnectionAdd() {
         </Box>
       </Fragment>
     </DashboardComponent>
-  )
+  );
 }
