@@ -11,7 +11,10 @@ export function Login(username: string, password: string): Promise<string> {
       },
     })
     .then((res) => {
-      sessionStorage.setItem('ACCESS_TOKEN', res.data.token[0].access_token)
+      // NOTE: key must be 'AccessToken' — all 52 API call sites read that key.
+      // Previously written as 'ACCESS_TOKEN', so the token was never read back
+      // and every authenticated admin request sent a null token.
+      sessionStorage.setItem('AccessToken', res.data.token[0].access_token)
       return ''
     })
     .catch((err) => {
@@ -27,7 +30,7 @@ export function Logout(): Promise<string> {
       {
         headers: {
           'Content-Type': 'application/json',
-          ACCESS_TOKEN: sessionStorage.getItem('ACCESS_TOKEN')!,
+          ACCESS_TOKEN: sessionStorage.getItem('AccessToken')!,
         },
       }
     )
