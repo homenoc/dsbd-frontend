@@ -40,7 +40,8 @@
     "typescript": "~5.0.4",
     "web-vitals": "^3.5.2",
     "yup": "^1.7.1",
-    "@dsbd/shared": "workspace:*"
+    "@dsbd/shared": "workspace:*",
+    "@tanstack/react-query": "^5.62.0"
   },
   "scripts": {
     "start": "vite --mode development",
