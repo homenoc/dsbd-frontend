@@ -1,3 +1,4 @@
+import { ConnectionTypeCode } from '@dsbd/shared';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Box,
@@ -67,7 +68,7 @@ export default function ConnectionAdd() {
     template.connections?.find((ct) => ct.type === value)?.need_comment ?? false;
   const isNeedInternet = (value: string) =>
     template.connections?.find((ct) => ct.type === value)?.need_internet ?? false;
-  const isIXConnection = (value: string) => value === 'IXP';
+  const isIXConnection = (value: string) => value === ConnectionTypeCode.IX;
   const isCrossConnect = (value: string) =>
     template.connections?.find((ct) => ct.type === value)?.need_cross_connect ?? false;
   const isNeedBGP = () =>

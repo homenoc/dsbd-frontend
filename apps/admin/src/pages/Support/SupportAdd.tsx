@@ -1,3 +1,4 @@
+import { canManageServices } from '@dsbd/shared';
 import {
   Box,
   Button,
@@ -115,7 +116,7 @@ export default function SupportAdd() {
                     let mails = '';
                     if (grp[0].users !== undefined) {
                       for (const user of grp[0].users) {
-                        if (user.level < 3) {
+                        if (canManageServices(user.level)) {
                           mails += user.email + ',';
                         }
                       }

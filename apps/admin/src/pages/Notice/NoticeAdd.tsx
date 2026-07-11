@@ -1,3 +1,4 @@
+import { canManageServices } from '@dsbd/shared';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Box,
@@ -167,7 +168,7 @@ export default function NoticeAdd() {
 
     // 全体に通知の場合は全ユーザーのメールアドレスを取得
     if (isEveryone) {
-      const allUsers = users.filter((d) => d.level < 3);
+      const allUsers = users.filter((d) => canManageServices(d.level));
       if (allUsers !== undefined) {
         for (const user of allUsers) {
           if (emails.indexOf(user.email) === -1) {
@@ -187,7 +188,7 @@ export default function NoticeAdd() {
       }
     }
     for (const tmpGroupID of inputGroupID) {
-      const tmpUser = users.filter((d) => d.group_id === tmpGroupID && d.level < 3);
+      const tmpUser = users.filter((d) => d.group_id === tmpGroupID && canManageServices(d.level));
       if (tmpUser !== undefined && tmpUser.length > 0) {
         for (const user of tmpUser) {
           if (emails.indexOf(user.email) === -1) {
@@ -204,7 +205,7 @@ export default function NoticeAdd() {
       if (tmpConnections !== undefined) {
         for (const tmpConnection of tmpConnections) {
           const tmpUser = users.filter(
-            (d) => d.group_id === tmpConnection.service?.group_id && d.level < 3,
+            (d) => d.group_id === tmpConnection.service?.group_id && canManageServices(d.level),
           );
           if (tmpUser !== undefined && tmpUser.length > 0) {
             for (const user of tmpUser) {

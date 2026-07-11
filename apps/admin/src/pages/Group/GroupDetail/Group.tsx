@@ -1,4 +1,5 @@
-import { GroupDetailData } from '../../../interface'
+import { ExpiredStatus, MemberType } from '@dsbd/shared';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Accordion,
   AccordionDetails,
@@ -10,15 +11,25 @@ import {
   Grid,
   InputLabel,
   MenuItem,
-  PropTypes,
+  type PropTypes,
   Typography,
-} from '@mui/material'
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { GroupStatusStr } from '../../../components/Dashboard/Status/Status'
-import { GroupAbolition, GroupLockButton, GroupStatusButton } from './GroupMenu'
-import { DeleteSubscription, Put } from '../../../api/Group'
-import { useSnackbar } from 'notistack'
+} from '@mui/material';
+import { DesktopDatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { format } from 'date-fns';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { DeleteSubscription, Put } from '../../../api/Group';
+import {
+  GetCustomerDashboard,
+  GetPayment,
+  GetSubscribeDashboard,
+  PostSubscribe,
+} from '../../../api/Payment';
+import { GroupStatusStr } from '../../../components/Dashboard/Status/Status';
+import { useTemplate } from '../../../hooks/useTemplate';
+import type { GroupDetailData } from '../../../interface';
 import {
   StyledButtonSpaceRight,
   StyledButtonSpaceTop,
@@ -32,64 +43,51 @@ import {
   StyledTextFieldMedium,
   StyledTextFieldVeryShort1,
   StyledTypographyHeading,
-} from '../../../style'
-import { LocalizationProvider, DesktopDatePicker } from '@mui/x-date-pickers'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { useNavigate } from 'react-router-dom'
-import { useTemplate } from '../../../hooks/useTemplate'
-import { StyledSelect1, StyledTextFieldShort } from '../../Add/style'
-import {
-  GetCustomerDashboard,
-  GetPayment,
-  GetSubscribeDashboard,
-  PostSubscribe,
-} from '../../../api/Payment'
-import { format } from 'date-fns';
+} from '../../../style';
+import { StyledSelect1, StyledTextFieldShort } from '../../Add/style';
+import { GroupAbolition, GroupLockButton, GroupStatusButton } from './GroupMenu';
 
 function ChipAgree(props: { agree: boolean }) {
-  const { agree } = props
+  const { agree } = props;
   if (agree) {
-    return <Chip size="small" color="primary" label="規約に同意する" />
+    return <Chip size="small" color="primary" label="規約に同意する" />;
   }
-  return <Chip size="small" color="secondary" label="規約に同意していない" />
+  return <Chip size="small" color="secondary" label="規約に同意していない" />;
 }
 
 export function GroupProfileInfo(props: {
-  data: GroupDetailData
-  setOpenMailSendDialog: Dispatch<SetStateAction<boolean>>
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: GroupDetailData;
+  setOpenMailSendDialog: Dispatch<SetStateAction<boolean>>;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { data, setOpenMailSendDialog, setReload } = props
-  const [lockPersonalInformation, setLockPersonalInformation] =
-    React.useState(true)
-  const { data: template } = useTemplate()
-  const [group, setGroup] = useState(data)
-  const { enqueueSnackbar } = useSnackbar()
-  const [paymentCoupon, setPaymentCoupon] = React.useState('')
-  const [memberType, setMemberType] = React.useState(0)
-  const [memberExpiredDate, setMemberExpiredDate] = React.useState<Date | null>(
-    null
-  )
-  const navigate = useNavigate()
+  const { data, setOpenMailSendDialog, setReload } = props;
+  const [lockPersonalInformation, setLockPersonalInformation] = React.useState(true);
+  const { data: template } = useTemplate();
+  const [group, setGroup] = useState(data);
+  const { enqueueSnackbar } = useSnackbar();
+  const [paymentCoupon, setPaymentCoupon] = React.useState('');
+  const [memberType, setMemberType] = React.useState(0);
+  const [memberExpiredDate, setMemberExpiredDate] = React.useState<Date | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (data.member_expired != null) {
-      const tmp = data.member_expired.split('T')
-      const expiredDate = new Date(tmp[0])
-      setMemberExpiredDate(expiredDate)
+      const tmp = data.member_expired.split('T');
+      const expiredDate = new Date(tmp[0]);
+      setMemberExpiredDate(expiredDate);
     }
 
     if (data.coupon_id != null) {
-      setPaymentCoupon(data.coupon_id)
+      setPaymentCoupon(data.coupon_id);
     }
 
     if (data.member_type != null) {
-      setMemberType(data.member_type)
+      setMemberType(data.member_type);
     }
-  }, [])
+  }, []);
 
   const membershipUpdate = () => {
-    let dateStr = null
+    let dateStr = null;
     if (memberExpiredDate != null) {
       dateStr = format(memberExpiredDate, "yyyy-MM-dd'T'HH:mm:ss+09:00");
     }
@@ -97,91 +95,91 @@ export function GroupProfileInfo(props: {
       coupon_id: paymentCoupon,
       member_type: memberType,
       member_expired: dateStr,
-    }
+    };
 
     Put(data.ID, req).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   const cancelSubscription = () => {
     DeleteSubscription(data.ID).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   const customerDashboard = () => {
     GetCustomerDashboard(data.ID).then((res) => {
       if (res.error === '') {
-        window.open(res.data, '_blank')
+        window.open(res.data, '_blank');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const subscribeDashboard = () => {
     GetSubscribeDashboard(data.ID).then((res) => {
       if (res.error === '') {
-        window.open(res.data, '_blank')
+        window.open(res.data, '_blank');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const subscribe = (plan: string) => {
     PostSubscribe(data.ID, plan).then((res) => {
       if (res.error === '') {
-        window.open(res.data, '_blank')
+        window.open(res.data, '_blank');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const getPayment = () => {
     GetPayment(data.ID).then((res) => {
       if (res.error === '') {
-        window.open(res.data, '_blank')
+        window.open(res.data, '_blank');
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-    })
-  }
+    });
+  };
 
   const handleMemberExpiredDateChange = (newDate: Date | null) => {
-    setMemberExpiredDate(newDate)
-  }
+    setMemberExpiredDate(newDate);
+  };
 
   const clickPersonalInfoLock = () => {
-    setLockPersonalInformation(!lockPersonalInformation)
-  }
+    setLockPersonalInformation(!lockPersonalInformation);
+  };
 
   // Update Group Information
   const updateGroupInfo = () => {
     Put(group.ID, group).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   return (
     <StyledCardRoot1>
@@ -192,9 +190,7 @@ export function GroupProfileInfo(props: {
             aria-controls="panel1a-content"
             id="group-info"
           >
-            <StyledTypographyHeading>
-              グループ情報(住所、電話番号など)
-            </StyledTypographyHeading>
+            <StyledTypographyHeading>グループ情報(住所、電話番号など)</StyledTypographyHeading>
           </AccordionSummary>
           <AccordionDetails>
             <FormControl sx={{ width: '100%' }}>
@@ -210,7 +206,7 @@ export function GroupProfileInfo(props: {
                     }}
                     variant="outlined"
                     onChange={(event) => {
-                      setGroup(prev => ({ ...prev, postcode: event.target.value }))
+                      setGroup((prev) => ({ ...prev, postcode: event.target.value }));
                     }}
                   />
                   <StyledTextFieldMedium
@@ -223,7 +219,7 @@ export function GroupProfileInfo(props: {
                     }}
                     variant="outlined"
                     onChange={(event) => {
-                      setGroup(prev => ({ ...prev, address: event.target.value }))
+                      setGroup((prev) => ({ ...prev, address: event.target.value }));
                     }}
                   />
                   <StyledTextFieldMedium
@@ -236,7 +232,7 @@ export function GroupProfileInfo(props: {
                     }}
                     variant="outlined"
                     onChange={(event) => {
-                      setGroup(prev => ({ ...prev, address_en: event.target.value }))
+                      setGroup((prev) => ({ ...prev, address_en: event.target.value }));
                     }}
                   />
                   <StyledTextFieldVeryShort1
@@ -249,7 +245,7 @@ export function GroupProfileInfo(props: {
                     }}
                     variant="outlined"
                     onChange={(event) => {
-                      setGroup(prev => ({ ...prev, tel: event.target.value }))
+                      setGroup((prev) => ({ ...prev, tel: event.target.value }));
                     }}
                   />
                   <StyledTextFieldVeryShort1
@@ -262,7 +258,7 @@ export function GroupProfileInfo(props: {
                     }}
                     variant="outlined"
                     onChange={(event) => {
-                      setGroup(prev => ({ ...prev, country: event.target.value }))
+                      setGroup((prev) => ({ ...prev, country: event.target.value }));
                     }}
                   />
                 </StyledRootForm>
@@ -288,14 +284,8 @@ export function GroupProfileInfo(props: {
           </AccordionDetails>
         </Accordion>
         <Accordion>
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="question"
-            id="question"
-          >
-            <StyledTypographyHeading>
-              Agree & Question & Contract
-            </StyledTypographyHeading>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="question" id="question">
+            <StyledTypographyHeading>Agree & Question & Contract</StyledTypographyHeading>
           </AccordionSummary>
           <AccordionDetails>
             <FormControl sx={{ width: '100%' }}>
@@ -311,14 +301,8 @@ export function GroupProfileInfo(props: {
           </AccordionDetails>
         </Accordion>
         <Accordion>
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="payment"
-            id="payment"
-          >
-            <StyledTypographyHeading>
-              会員種別・会費関連
-            </StyledTypographyHeading>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="payment" id="payment">
+            <StyledTypographyHeading>会員種別・会費関連</StyledTypographyHeading>
           </AccordionSummary>
           <AccordionDetails>
             <StyledFormControlFormShort variant="filled">
@@ -354,9 +338,9 @@ export function GroupProfileInfo(props: {
                   id="member_type"
                   label="member type"
                   onChange={(e) => {
-                    const value = Number(e.target.value)
+                    const value = Number(e.target.value);
                     if (!isNaN(value)) {
-                      setMemberType(value)
+                      setMemberType(value);
                     }
                   }}
                   value={memberType}
@@ -439,11 +423,7 @@ export function GroupProfileInfo(props: {
           </AccordionDetails>
         </Accordion>
         <Accordion>
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="other"
-            id="other"
-          >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="other" id="other">
             <StyledTypographyHeading>その他</StyledTypographyHeading>
           </AccordionSummary>
           <AccordionDetails>
@@ -455,9 +435,7 @@ export function GroupProfileInfo(props: {
           size="small"
           variant="contained"
           color="primary"
-          onClick={() =>
-            navigate('/dashboard/group/' + data.ID + '/add/service')
-          }
+          onClick={() => navigate('/dashboard/group/' + data.ID + '/add/service')}
         >
           Service情報の追加
         </StyledButtonSpaceRight>
@@ -465,17 +443,12 @@ export function GroupProfileInfo(props: {
           size="small"
           variant="contained"
           color="primary"
-          onClick={() =>
-            navigate('/dashboard/group/' + data.ID + '/add/connection')
-          }
+          onClick={() => navigate('/dashboard/group/' + data.ID + '/add/connection')}
         >
           接続情報の追加
         </Button>
         <br />
-        <StyledButtonSpaceTop
-          size="small"
-          onClick={() => setOpenMailSendDialog(true)}
-        >
+        <StyledButtonSpaceTop size="small" onClick={() => setOpenMailSendDialog(true)}>
           メール送信
         </StyledButtonSpaceTop>
         <Button
@@ -488,15 +461,15 @@ export function GroupProfileInfo(props: {
         </Button>
       </CardContent>
     </StyledCardRoot1>
-  )
+  );
 }
 
 export function GroupMainMenu(props: {
-  data: GroupDetailData
-  autoMail: Dispatch<SetStateAction<string>>
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: GroupDetailData;
+  autoMail: Dispatch<SetStateAction<string>>;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { data, autoMail, setReload } = props
+  const { data, autoMail, setReload } = props;
 
   return (
     <StyledCardRoot1>
@@ -507,47 +480,39 @@ export function GroupMainMenu(props: {
           autoMail={autoMail}
           setReload={setReload}
         />
-        <GroupLockButton
-          key={'group_lock_button'}
-          data={data}
-          setReload={setReload}
-        />
-        <GroupAbolition
-          key={'group_abolition'}
-          data={data}
-          setReload={setReload}
-        />
+        <GroupLockButton key={'group_lock_button'} data={data} setReload={setReload} />
+        <GroupAbolition key={'group_abolition'} data={data} setReload={setReload} />
       </CardContent>
     </StyledCardRoot1>
-  )
+  );
 }
 
 export function GroupStatus(props: {
-  data: GroupDetailData
-  setReload: boolean
+  data: GroupDetailData;
+  setReload: boolean;
 }) {
-  const { data, setReload } = props
-  const [createDate, setCreateDate] = useState('')
-  const [updateDate, setUpdateDate] = useState('')
+  const { data, setReload } = props;
+  const [createDate, setCreateDate] = useState('');
+  const [updateDate, setUpdateDate] = useState('');
   const [membershipLabel, setMembershipLabel] = useState<{
-    color: Exclude<PropTypes.Color, 'inherit'>
-    label: string
+    color: Exclude<PropTypes.Color, 'inherit'>;
+    label: string;
   }>({
     color: 'primary',
     label: '',
-  })
+  });
   const [automaticUpdate, setAutomaticUpdate] = useState<{
-    color: Exclude<PropTypes.Color, 'inherit'>
-    label: string
+    color: Exclude<PropTypes.Color, 'inherit'>;
+    label: string;
   }>({
     color: 'primary',
     label: '',
-  })
-  const nowDate = new Date()
+  });
+  const nowDate = new Date();
 
   useEffect(() => {
     // create date
-    const tmpCreateDate = new Date(Date.parse(data.CreatedAt))
+    const tmpCreateDate = new Date(Date.parse(data.CreatedAt));
     setCreateDate(
       '作成日: ' +
         tmpCreateDate.getFullYear() +
@@ -560,11 +525,11 @@ export function GroupStatus(props: {
         ':' +
         ('00' + tmpCreateDate.getMinutes()).slice(-2) +
         ':' +
-        ('00' + tmpCreateDate.getSeconds()).slice(-2)
-    )
+        ('00' + tmpCreateDate.getSeconds()).slice(-2),
+    );
 
     // update date
-    const tmpUpdateDate = new Date(Date.parse(data.UpdatedAt))
+    const tmpUpdateDate = new Date(Date.parse(data.UpdatedAt));
     setUpdateDate(
       '更新日: ' +
         tmpUpdateDate.getFullYear() +
@@ -577,22 +542,22 @@ export function GroupStatus(props: {
         ':' +
         ('00' + tmpUpdateDate.getMinutes()).slice(-2) +
         ':' +
-        ('00' + tmpUpdateDate.getSeconds()).slice(-2)
-    )
+        ('00' + tmpUpdateDate.getSeconds()).slice(-2),
+    );
 
     // member expired
-    setMembershipLabel({ color: 'primary', label: '' })
+    setMembershipLabel({ color: 'primary', label: '' });
     if (data.member_expired != null) {
-      const tmp = data.member_expired.split('T')
-      const memberExpired = new Date(tmp[0])
+      const tmp = data.member_expired.split('T');
+      const memberExpired = new Date(tmp[0]);
       const expiredDate =
         memberExpired.getFullYear() +
         '-' +
         ('00' + (memberExpired.getMonth() + 1)).slice(-2) +
         '-' +
-        ('00' + memberExpired.getDate()).slice(-2)
+        ('00' + memberExpired.getDate()).slice(-2);
 
-      nowDate.setDate(nowDate.getDate() + 1)
+      nowDate.setDate(nowDate.getDate() + 1);
       if (
         Date.UTC(
           memberExpired.getFullYear(),
@@ -600,85 +565,69 @@ export function GroupStatus(props: {
           memberExpired.getDate(),
           0,
           0,
-          0
-        ) >=
-        Date.UTC(
-          nowDate.getFullYear(),
-          nowDate.getMonth() + 1,
-          nowDate.getDate(),
           0,
-          0,
-          0
-        )
+        ) >= Date.UTC(nowDate.getFullYear(), nowDate.getMonth() + 1, nowDate.getDate(), 0, 0, 0)
       ) {
         setAutomaticUpdate({
           color: 'primary',
           label: expiredDate,
-        })
+        });
       } else {
         setAutomaticUpdate({
           color: 'secondary',
           label: '未払い ' + expiredDate,
-        })
+        });
       }
     } else {
       setAutomaticUpdate({
         color: 'secondary',
         label: '-----',
-      })
+      });
     }
 
-    let paymentMemberStatus = ''
+    let paymentMemberStatus = '';
     switch (data.member_type) {
-      case 1:
-        paymentMemberStatus += '通常会員'
-        break
-      case 40:
-        paymentMemberStatus += '運営委員(有償)'
-        break
-      case 70:
-        paymentMemberStatus += '学生会員'
-        break
-      case 90:
-        paymentMemberStatus += '運営委員(無償)'
-        break
+      case MemberType.Standard:
+        paymentMemberStatus += '通常会員';
+        break;
+      case MemberType.Committee:
+        paymentMemberStatus += '運営委員(有償)';
+        break;
+      case MemberType.Student:
+        paymentMemberStatus += '学生会員';
+        break;
+      case MemberType.CommitteeFree:
+        paymentMemberStatus += '運営委員(無償)';
+        break;
       default:
-        break
+        break;
     }
     setMembershipLabel({
       color: 'primary',
       label: paymentMemberStatus,
-    })
-  }, [setReload])
+    });
+  }, [setReload]);
 
   return (
     <StyledCardRoot1>
       <CardContent>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            {data.expired_status === 1 && (
+            {data.expired_status === ExpiredStatus.ByMaster && (
               <Chip size="small" color="secondary" label={'審査落ち'} />
             )}
-            {data.expired_status === 2 && (
+            {data.expired_status === ExpiredStatus.ByCommittee && (
               <Chip size="small" color="secondary" label={'ユーザより廃止'} />
             )}
-            {data.expired_status === 3 && (
+            {data.expired_status === ExpiredStatus.ReviewFailed && (
               <Chip size="small" color="secondary" label={'運営委員より廃止\n'} />
             )}
             <h4>Status</h4>
             <Chip size="small" color="primary" label={GroupStatusStr(data)} />
             <h4>Membership</h4>
-            <Chip
-              size="small"
-              color={membershipLabel.color}
-              label={membershipLabel.label}
-            />
+            <Chip size="small" color={membershipLabel.color} label={membershipLabel.label} />
             &nbsp;
-            <Chip
-              size="small"
-              color={automaticUpdate.color}
-              label={automaticUpdate.label}
-            />
+            <Chip size="small" color={automaticUpdate.color} label={automaticUpdate.label} />
             <h4>Date</h4>
             <StyledChip2 size="small" color="primary" label={createDate} />
             <Chip size="small" color="primary" label={updateDate} />
@@ -686,5 +635,5 @@ export function GroupStatus(props: {
         </Grid>
       </CardContent>
     </StyledCardRoot1>
-  )
+  );
 }

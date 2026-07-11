@@ -1,0 +1,517 @@
+diff --git a/apps/admin/src/interface.ts b/apps/admin/src/interface.ts
+index fb5d590..0c03c9d 100644
+--- a/apps/admin/src/interface.ts
++++ b/apps/admin/src/interface.ts
+@@ -1,3 +1,5 @@
++import { ExpiredStatus, MemberType } from '@dsbd/shared'
++
+ export interface NoticeData {
+   ID: number
+   CreatedAt: string
+@@ -624,7 +626,7 @@ export const DefaultGroupDetailData: GroupDetailData = {
+   org: '',
+   org_en: '',
+   status: 0,
+-  expired_status: 0,
++  expired_status: ExpiredStatus.None,
+   pass: false,
+   add_allow: false,
+   agree: false,
+@@ -637,7 +639,7 @@ export const DefaultGroupDetailData: GroupDetailData = {
+   contract: '',
+   coupon_id: '',
+   member_expired: '',
+-  member_type: 1,
++  member_type: MemberType.Standard,
+   users: undefined,
+   tickets: undefined,
+   services: undefined,
+@@ -810,7 +812,7 @@ export const DefaultUserDetailData: UserDetailData = {
+   ID: 0,
+   UpdatedAt: '',
+   email: '',
+-  expired_status: 0,
++  expired_status: ExpiredStatus.None,
+   group: undefined,
+   group_id: 0,
+   level: 0,
+diff --git a/apps/admin/src/pages/Add/ConnectionAdd.tsx b/apps/admin/src/pages/Add/ConnectionAdd.tsx
+index 770946c..2fb9ca4 100644
+--- a/apps/admin/src/pages/Add/ConnectionAdd.tsx
++++ b/apps/admin/src/pages/Add/ConnectionAdd.tsx
+@@ -1,3 +1,4 @@
++import { ConnectionTypeCode } from '@dsbd/shared'
+ import React, { Fragment, useEffect, useState } from 'react'
+ import DashboardComponent from '../../components/Dashboard/Dashboard'
+ import { Get } from '../../api/Group'
+@@ -56,7 +57,7 @@ export default function ConnectionAdd() {
+   const isNeedInternet = (value: string) =>
+     template.connections?.find((ct) => ct.type === value)?.need_internet ??
+     false
+-  const isIXConnection = (value: string) => value === 'IXP'
++  const isIXConnection = (value: string) => value === ConnectionTypeCode.IX
+   const isCrossConnect = (value: string) =>
+     template.connections?.find((ct) => ct.type === value)?.need_cross_connect ??
+     false
+diff --git a/apps/admin/src/pages/Add/ServiceAdd.tsx b/apps/admin/src/pages/Add/ServiceAdd.tsx
+index dfa81f3..2846ee6 100644
+--- a/apps/admin/src/pages/Add/ServiceAdd.tsx
++++ b/apps/admin/src/pages/Add/ServiceAdd.tsx
+@@ -1,3 +1,4 @@
++import { ServiceTypeCode } from '@dsbd/shared'
+ import React, { Fragment, useEffect } from 'react'
+ import { useSnackbar } from 'notistack'
+ import { useNavigate, useParams } from 'react-router-dom'
+@@ -77,7 +78,7 @@ export default function ServiceAdd() {
+     template.services?.find(
+       (serviceTemplate) => serviceTemplate.type === serviceType
+     )?.need_global_as ?? false
+-  const isTransitUser = (service_type: string) => service_type === 'IP3B'
++  const isTransitUser = (service_type: string) => service_type === ServiceTypeCode.Transit
+ 
+   const validationSchema = Yup.object().shape({
+     service_type: Yup.string().min(1).required('service template is required'),
+diff --git a/apps/admin/src/pages/Connection/ConnectionDetail/ConnectionDetail.tsx b/apps/admin/src/pages/Connection/ConnectionDetail/ConnectionDetail.tsx
+index 7f67bf3..90b4a33 100644
+--- a/apps/admin/src/pages/Connection/ConnectionDetail/ConnectionDetail.tsx
++++ b/apps/admin/src/pages/Connection/ConnectionDetail/ConnectionDetail.tsx
+@@ -1,3 +1,4 @@
++import { ConnectionTypeCode } from '@dsbd/shared';
+ import {
+   Button,
+   CardContent,
+@@ -576,7 +577,7 @@ export function ConnectionUserDisplay(props: {
+                   {findConnectionType(template.connections, connection.connection_type)?.name ?? ''}
+                 </td>
+               </tr>
+-              {connection.connection_type !== 'IXP' && (
++              {connection.connection_type !== ConnectionTypeCode.IX && (
+                 <tr>
+                   <th>接続NOC</th>
+                   <td colSpan={2}>{getNOCName()}</td>
+@@ -600,7 +601,7 @@ export function ConnectionUserDisplay(props: {
+                   )}
+                 </>
+               )}
+-              {connection.connection_type !== 'IXP' && (
++              {connection.connection_type !== ConnectionTypeCode.IX && (
+                 <>
+                   <tr>
+                     <th>トンネル終端アドレス（貴団体側）</th>
+diff --git a/apps/admin/src/pages/Dashboard/Dashboard.tsx b/apps/admin/src/pages/Dashboard/Dashboard.tsx
+index 282344b..3c46c4d 100644
+--- a/apps/admin/src/pages/Dashboard/Dashboard.tsx
++++ b/apps/admin/src/pages/Dashboard/Dashboard.tsx
+@@ -1,3 +1,4 @@
++import { canManageServices, ExpiredStatus, isActive, MemberType } from '@dsbd/shared';
+ import {
+   Button,
+   Card,
+@@ -111,7 +112,7 @@ export default function Dashboard() {
+                       paddingTop: 1,
+                     }}
+                     label={`有効GROUP: ${
+-                      group?.filter((g: GroupDetailData) => g.expired_status === 0).length
++                      group?.filter((g: GroupDetailData) => isActive(g.expired_status)).length
+                     }`}
+                   />
+                   <Chip
+@@ -189,22 +190,22 @@ export default function Dashboard() {
+           <Group
+             key={'group'}
+             data={groups?.filter((item) => {
+-              if (!expired_status0IsChecked && item.expired_status === 0) {
++              if (!expired_status0IsChecked && isActive(item.expired_status)) {
+                 return false;
+               }
+-              if (!expired_status1IsChecked && item.expired_status === 1) {
++              if (!expired_status1IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
+                 return false;
+               }
+-              if (!expired_status2IsChecked && item.expired_status === 2) {
++              if (!expired_status2IsChecked && item.expired_status === ExpiredStatus.ByCommittee) {
+                 return false;
+               }
+-              if (!expired_status3IsChecked && item.expired_status === 3) {
++              if (!expired_status3IsChecked && item.expired_status === ExpiredStatus.ReviewFailed) {
+                 return false;
+               }
+-              if (!member_type90IsChecked && item.member_type === 90) {
++              if (!member_type90IsChecked && item.member_type === MemberType.CommitteeFree) {
+                 return false;
+               }
+-              if (!member_type99IsChecked && item.member_type === 99) {
++              if (!member_type99IsChecked && item.member_type === MemberType.Disable) {
+                 return false;
+               }
+               if (hasEnabledServiceIsChecked) {
+@@ -304,22 +305,28 @@ export default function Dashboard() {
+             <p>
+               {groups
+                 ?.filter((item) => {
+-                  if (!expired_status0IsChecked && item.expired_status === 0) {
++                  if (!expired_status0IsChecked && isActive(item.expired_status)) {
+                     return false;
+                   }
+-                  if (!expired_status1IsChecked && item.expired_status === 1) {
++                  if (!expired_status1IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
+                     return false;
+                   }
+-                  if (!expired_status2IsChecked && item.expired_status === 2) {
++                  if (
++                    !expired_status2IsChecked &&
++                    item.expired_status === ExpiredStatus.ByCommittee
++                  ) {
+                     return false;
+                   }
+-                  if (!expired_status3IsChecked && item.expired_status === 3) {
++                  if (
++                    !expired_status3IsChecked &&
++                    item.expired_status === ExpiredStatus.ReviewFailed
++                  ) {
+                     return false;
+                   }
+-                  if (!member_type90IsChecked && item.member_type === 90) {
++                  if (!member_type90IsChecked && item.member_type === MemberType.CommitteeFree) {
+                     return false;
+                   }
+-                  if (!member_type99IsChecked && item.member_type === 99) {
++                  if (!member_type99IsChecked && item.member_type === MemberType.Disable) {
+                     return false;
+                   }
+                   if (hasEnabledServiceIsChecked) {
+@@ -345,7 +352,7 @@ export default function Dashboard() {
+                   return true;
+                 })
+                 .map((group) =>
+-                  group.users?.filter((user) => user.level < 3).map((user) => user.email + ','),
++                  group.users?.filter((user) => canManageServices(user.level)).map((user) => user.email + ','),
+                 )}
+             </p>
+           ) : (
+diff --git a/apps/admin/src/pages/Group/Group.tsx b/apps/admin/src/pages/Group/Group.tsx
+index 726a9bb..891b0e2 100644
+--- a/apps/admin/src/pages/Group/Group.tsx
++++ b/apps/admin/src/pages/Group/Group.tsx
+@@ -1,3 +1,4 @@
++import { isActive } from '@dsbd/shared'
+ import React, { useEffect, useState } from 'react'
+ import Dashboard from '../../components/Dashboard/Dashboard'
+ import {
+@@ -46,10 +47,10 @@ export default function Group() {
+ 
+   const checkGroup = (group: GroupDetailData) => {
+     if (value === 1) {
+-      return group.expired_status === 0
++      return isActive(group.expired_status)
+     }
+     if (value === 2) {
+-      return group.expired_status !== 0
++      return !isActive(group.expired_status)
+     }
+     return true
+   }
+diff --git a/apps/admin/src/pages/Group/GroupDetail/Group.tsx b/apps/admin/src/pages/Group/GroupDetail/Group.tsx
+index a1e611f..ad3f997 100644
+--- a/apps/admin/src/pages/Group/GroupDetail/Group.tsx
++++ b/apps/admin/src/pages/Group/GroupDetail/Group.tsx
+@@ -1,3 +1,4 @@
++import { ExpiredStatus, MemberType } from '@dsbd/shared'
+ import { GroupDetailData } from '../../../interface'
+ import {
+   Accordion,
+@@ -630,16 +631,16 @@ export function GroupStatus(props: {
+ 
+     let paymentMemberStatus = ''
+     switch (data.member_type) {
+-      case 1:
++      case MemberType.Standard:
+         paymentMemberStatus += '通常会員'
+         break
+-      case 40:
++      case MemberType.Committee:
+         paymentMemberStatus += '運営委員(有償)'
+         break
+-      case 70:
++      case MemberType.Student:
+         paymentMemberStatus += '学生会員'
+         break
+-      case 90:
++      case MemberType.CommitteeFree:
+         paymentMemberStatus += '運営委員(無償)'
+         break
+       default:
+@@ -656,13 +657,13 @@ export function GroupStatus(props: {
+       <CardContent>
+         <Grid container spacing={3}>
+           <Grid item xs={12}>
+-            {data.expired_status === 1 && (
++            {data.expired_status === ExpiredStatus.ByMaster && (
+               <Chip size="small" color="secondary" label={'審査落ち'} />
+             )}
+-            {data.expired_status === 2 && (
++            {data.expired_status === ExpiredStatus.ByCommittee && (
+               <Chip size="small" color="secondary" label={'ユーザより廃止'} />
+             )}
+-            {data.expired_status === 3 && (
++            {data.expired_status === ExpiredStatus.ReviewFailed && (
+               <Chip size="small" color="secondary" label={'運営委員より廃止\n'} />
+             )}
+             <h4>Status</h4>
+diff --git a/apps/admin/src/pages/Group/GroupDetail/GroupDetail.tsx b/apps/admin/src/pages/Group/GroupDetail/GroupDetail.tsx
+index 57531c0..cf115e7 100644
+--- a/apps/admin/src/pages/Group/GroupDetail/GroupDetail.tsx
++++ b/apps/admin/src/pages/Group/GroupDetail/GroupDetail.tsx
+@@ -1,3 +1,4 @@
++import { canManageServices } from '@dsbd/shared'
+ import React, { useEffect, useState } from 'react'
+ import { useParams } from 'react-router-dom'
+ import Dashboard from '../../../components/Dashboard/Dashboard'
+@@ -59,7 +60,7 @@ export default function GroupDetail() {
+         let mails = ''
+         if (res.data.users != null) {
+           for (const user of res.data.users) {
+-            if (user.level < 3) {
++            if (canManageServices(user.level)) {
+               mails += user.email + ','
+             }
+           }
+diff --git a/apps/admin/src/pages/Group/GroupDetail/GroupMenu.tsx b/apps/admin/src/pages/Group/GroupDetail/GroupMenu.tsx
+index 4fa3ccd..45dbc40 100644
+--- a/apps/admin/src/pages/Group/GroupDetail/GroupMenu.tsx
++++ b/apps/admin/src/pages/Group/GroupDetail/GroupMenu.tsx
+@@ -1,3 +1,4 @@
++import { ExpiredStatus, isActive } from '@dsbd/shared'
+ import { Menu, MenuItem } from '@mui/material'
+ import React, { Dispatch, SetStateAction } from 'react'
+ import { GroupDetailData } from '../../../interface'
+@@ -159,7 +160,7 @@ export function GroupAbolition(props: {
+   }
+ 
+   const clickActive = () => {
+-    data.expired_status = 0
++    data.expired_status = ExpiredStatus.None
+ 
+     Put(data.ID, data).then((res) => {
+       if (res.error === '') {
+@@ -172,7 +173,7 @@ export function GroupAbolition(props: {
+     })
+   }
+ 
+-  if (data.expired_status !== 0) {
++  if (!isActive(data.expired_status)) {
+     return (
+       <div>
+         <StyledButton1
+diff --git a/apps/admin/src/pages/Notice/NoticeAdd.tsx b/apps/admin/src/pages/Notice/NoticeAdd.tsx
+index dd05d67..a234a33 100644
+--- a/apps/admin/src/pages/Notice/NoticeAdd.tsx
++++ b/apps/admin/src/pages/Notice/NoticeAdd.tsx
+@@ -1,3 +1,4 @@
++import { canManageServices } from '@dsbd/shared';
+ import { yupResolver } from '@hookform/resolvers/yup';
+ import {
+   Box,
+@@ -167,7 +168,7 @@ export default function NoticeAdd() {
+ 
+     // 全体に通知の場合は全ユーザーのメールアドレスを取得
+     if (isEveryone) {
+-      const allUsers = users.filter((d) => d.level < 3);
++      const allUsers = users.filter((d) => canManageServices(d.level));
+       if (allUsers !== undefined) {
+         for (const user of allUsers) {
+           if (emails.indexOf(user.email) === -1) {
+@@ -187,7 +188,7 @@ export default function NoticeAdd() {
+       }
+     }
+     for (const tmpGroupID of inputGroupID) {
+-      const tmpUser = users.filter((d) => d.group_id === tmpGroupID && d.level < 3);
++      const tmpUser = users.filter((d) => d.group_id === tmpGroupID && canManageServices(d.level));
+       if (tmpUser !== undefined && tmpUser.length > 0) {
+         for (const user of tmpUser) {
+           if (emails.indexOf(user.email) === -1) {
+@@ -204,7 +205,7 @@ export default function NoticeAdd() {
+       if (tmpConnections !== undefined) {
+         for (const tmpConnection of tmpConnections) {
+           const tmpUser = users.filter(
+-            (d) => d.group_id === tmpConnection.service?.group_id && d.level < 3,
++            (d) => d.group_id === tmpConnection.service?.group_id && canManageServices(d.level),
+           );
+           if (tmpUser !== undefined && tmpUser.length > 0) {
+             for (const user of tmpUser) {
+diff --git a/apps/admin/src/pages/Support/SupportAdd.tsx b/apps/admin/src/pages/Support/SupportAdd.tsx
+index 2dac391..84c36c0 100644
+--- a/apps/admin/src/pages/Support/SupportAdd.tsx
++++ b/apps/admin/src/pages/Support/SupportAdd.tsx
+@@ -1,3 +1,4 @@
++import { canManageServices } from '@dsbd/shared';
+ import {
+   Box,
+   Button,
+@@ -115,7 +116,7 @@ export default function SupportAdd() {
+                     let mails = '';
+                     if (grp[0].users !== undefined) {
+                       for (const user of grp[0].users) {
+-                        if (user.level < 3) {
++                        if (canManageServices(user.level)) {
+                           mails += user.email + ',';
+                         }
+                       }
+diff --git a/apps/admin/src/pages/User/User.tsx b/apps/admin/src/pages/User/User.tsx
+index bc4c94b..0fdf281 100644
+--- a/apps/admin/src/pages/User/User.tsx
++++ b/apps/admin/src/pages/User/User.tsx
+@@ -1,3 +1,4 @@
++import { isActive } from '@dsbd/shared'
+ import React, { useEffect, useState } from 'react'
+ import Dashboard from '../../components/Dashboard/Dashboard'
+ import {
+@@ -47,10 +48,10 @@ export default function User() {
+ 
+   const checkUser = (user: UserDetailData) => {
+     if (value === 1) {
+-      return user.expired_status === 0
++      return isActive(user.expired_status)
+     }
+     if (value === 2) {
+-      return user.expired_status !== 0
++      return !isActive(user.expired_status)
+     }
+     return true
+   }
+@@ -113,8 +114,8 @@ export default function User() {
+               <br />
+               <Chip
+                 size="small"
+-                label={user.expired_status === 0 ? '有効' : '無効'}
+-                color={user.expired_status === 0 ? 'success' : 'error'}
++                label={isActive(user.expired_status) ? '有効' : '無効'}
++                color={isActive(user.expired_status) ? 'success' : 'error'}
+                 sx={{ mr: 1 }}
+               />
+               <Chip
+diff --git a/apps/web/src/pages/Add/Add.tsx b/apps/web/src/pages/Add/Add.tsx
+index 85aa0fd..f50ae2d 100644
+--- a/apps/web/src/pages/Add/Add.tsx
++++ b/apps/web/src/pages/Add/Add.tsx
+@@ -1,3 +1,4 @@
++import { isActive } from '@dsbd/shared';
+ import { Button, Grid, Step, StepLabel, Stepper } from '@mui/material';
+ import { useSnackbar } from 'notistack';
+ import React, { useEffect, useMemo } from 'react';
+@@ -57,7 +58,7 @@ export default function Add() {
+   // 401 is handled centrally by the shared API client (redirect to /login).
+   useEffect(() => {
+     if (infoData == null) return;
+-    if (infoData.user?.group_id !== 0 && infoData.group?.expired_status !== 0) {
++    if (infoData.user?.group_id !== 0 && !isActive(infoData.group?.expired_status)) {
+       navigate('/dashboard');
+     }
+     setData(infoData);
+diff --git a/apps/web/src/pages/Add/ConnectionAdd/ConnectionAdd.tsx b/apps/web/src/pages/Add/ConnectionAdd/ConnectionAdd.tsx
+index 2884c18..9b9d49a 100644
+--- a/apps/web/src/pages/Add/ConnectionAdd/ConnectionAdd.tsx
++++ b/apps/web/src/pages/Add/ConnectionAdd/ConnectionAdd.tsx
+@@ -1,3 +1,4 @@
++import { ConnectionTypeCode } from '@dsbd/shared';
+ import { yupResolver } from '@hookform/resolvers/yup';
+ import {
+   Box,
+@@ -67,7 +68,7 @@ export default function ConnectionAdd() {
+     template.connections?.find((ct) => ct.type === value)?.need_comment ?? false;
+   const isNeedInternet = (value: string) =>
+     template.connections?.find((ct) => ct.type === value)?.need_internet ?? false;
+-  const isIXConnection = (value: string) => value === 'IXP';
++  const isIXConnection = (value: string) => value === ConnectionTypeCode.IX;
+   const isCrossConnect = (value: string) =>
+     template.connections?.find((ct) => ct.type === value)?.need_cross_connect ?? false;
+   const isNeedBGP = () =>
+diff --git a/apps/web/src/pages/Add/ServiceAdd/ServiceAdd.tsx b/apps/web/src/pages/Add/ServiceAdd/ServiceAdd.tsx
+index 3fb819d..64a4b87 100644
+--- a/apps/web/src/pages/Add/ServiceAdd/ServiceAdd.tsx
++++ b/apps/web/src/pages/Add/ServiceAdd/ServiceAdd.tsx
+@@ -1,3 +1,4 @@
++import { ServiceTypeCode } from '@dsbd/shared';
+ import { yupResolver } from '@hookform/resolvers/yup';
+ import {
+   Box,
+@@ -96,7 +97,7 @@ export default function ServiceAdd() {
+   const isGlobalAS = () =>
+     template.services?.find((serviceTemplate) => serviceTemplate.type === serviceType)
+       ?.need_global_as ?? false;
+-  const isTransitUser = (service_type: string) => service_type === 'IP3B';
++  const isTransitUser = (service_type: string) => service_type === ServiceTypeCode.Transit;
+ 
+   const validationSchema = Yup.object().shape({
+     service_type: Yup.string().min(1).required('service template is required'),
+diff --git a/apps/web/src/pages/Dashboard/Dashboard.tsx b/apps/web/src/pages/Dashboard/Dashboard.tsx
+index 14c7d23..627ad8d 100644
+--- a/apps/web/src/pages/Dashboard/Dashboard.tsx
++++ b/apps/web/src/pages/Dashboard/Dashboard.tsx
+@@ -1,3 +1,4 @@
++import { isActive } from '@dsbd/shared';
+ import { Box, Button, CardActions, CardContent, Chip, Grid, Typography } from '@mui/material';
+ import { useSnackbar } from 'notistack';
+ import React, { useEffect, useMemo } from 'react';
+@@ -112,7 +113,7 @@ export default function Dashboard() {
+     <DashboardComponent title="Dashboard">
+       <Grid container spacing={3}>
+         <Grid item xs={12} md={8}>
+-          {data?.user?.group_id !== 0 && data?.group?.expired_status !== 0 && (
++          {data?.user?.group_id !== 0 && !isActive(data?.group?.expired_status) && (
+             <StyledCardRoot3 key={'payment_notice'}>
+               <CardContent>
+                 <Typography variant="h5" component="h2">
+@@ -130,7 +131,7 @@ export default function Dashboard() {
+               </CardContent>
+             </StyledCardRoot3>
+           )}
+-          {data?.group?.expired_status === 0 &&
++          {isActive(data?.group?.expired_status) &&
+             restfulApiConfig.enableMoney &&
+             data?.group?.is_expired &&
+             !data?.info?.length && (
+@@ -158,7 +159,7 @@ export default function Dashboard() {
+                 </CardActions>
+               </StyledCardRoot3>
+             )}
+-          {!(data?.user?.group_id !== 0 && data?.group?.expired_status === 0) && status !== 3 && (
++          {!(data?.user?.group_id !== 0 && isActive(data?.group?.expired_status)) && status !== 3 && (
+             <StyledCardRoot3 key={'add_notice'}>
+               <CardContent>
+                 <Typography variant="h5" component="h2">
+@@ -175,7 +176,7 @@ export default function Dashboard() {
+               </CardActions>
+             </StyledCardRoot3>
+           )}
+-          {data?.group?.expired_status === 0 &&
++          {isActive(data?.group?.expired_status) &&
+             data?.notice?.map((notice, index) => (
+               <StyledCardRoot3 key={index}>
+                 <CardContent>
+diff --git a/apps/web/src/pages/Payment/Payment.tsx b/apps/web/src/pages/Payment/Payment.tsx
+index e0ec978..232b0fc 100644
+--- a/apps/web/src/pages/Payment/Payment.tsx
++++ b/apps/web/src/pages/Payment/Payment.tsx
+@@ -1,3 +1,4 @@
++import { isActive, isPaidMemberType } from '@dsbd/shared';
+ import { Button, Card, CardActions, CardContent, Container, Grid, Typography } from '@mui/material';
+ import { useSnackbar } from 'notistack';
+ import React, { useEffect, useMemo } from 'react';
+@@ -34,14 +35,14 @@ export default function Payment() {
+   // 401 is handled centrally by the shared API client (redirect to /login).
+   useEffect(() => {
+     if (infoData == null) return;
+-    if (infoData.group?.expired_status !== 0) {
++    if (!isActive(infoData.group?.expired_status)) {
+       navigate('/dashboard');
+     }
+     setData(infoData);
+ 
+     if (infoData.user?.group_id == null) {
+       setIsStatus(1);
+-    } else if ((infoData.group?.member_type_id ?? 0) >= 50) {
++    } else if (!isPaidMemberType(infoData.group?.member_type_id ?? 0)) {
+       setIsStatus(2);
+     } else if (infoData.info?.length == null) {
+       setIsStatus(3);

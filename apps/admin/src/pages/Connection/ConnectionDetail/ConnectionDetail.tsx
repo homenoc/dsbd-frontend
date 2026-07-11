@@ -1,3 +1,4 @@
+import { ConnectionTypeCode } from '@dsbd/shared';
 import {
   Button,
   CardContent,
@@ -576,7 +577,7 @@ export function ConnectionUserDisplay(props: {
                   {findConnectionType(template.connections, connection.connection_type)?.name ?? ''}
                 </td>
               </tr>
-              {connection.connection_type !== 'IXP' && (
+              {connection.connection_type !== ConnectionTypeCode.IX && (
                 <tr>
                   <th>接続NOC</th>
                   <td colSpan={2}>{getNOCName()}</td>
@@ -600,7 +601,7 @@ export function ConnectionUserDisplay(props: {
                   )}
                 </>
               )}
-              {connection.connection_type !== 'IXP' && (
+              {connection.connection_type !== ConnectionTypeCode.IX && (
                 <>
                   <tr>
                     <th>トンネル終端アドレス（貴団体側）</th>

@@ -1,3 +1,4 @@
+import { isActive } from '@dsbd/shared';
 import { Button, Grid, Step, StepLabel, Stepper } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useMemo } from 'react';
@@ -57,7 +58,7 @@ export default function Add() {
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData == null) return;
-    if (infoData.user?.group_id !== 0 && infoData.group?.expired_status !== 0) {
+    if (infoData.user?.group_id !== 0 && !isActive(infoData.group?.expired_status)) {
       navigate('/dashboard');
     }
     setData(infoData);

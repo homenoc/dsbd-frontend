@@ -1,49 +1,50 @@
-import { Menu, MenuItem } from '@mui/material'
-import React, { Dispatch, SetStateAction } from 'react'
-import { GroupDetailData } from '../../../interface'
-import { Put } from '../../../api/Group'
-import { useSnackbar } from 'notistack'
-import { StyledButton1 } from '../../../style'
+import { ExpiredStatus, isActive } from '@dsbd/shared';
+import { Menu, MenuItem } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction } from 'react';
+import { Put } from '../../../api/Group';
+import type { GroupDetailData } from '../../../interface';
+import { StyledButton1 } from '../../../style';
 
 export function GroupStatusButton(props: {
-  data: GroupDetailData
-  autoMail: Dispatch<SetStateAction<string>>
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: GroupDetailData;
+  autoMail: Dispatch<SetStateAction<string>>;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { data, autoMail, setReload } = props
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
+  const { data, autoMail, setReload } = props;
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClose = () => {
-    setAnchorEl(null)
-  }
+    setAnchorEl(null);
+  };
 
   const changePassStatus = (pass: boolean) => {
-    data.pass = pass
+    data.pass = pass;
     Put(data.ID, data).then((res) => {
       if (res.error === '') {
         // console.log(res.error);
       }
 
       if (pass) {
-        autoMail('pass_the_examination')
+        autoMail('pass_the_examination');
       }
 
-      handleClose()
-      setReload(true)
-    })
-  }
+      handleClose();
+      setReload(true);
+    });
+  };
 
   const changeAddAllowStatus = (add_allow: boolean) => {
-    data.add_allow = add_allow
+    data.add_allow = add_allow;
     Put(data.ID, data).then((res) => {
       if (res.error === '') {
         // console.log(res.error);
       }
 
-      handleClose()
-      setReload(true)
-    })
-  }
+      handleClose();
+      setReload(true);
+    });
+  };
 
   return (
     <div>
@@ -81,29 +82,29 @@ export function GroupStatusButton(props: {
         </StyledButton1>
       )}
     </div>
-  )
+  );
 }
 
 export function GroupLockButton(props: {
-  data: GroupDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: GroupDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { data, setReload } = props
-  const { enqueueSnackbar } = useSnackbar()
+  const { data, setReload } = props;
+  const { enqueueSnackbar } = useSnackbar();
 
   const changeLock = (pass: boolean) => {
-    data.pass = pass
+    data.pass = pass;
 
     Put(data.ID, data).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
   if (data.pass) {
     return (
@@ -116,7 +117,7 @@ export function GroupLockButton(props: {
       >
         変更を禁止
       </StyledButton1>
-    )
+    );
   }
   return (
     <StyledButton1
@@ -128,51 +129,51 @@ export function GroupLockButton(props: {
     >
       変更を許可
     </StyledButton1>
-  )
+  );
 }
 
 export function GroupAbolition(props: {
-  data: GroupDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: GroupDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }): any {
-  const { data, setReload } = props
-  const { enqueueSnackbar } = useSnackbar()
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
+  const { data, setReload } = props;
+  const { enqueueSnackbar } = useSnackbar();
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
-  const handleClose = () => setAnchorEl(null)
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => setAnchorEl(null);
   const handleClickExpire = (expired_status: number) => {
-    data.expired_status = expired_status
+    data.expired_status = expired_status;
 
     Put(data.ID, data).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-    handleClose()
-  }
+      setReload(true);
+    });
+    handleClose();
+  };
 
   const clickActive = () => {
-    data.expired_status = 0
+    data.expired_status = ExpiredStatus.None;
 
     Put(data.ID, data).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
 
-      setReload(true)
-    })
-  }
+      setReload(true);
+    });
+  };
 
-  if (data.expired_status !== 0) {
+  if (!isActive(data.expired_status)) {
     return (
       <div>
         <StyledButton1
@@ -185,7 +186,7 @@ export function GroupAbolition(props: {
           Active処理
         </StyledButton1>
       </div>
-    )
+    );
   }
   return (
     <div>
@@ -207,10 +208,8 @@ export function GroupAbolition(props: {
       >
         <MenuItem onClick={() => handleClickExpire(1)}>審査落ち</MenuItem>
         <MenuItem onClick={() => handleClickExpire(2)}>ユーザより廃止</MenuItem>
-        <MenuItem onClick={() => handleClickExpire(3)}>
-          運営委員より廃止
-        </MenuItem>
+        <MenuItem onClick={() => handleClickExpire(3)}>運営委員より廃止</MenuItem>
       </Menu>
     </div>
-  )
+  );
 }

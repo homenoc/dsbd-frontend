@@ -1,77 +1,73 @@
-import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import Dashboard from '../../../components/Dashboard/Dashboard'
-import { Get } from '../../../api/Group'
-import Users from './User'
-import { CircularProgress, Grid } from '@mui/material'
-import { DefaultGroupDetailData } from '../../../interface'
-import Ticket from '../../../components/Dashboard/Ticket/Ticket'
-import Request from '../../../components/Dashboard/Request/Request'
-import { GroupProfileInfo, GroupMainMenu, GroupStatus } from './Group'
-import { useSnackbar } from 'notistack'
-import { GroupMemo } from './Memo'
-import { MailAutoSendDialogs, MailSendDialogs } from '../Mail'
-import { StyledDivRoot1 } from '../../../style'
-import { Service } from "./Service";
+import { canManageServices } from '@dsbd/shared';
+import { CircularProgress, Grid } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Get } from '../../../api/Group';
+import Dashboard from '../../../components/Dashboard/Dashboard';
+import Request from '../../../components/Dashboard/Request/Request';
+import Ticket from '../../../components/Dashboard/Ticket/Ticket';
+import { DefaultGroupDetailData } from '../../../interface';
+import { StyledDivRoot1 } from '../../../style';
+import { MailAutoSendDialogs, MailSendDialogs } from '../Mail';
+import { GroupMainMenu, GroupProfileInfo, GroupStatus } from './Group';
+import { GroupMemo } from './Memo';
+import { Service } from './Service';
+import Users from './User';
 
-function getTitle(
-  id: number,
-  org: string,
-  org_en: string,
-  loading: boolean
-): string {
+function getTitle(id: number, org: string, org_en: string, loading: boolean): string {
   if (loading) {
-    return 'Loading...'
+    return 'Loading...';
   }
   if (!loading && org === '' && org_en === '') {
-    return 'No Data...'
+    return 'No Data...';
   }
-  return 'id: ' + id + ' ' + org + '(' + org_en + ')'
+  return 'id: ' + id + ' ' + org + '(' + org_en + ')';
 }
 
 export default function GroupDetail() {
-  const { enqueueSnackbar } = useSnackbar()
-  const [reload, setReload] = useState(true)
-  const [loading, setLoading] = useState(true)
-  const [group, setGroup] = useState(DefaultGroupDetailData)
-  const [openMailSendDialog, setOpenMailSendDialog] = useState(false)
-  const [openMailAutoSendDialog, setOpenMailAutoSendDialog] = useState('')
-  const [sendAutoEmail, setSendAutoEmail] = useState('')
-  const { id } = useParams()
+  const { enqueueSnackbar } = useSnackbar();
+  const [reload, setReload] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [group, setGroup] = useState(DefaultGroupDetailData);
+  const [openMailSendDialog, setOpenMailSendDialog] = useState(false);
+  const [openMailAutoSendDialog, setOpenMailAutoSendDialog] = useState('');
+  const [sendAutoEmail, setSendAutoEmail] = useState('');
+  const { id } = useParams();
 
   useEffect(() => {
     if (reload) {
       Get(id!).then((res) => {
         if (res.error === '') {
-          setGroup(res.data)
-          setReload(false)
+          setGroup(res.data);
+          setReload(false);
         } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' })
+          enqueueSnackbar('' + res.error, { variant: 'error' });
         }
-      })
+      });
     }
-  }, [reload])
+  }, [reload]);
 
   useEffect(() => {
     Get(id!).then((res) => {
       if (res.error === '') {
-        setGroup(res.data)
-        let mails = ''
+        setGroup(res.data);
+        let mails = '';
         if (res.data.users != null) {
           for (const user of res.data.users) {
-            if (user.level < 3) {
-              mails += user.email + ','
+            if (canManageServices(user.level)) {
+              mails += user.email + ',';
             }
           }
         }
-        setSendAutoEmail(mails)
-        setLoading(false)
-        setReload(false)
+        setSendAutoEmail(mails);
+        setLoading(false);
+        setReload(false);
       } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
+        enqueueSnackbar('' + res.error, { variant: 'error' });
       }
-    })
-  }, [])
+    });
+  }, []);
 
   return (
     <Dashboard title={getTitle(group.ID, group.org, group.org_en, loading)}>
@@ -114,11 +110,7 @@ export default function GroupDetail() {
             <Ticket key={'ticket'} data={group.tickets} setReload={setReload} />
           </Grid>
           <Grid item xs={12}>
-            <Request
-              key={'request'}
-              data={group.tickets}
-              setReload={setReload}
-            />
+            <Request key={'request'} data={group.tickets} setReload={setReload} />
           </Grid>
           <Grid item xs={12}>
             <Users key={'users'} data={group} />
@@ -140,5 +132,5 @@ export default function GroupDetail() {
         </Grid>
       )}
     </Dashboard>
-  )
+  );
 }

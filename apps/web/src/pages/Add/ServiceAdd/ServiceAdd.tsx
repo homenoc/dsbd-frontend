@@ -1,3 +1,4 @@
+import { ServiceTypeCode } from '@dsbd/shared';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Box,
@@ -96,7 +97,7 @@ export default function ServiceAdd() {
   const isGlobalAS = () =>
     template.services?.find((serviceTemplate) => serviceTemplate.type === serviceType)
       ?.need_global_as ?? false;
-  const isTransitUser = (service_type: string) => service_type === 'IP3B';
+  const isTransitUser = (service_type: string) => service_type === ServiceTypeCode.Transit;
 
   const validationSchema = Yup.object().shape({
     service_type: Yup.string().min(1).required('service template is required'),

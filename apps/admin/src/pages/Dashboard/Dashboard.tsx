@@ -1,3 +1,4 @@
+import { ExpiredStatus, MemberType, canManageServices, isActive } from '@dsbd/shared';
 import {
   Button,
   Card,
@@ -111,7 +112,7 @@ export default function Dashboard() {
                       paddingTop: 1,
                     }}
                     label={`有効GROUP: ${
-                      group?.filter((g: GroupDetailData) => g.expired_status === 0).length
+                      group?.filter((g: GroupDetailData) => isActive(g.expired_status)).length
                     }`}
                   />
                   <Chip
@@ -189,22 +190,22 @@ export default function Dashboard() {
           <Group
             key={'group'}
             data={groups?.filter((item) => {
-              if (!expired_status0IsChecked && item.expired_status === 0) {
+              if (!expired_status0IsChecked && isActive(item.expired_status)) {
                 return false;
               }
-              if (!expired_status1IsChecked && item.expired_status === 1) {
+              if (!expired_status1IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
                 return false;
               }
-              if (!expired_status2IsChecked && item.expired_status === 2) {
+              if (!expired_status2IsChecked && item.expired_status === ExpiredStatus.ByCommittee) {
                 return false;
               }
-              if (!expired_status3IsChecked && item.expired_status === 3) {
+              if (!expired_status3IsChecked && item.expired_status === ExpiredStatus.ReviewFailed) {
                 return false;
               }
-              if (!member_type90IsChecked && item.member_type === 90) {
+              if (!member_type90IsChecked && item.member_type === MemberType.CommitteeFree) {
                 return false;
               }
-              if (!member_type99IsChecked && item.member_type === 99) {
+              if (!member_type99IsChecked && item.member_type === MemberType.Disable) {
                 return false;
               }
               if (hasEnabledServiceIsChecked) {
@@ -304,22 +305,28 @@ export default function Dashboard() {
             <p>
               {groups
                 ?.filter((item) => {
-                  if (!expired_status0IsChecked && item.expired_status === 0) {
+                  if (!expired_status0IsChecked && isActive(item.expired_status)) {
                     return false;
                   }
-                  if (!expired_status1IsChecked && item.expired_status === 1) {
+                  if (!expired_status1IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
                     return false;
                   }
-                  if (!expired_status2IsChecked && item.expired_status === 2) {
+                  if (
+                    !expired_status2IsChecked &&
+                    item.expired_status === ExpiredStatus.ByCommittee
+                  ) {
                     return false;
                   }
-                  if (!expired_status3IsChecked && item.expired_status === 3) {
+                  if (
+                    !expired_status3IsChecked &&
+                    item.expired_status === ExpiredStatus.ReviewFailed
+                  ) {
                     return false;
                   }
-                  if (!member_type90IsChecked && item.member_type === 90) {
+                  if (!member_type90IsChecked && item.member_type === MemberType.CommitteeFree) {
                     return false;
                   }
-                  if (!member_type99IsChecked && item.member_type === 99) {
+                  if (!member_type99IsChecked && item.member_type === MemberType.Disable) {
                     return false;
                   }
                   if (hasEnabledServiceIsChecked) {
@@ -345,7 +352,9 @@ export default function Dashboard() {
                   return true;
                 })
                 .map((group) =>
-                  group.users?.filter((user) => user.level < 3).map((user) => user.email + ','),
+                  group.users
+                    ?.filter((user) => canManageServices(user.level))
+                    .map((user) => user.email + ','),
                 )}
             </p>
           ) : (

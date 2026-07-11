@@ -1,11 +1,4 @@
-import React, { useEffect, useState } from 'react'
-import Dashboard from '../../components/Dashboard/Dashboard'
-import {
-  StyledCard,
-  StyledInputBase,
-  StyledPaperRootInput,
-  StyledTypographyTitle,
-} from '../Dashboard/styles'
+import { isActive } from '@dsbd/shared';
 import {
   Button,
   CardActions,
@@ -16,57 +9,65 @@ import {
   Radio,
   RadioGroup,
   Typography,
-} from '@mui/material'
-import { GetAll } from '../../api/User'
-import { DefaultUserDetailDataArray, UserDetailData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { useNavigate } from 'react-router-dom'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { GetAll } from '../../api/User';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import { DefaultUserDetailDataArray, type UserDetailData } from '../../interface';
+import {
+  StyledCard,
+  StyledInputBase,
+  StyledPaperRootInput,
+  StyledTypographyTitle,
+} from '../Dashboard/styles';
 
 export default function User() {
-  const navigate = useNavigate()
-  const [users, setUsers] = useState(DefaultUserDetailDataArray)
-  const [initUsers, setInitUsers] = useState(DefaultUserDetailDataArray)
-  const { enqueueSnackbar } = useSnackbar()
+  const navigate = useNavigate();
+  const [users, setUsers] = useState(DefaultUserDetailDataArray);
+  const [initUsers, setInitUsers] = useState(DefaultUserDetailDataArray);
+  const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効
-  const [value, setValue] = React.useState(1)
+  const [value, setValue] = React.useState(1);
 
   useEffect(() => {
     GetAll().then((res) => {
       if (res.error === '') {
-        setUsers(res.data)
-        setInitUsers(res.data)
+        setUsers(res.data);
+        setInitUsers(res.data);
       } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
+        enqueueSnackbar('' + res.error, { variant: 'error' });
       }
-    })
-  }, [])
+    });
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(Number(event.target.value))
-  }
+    setValue(Number(event.target.value));
+  };
 
   const checkUser = (user: UserDetailData) => {
     if (value === 1) {
-      return user.expired_status === 0
+      return isActive(user.expired_status);
     }
     if (value === 2) {
-      return user.expired_status !== 0
+      return !isActive(user.expired_status);
     }
-    return true
-  }
+    return true;
+  };
 
   const handleFilter = (search: string) => {
-    let tmp: UserDetailData[]
+    let tmp: UserDetailData[];
     if (search === '') {
-      tmp = initUsers
+      tmp = initUsers;
     } else {
       tmp = initUsers.filter((users: UserDetailData) => {
-        const name = users.name + users.name_en
-        return name.toLowerCase().includes(search.toLowerCase())
-      })
+        const name = users.name + users.name_en;
+        return name.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setUsers(tmp)
-  }
+    setUsers(tmp);
+  };
 
   return (
     <Dashboard title="User Info">
@@ -75,28 +76,14 @@ export default function User() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
       <FormControl component="fieldset">
-        <RadioGroup
-          row
-          aria-label="gender"
-          name="gender1"
-          value={value}
-          onChange={handleChange}
-        >
-          <FormControlLabel
-            value={1}
-            control={<Radio color="primary" />}
-            label="有効"
-          />
-          <FormControlLabel
-            value={2}
-            control={<Radio color="secondary" />}
-            label="無効"
-          />
+        <RadioGroup row aria-label="gender" name="gender1" value={value} onChange={handleChange}>
+          <FormControlLabel value={1} control={<Radio color="primary" />} label="有効" />
+          <FormControlLabel value={2} control={<Radio color="secondary" />} label="無効" />
         </RadioGroup>
       </FormControl>
       {users
@@ -113,8 +100,8 @@ export default function User() {
               <br />
               <Chip
                 size="small"
-                label={user.expired_status === 0 ? '有効' : '無効'}
-                color={user.expired_status === 0 ? 'success' : 'error'}
+                label={isActive(user.expired_status) ? '有効' : '無効'}
+                color={isActive(user.expired_status) ? 'success' : 'error'}
                 sx={{ mr: 1 }}
               />
               <Chip
@@ -137,5 +124,5 @@ export default function User() {
           </StyledCard>
         ))}
     </Dashboard>
-  )
+  );
 }

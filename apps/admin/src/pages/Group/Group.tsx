@@ -1,11 +1,4 @@
-import React, { useEffect, useState } from 'react'
-import Dashboard from '../../components/Dashboard/Dashboard'
-import {
-  StyledCard,
-  StyledInputBase,
-  StyledPaperRootInput,
-  StyledTypographyTitle,
-} from '../Dashboard/styles'
+import { isActive } from '@dsbd/shared';
 import {
   Button,
   CardActions,
@@ -15,58 +8,66 @@ import {
   Radio,
   RadioGroup,
   Typography,
-} from '@mui/material'
-import { GetAll } from '../../api/Group'
-import { useNavigate } from 'react-router-dom'
-import { DefaultGroupDetailDataArray, GroupDetailData } from '../../interface'
-import { useSnackbar } from 'notistack'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { GetAll } from '../../api/Group';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import { DefaultGroupDetailDataArray, type GroupDetailData } from '../../interface';
+import {
+  StyledCard,
+  StyledInputBase,
+  StyledPaperRootInput,
+  StyledTypographyTitle,
+} from '../Dashboard/styles';
 
 export default function Group() {
-  const [groups, setGroups] = useState(DefaultGroupDetailDataArray)
-  const [initGroups, setInitGroups] = useState(DefaultGroupDetailDataArray)
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const [groups, setGroups] = useState(DefaultGroupDetailDataArray);
+  const [initGroups, setInitGroups] = useState(DefaultGroupDetailDataArray);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効
-  const [value, setValue] = React.useState(1)
+  const [value, setValue] = React.useState(1);
 
   useEffect(() => {
     GetAll().then((res) => {
       if (res.error === '') {
-        setGroups(res.data)
-        setInitGroups(res.data)
+        setGroups(res.data);
+        setInitGroups(res.data);
       } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
+        enqueueSnackbar('' + res.error, { variant: 'error' });
       }
-    })
-  }, [])
+    });
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(Number(event.target.value))
-  }
+    setValue(Number(event.target.value));
+  };
 
   const checkGroup = (group: GroupDetailData) => {
     if (value === 1) {
-      return group.expired_status === 0
+      return isActive(group.expired_status);
     }
     if (value === 2) {
-      return group.expired_status !== 0
+      return !isActive(group.expired_status);
     }
-    return true
-  }
+    return true;
+  };
 
   const handleFilter = (search: string) => {
-    let tmp: GroupDetailData[]
+    let tmp: GroupDetailData[];
     if (search === '') {
-      tmp = initGroups
+      tmp = initGroups;
     } else {
       tmp = initGroups.filter((grp: GroupDetailData) => {
-        return grp.org_en.toLowerCase().includes(search.toLowerCase())
-      })
+        return grp.org_en.toLowerCase().includes(search.toLowerCase());
+      });
     }
-    setGroups(tmp)
-  }
+    setGroups(tmp);
+  };
 
-  const clickDetailPage = (id: number) => navigate('/dashboard/group/' + id)
+  const clickDetailPage = (id: number) => navigate('/dashboard/group/' + id);
 
   return (
     <Dashboard title="Group Info">
@@ -75,28 +76,14 @@ export default function Group() {
           placeholder="Search…"
           inputProps={{ 'aria-label': 'search' }}
           onChange={(event) => {
-            handleFilter(event.target.value)
+            handleFilter(event.target.value);
           }}
         />
       </StyledPaperRootInput>
       <FormControl component="fieldset">
-        <RadioGroup
-          row
-          aria-label="gender"
-          name="open"
-          value={value}
-          onChange={handleChange}
-        >
-          <FormControlLabel
-            value={1}
-            control={<Radio color="primary" />}
-            label="有効"
-          />
-          <FormControlLabel
-            value={2}
-            control={<Radio color="secondary" />}
-            label="無効"
-          />
+        <RadioGroup row aria-label="gender" name="open" value={value} onChange={handleChange}>
+          <FormControlLabel value={1} control={<Radio color="primary" />} label="有効" />
+          <FormControlLabel value={2} control={<Radio color="secondary" />} label="無効" />
         </RadioGroup>
       </FormControl>
       {groups
@@ -112,16 +99,12 @@ export default function Group() {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => clickDetailPage(group.ID)}
-              >
+              <Button size="small" variant="outlined" onClick={() => clickDetailPage(group.ID)}>
                 Detail
               </Button>
             </CardActions>
           </StyledCard>
         ))}
     </Dashboard>
-  )
+  );
 }

@@ -1,3 +1,4 @@
+import { isActive, isPaidMemberType } from '@dsbd/shared';
 import { Button, Card, CardActions, CardContent, Container, Grid, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useMemo } from 'react';
@@ -34,14 +35,14 @@ export default function Payment() {
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
     if (infoData == null) return;
-    if (infoData.group?.expired_status !== 0) {
+    if (!isActive(infoData.group?.expired_status)) {
       navigate('/dashboard');
     }
     setData(infoData);
 
     if (infoData.user?.group_id == null) {
       setIsStatus(1);
-    } else if ((infoData.group?.member_type_id ?? 0) >= 50) {
+    } else if (!isPaidMemberType(infoData.group?.member_type_id ?? 0)) {
       setIsStatus(2);
     } else if (infoData.info?.length == null) {
       setIsStatus(3);

@@ -1,3 +1,4 @@
+import { isActive } from '@dsbd/shared';
 import { Box, Button, CardActions, CardContent, Chip, Grid, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useMemo } from 'react';
@@ -112,7 +113,7 @@ export default function Dashboard() {
     <DashboardComponent title="Dashboard">
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-          {data?.user?.group_id !== 0 && data?.group?.expired_status !== 0 && (
+          {data?.user?.group_id !== 0 && !isActive(data?.group?.expired_status) && (
             <StyledCardRoot3 key={'payment_notice'}>
               <CardContent>
                 <Typography variant="h5" component="h2">
@@ -130,7 +131,7 @@ export default function Dashboard() {
               </CardContent>
             </StyledCardRoot3>
           )}
-          {data?.group?.expired_status === 0 &&
+          {isActive(data?.group?.expired_status) &&
             restfulApiConfig.enableMoney &&
             data?.group?.is_expired &&
             !data?.info?.length && (
@@ -158,24 +159,25 @@ export default function Dashboard() {
                 </CardActions>
               </StyledCardRoot3>
             )}
-          {!(data?.user?.group_id !== 0 && data?.group?.expired_status === 0) && status !== 3 && (
-            <StyledCardRoot3 key={'add_notice'}>
-              <CardContent>
-                <Typography variant="h5" component="h2">
-                  申請手続きのお知らせ
-                </Typography>
-                <Chip size={'small'} label="重要" color="secondary" sx={{ marginRight: 1 }} />
-                <br />
-                以下の「申請ページはこちら」ボタンより手続きを進めてください
-              </CardContent>
-              <CardActions>
-                <Button size="small" variant="outlined" onClick={moveAddPage}>
-                  申請ページはこちら
-                </Button>
-              </CardActions>
-            </StyledCardRoot3>
-          )}
-          {data?.group?.expired_status === 0 &&
+          {!(data?.user?.group_id !== 0 && isActive(data?.group?.expired_status)) &&
+            status !== 3 && (
+              <StyledCardRoot3 key={'add_notice'}>
+                <CardContent>
+                  <Typography variant="h5" component="h2">
+                    申請手続きのお知らせ
+                  </Typography>
+                  <Chip size={'small'} label="重要" color="secondary" sx={{ marginRight: 1 }} />
+                  <br />
+                  以下の「申請ページはこちら」ボタンより手続きを進めてください
+                </CardContent>
+                <CardActions>
+                  <Button size="small" variant="outlined" onClick={moveAddPage}>
+                    申請ページはこちら
+                  </Button>
+                </CardActions>
+              </StyledCardRoot3>
+            )}
+          {isActive(data?.group?.expired_status) &&
             data?.notice?.map((notice, index) => (
               <StyledCardRoot3 key={index}>
                 <CardContent>
