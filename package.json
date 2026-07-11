@@ -1,0 +1,25 @@
+{
+  "name": "dsbd-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "HomeNOC frontend monorepo: apps/web (user), apps/admin, packages/shared",
+  "packageManager": "pnpm@11.6.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "web": "pnpm --filter dsbd-web",
+    "admin": "pnpm --filter dsbd-web-admin",
+    "shared": "pnpm --filter @dsbd/shared",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r exec tsc --noEmit",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "~5.5.4",
+    "vitest": "^2.1.8"
+  }
+}
