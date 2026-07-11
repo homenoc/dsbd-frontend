@@ -1,12 +1,9 @@
 import React, { Fragment, useEffect } from 'react'
 import DashboardComponent from '../../../components/Dashboard/Dashboard'
-import { Get } from '../../../api/Info'
-import Cookies from 'js-cookie'
-import store, { RootState } from '../../../store'
-import { clearInfos, clearTemplates } from '../../../store/action/Actions'
 import { useSnackbar } from 'notistack'
 import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useInfo, infoQueryKey } from '../../../hooks/useInfo'
+import { queryClient } from '../../../lib/queryClient'
 import {
   Box,
   Button,
@@ -41,46 +38,24 @@ import { Post } from '../../../api/Group'
 export default function GroupAdd() {
   const { enqueueSnackbar } = useSnackbar()
   const navigate = useNavigate()
-  const infos = useSelector((state: RootState) => state.infos)
+  const { data: infoData, error } = useInfo()
 
   const privacyPolicyURL = 'https://www.homenoc.ad.jp/about/privacy/'
   const usageURL = 'https://www.homenoc.ad.jp/usage/'
   const feeURL = 'https://www.homenoc.ad.jp/about/membership/'
 
   useEffect(() => {
-    Get().then()
-  }, [])
-
-  useEffect(() => {
-    // info
-    const tmpData = infos[infos.length - 1]
-
-    if (tmpData.error != null || tmpData.data != null) {
-      if (tmpData.error != null) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/login')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-        }
-      } else if (tmpData.data != null) {
-        // add group
-        if (tmpData.data.user?.group_id !== 0) {
-          navigate('/dashboard/add')
-        }
-      } else {
-        Get().then()
-        const date = new Date()
-        enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-          variant: 'info',
-        })
-      }
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
     }
-  }, [infos])
+  }, [error, enqueueSnackbar])
+
+  // 401 is handled centrally by the shared API client (redirect to /login).
+  useEffect(() => {
+    if (infoData != null && infoData.user?.group_id !== 0) {
+      navigate('/dashboard/add')
+    }
+  }, [infoData, navigate])
 
   const validationSchema = Yup.object().shape({
     agree: Yup.bool().oneOf([true], '利用の規約に同意しないと次へ進めません。'),
@@ -216,7 +191,7 @@ export default function GroupAdd() {
     Post(request).then((res) => {
       if (res.error === '') {
         enqueueSnackbar('Request Success', { variant: 'success' })
-        Get().then()
+        queryClient.invalidateQueries({ queryKey: infoQueryKey })
         navigate('/dashboard/add')
       } else {
         enqueueSnackbar(String(res.error), { variant: 'error' })

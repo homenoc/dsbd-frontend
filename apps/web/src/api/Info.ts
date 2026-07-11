@@ -1,50 +1,17 @@
-import axios from 'axios'
-import { restfulApiConfig } from './Config'
-import store from '../store'
-import { getInfosFailure, getInfosSuccess } from '../store/action/Actions'
-import Cookies from 'js-cookie'
+import { infoQueryKey } from '../hooks/useInfo';
+import { templateQueryKey } from '../hooks/useTemplate';
+import { queryClient } from '../lib/queryClient';
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function Get(): Promise<Object | string> {
-  return axios
-    .get(restfulApiConfig.apiURL + '/info', {
-      headers: {
-        'Content-Type': 'application/json',
-        USER_TOKEN: Cookies.get('user_token')!,
-        ACCESS_TOKEN: Cookies.get('access_token')!,
-      },
-    })
-    .then((res) => {
-      store.dispatch(getInfosSuccess(res.data))
+// The info/template data now lives in TanStack Query (see hooks/useInfo,
+// hooks/useTemplate). These helpers are kept as thin "refresh" triggers so the
+// many dialog call sites (Get().then(), GetTemplate()) keep working: they
+// invalidate the cached query, which refetches through the useInfo/useTemplate
+// hooks. Prefer invalidateQueries directly in new code.
 
-      return res.data
-    })
-    .catch((err) => {
-      // console.log(err.response);
-      // console.log("[" + err.response.status + "] " + err.response.data.error);
-      store.dispatch(
-        getInfosFailure(
-          '[' + err.response.status + '] ' + err.response.data.error
-        )
-      )
-      return '[' + err.response.status + '] ' + err.response.data.error
-    })
+export function Get(): Promise<void> {
+  return queryClient.invalidateQueries({ queryKey: infoQueryKey });
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function GetTemplate(): Promise<Object | string> {
-  return axios
-    .get(restfulApiConfig.apiURL + '/template', {
-      headers: {
-        'Content-Type': 'application/json',
-        USER_TOKEN: Cookies.get('user_token')!,
-        ACCESS_TOKEN: Cookies.get('access_token')!,
-      },
-    })
-    .then((res) => {
-      return res.data
-    })
-    .catch((err) => {
-      return '[' + err.response.status + '] ' + err.response.data.error
-    })
+export function GetTemplate(): Promise<void> {
+  return queryClient.invalidateQueries({ queryKey: templateQueryKey });
 }

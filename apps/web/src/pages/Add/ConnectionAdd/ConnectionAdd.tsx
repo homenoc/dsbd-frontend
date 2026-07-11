@@ -1,13 +1,11 @@
 import React, { Fragment, useEffect } from 'react'
 import DashboardComponent from '../../../components/Dashboard/Dashboard'
-import { Get, GetTemplate } from '../../../api/Info'
-import Cookies from 'js-cookie'
-import store, { RootState } from '../../../store'
-import { clearInfos, clearTemplates } from '../../../store/action/Actions'
-import { DefaultTemplateData, TemplateData } from '../../../interface'
+import { DefaultTemplateData, ServiceData } from '../../../interface'
 import { useSnackbar } from 'notistack'
 import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useInfo, infoQueryKey } from '../../../hooks/useInfo'
+import { useTemplate } from '../../../hooks/useTemplate'
+import { queryClient } from '../../../lib/queryClient'
 import {
   Box,
   Button,
@@ -35,67 +33,28 @@ import { Post } from '../../../api/Connection'
 
 export default function ConnectionAdd() {
   const { enqueueSnackbar } = useSnackbar()
-  const [template, setTemplate] =
-    React.useState<TemplateData>(DefaultTemplateData)
+  const { data: template = DefaultTemplateData } = useTemplate()
+  const { data: infoData, error } = useInfo()
   const navigate = useNavigate()
-  const infos = useSelector((state: RootState) => state.infos)
   const [serviceType, setServiceType] = React.useState('')
   const [serviceID, setServiceID] = React.useState(0)
 
   useEffect(() => {
-    Get().then()
-    GetTemplate().then((res) => {
-      if (typeof res === 'object') {
-        setTemplate(res)
-      } else {
-        enqueueSnackbar(res, { variant: 'error' })
-        if (res.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(res, { variant: 'error' })
-          navigate('/login')
-        }
-      }
-    })
-  }, [])
-
-  useEffect(() => {
-    // info
-    const tmpData = infos[infos.length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/login')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-        }
-      } else if (tmpData.data != null) {
-        // add group
-        if (
-          !(
-            tmpData.data.service != null &&
-            tmpData.data.service?.filter((value) => value.add_allow).length > 0
-          )
-        ) {
-          navigate('/dashboard/add')
-        }
-      } else {
-        Get().then()
-        const date = new Date()
-        enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-          variant: 'info',
-        })
-      }
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
     }
-  }, [infos])
+  }, [error, enqueueSnackbar])
+
+  // 401 is handled centrally by the shared API client (redirect to /login).
+  useEffect(() => {
+    if (infoData == null) return
+    const canAdd =
+      infoData.service != null &&
+      infoData.service.filter((value: ServiceData) => value.add_allow).length > 0
+    if (!canAdd) {
+      navigate('/dashboard/add')
+    }
+  }, [infoData, navigate])
 
   const isNeedComment = (value: string) =>
     template.connections?.find((ct) => ct.type === value)?.need_comment ?? false
@@ -119,11 +78,11 @@ export default function ConnectionAdd() {
       (serviceTemplate) => serviceTemplate.type === serviceType
     )?.need_global_as ?? false
   const isIPv4Route = () =>
-    (infos[infos.length - 1]?.data?.service
+    (infoData?.service
       ?.find((service) => service.id === serviceID)
       ?.ip?.filter((ip) => ip.version === 4)?.length ?? 0) > 0 || isGlobalAS()
   const isIPv6Route = () =>
-    (infos[infos.length - 1]?.data?.service
+    (infoData?.service
       ?.find((service) => service.id === serviceID)
       ?.ip?.filter((ip) => ip.version === 6)?.length ?? 0) > 0 || isGlobalAS()
 
@@ -328,7 +287,7 @@ export default function ConnectionAdd() {
     Post(serviceID, request).then((res) => {
       if (res.error === '') {
         enqueueSnackbar('Request Success', { variant: 'success' })
-        Get().then()
+        queryClient.invalidateQueries({ queryKey: infoQueryKey })
         navigate('/dashboard/add')
       } else {
         enqueueSnackbar(String(res.error), { variant: 'error' })
@@ -361,9 +320,7 @@ export default function ConnectionAdd() {
                 labelId="service_code"
                 id="service_code"
                 onChange={(event) => {
-                  const tmpService = infos[
-                    infos.length - 1
-                  ]?.data?.service?.filter(
+                  const tmpService = infoData?.service?.filter(
                     (data) => data.id === Number(event.target.value)
                   )
                   if (tmpService != null) {
@@ -372,7 +329,7 @@ export default function ConnectionAdd() {
                   }
                 }}
               >
-                {infos[infos.length - 1]?.data?.service
+                {infoData?.service
                   ?.filter((tmp) => tmp.add_allow)
                   .map((row, index) => (
                     <MenuItem key={'service_code_' + index} value={row.id}>
@@ -385,7 +342,7 @@ export default function ConnectionAdd() {
           {serviceID !== 0 &&
             isNeedBGP() &&
             !isGlobalAS() &&
-            infos[infos.length - 1]?.data?.service?.find(
+            infoData?.service?.find(
               (service) => service.id === serviceID
             )?.ip == null && (
               <h1>
@@ -394,7 +351,7 @@ export default function ConnectionAdd() {
             )}
           {serviceID !== 0 &&
             isNeedBGP() &&
-            (infos[infos.length - 1]?.data?.service?.find(
+            (infoData?.service?.find(
               (service) => service.id === serviceID
             )?.ip != null ||
               isGlobalAS()) && (

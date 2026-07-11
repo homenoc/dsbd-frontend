@@ -10,13 +10,10 @@ import {
   Typography,
 } from '@mui/material'
 import { StyledCardHeader1, StyledDivCardPricing } from './styles'
-import { clearInfos, clearTemplates } from '../../store/action/Actions'
-import store, { RootState } from '../../store'
-import { InfoData, TemplateData } from '../../interface'
+import { InfoData } from '../../interface'
 import { useSnackbar } from 'notistack'
-import { useSelector } from 'react-redux'
-import { Get, GetTemplate } from '../../api/Info'
-import Cookies from 'js-cookie'
+import { useInfo } from '../../hooks/useInfo'
+import { useTemplate } from '../../hooks/useTemplate'
 import { useNavigate } from 'react-router-dom'
 import './payment.scss'
 import { StyledContainer1 } from '../../style'
@@ -25,79 +22,38 @@ import { GetPayment, PostSubscribe } from '../../api/payment'
 
 export default function Payment() {
   const [data, setData] = React.useState<InfoData>()
-  const [template, setTemplate] = React.useState<TemplateData>()
-  const infos = useSelector((state: RootState) => state.infos)
-  const templates = useSelector((state: RootState) => state.templates)
+  const { data: infoData, error } = useInfo()
+  const { data: template } = useTemplate()
   const navigate = useNavigate()
   const [isStatus, setIsStatus] = React.useState(0)
   const { enqueueSnackbar } = useSnackbar()
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = infos.length
-    const tmpData = infos[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/login')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-        }
-      } else if (tmpData.data != null) {
-        if (tmpData.data?.group?.expired_status !== 0) {
-          navigate('/dashboard')
-        }
-        setData(tmpData.data)
-
-        if (tmpData.data.user?.group_id == null) {
-          setIsStatus(1)
-        } else if ((tmpData.data.group?.member_type_id ?? 0) >= 50) {
-          setIsStatus(2)
-        } else if (tmpData.data.info?.length == null) {
-          setIsStatus(3)
-        } else if (
-          tmpData.data.group?.is_stripe_id &&
-          tmpData.data.group?.is_expired
-        ) {
-          setIsStatus(4)
-        } else if (!tmpData.data.group?.is_expired) {
-          setIsStatus(5)
-        }
-      }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
+    if (infoData == null) return
+    if (infoData.group?.expired_status !== 0) {
+      navigate('/dashboard')
     }
+    setData(infoData)
 
-    // template
-  }, [infos, templates])
+    if (infoData.user?.group_id == null) {
+      setIsStatus(1)
+    } else if ((infoData.group?.member_type_id ?? 0) >= 50) {
+      setIsStatus(2)
+    } else if (infoData.info?.length == null) {
+      setIsStatus(3)
+    } else if (infoData.group?.is_stripe_id && infoData.group?.is_expired) {
+      setIsStatus(4)
+    } else if (!infoData.group?.is_expired) {
+      setIsStatus(5)
+    }
+  }, [infoData, navigate])
 
   useEffect(() => {
-    GetTemplate().then((res) => {
-      if (typeof res === 'object') {
-        setTemplate(res)
-      } else {
-        enqueueSnackbar(res, { variant: 'error' })
-        if (res.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(res, { variant: 'error' })
-          navigate('/login')
-        }
-      }
-    })
-  }, [])
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const subscribe = (plan: string) => {
     PostSubscribe(plan).then((res) => {

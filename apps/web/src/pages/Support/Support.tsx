@@ -15,11 +15,8 @@ import { useNavigate } from 'react-router-dom'
 import { TicketData } from '../../interface'
 import { useSnackbar } from 'notistack'
 import { Solved } from '../../components/Dashboard/Solved/Open'
-import Cookies from 'js-cookie'
-import store, { RootState } from '../../store'
-import { clearInfos, clearTemplates } from '../../store/action/Actions'
-import { useSelector } from 'react-redux'
-import { Get } from '../../api/Info'
+import { queryClient } from '../../lib/queryClient'
+import { useInfo, infoQueryKey } from '../../hooks/useInfo'
 import { SupportAddDialog } from './SupportAddDialog'
 import { Put } from '../../api/Support'
 import {
@@ -33,46 +30,28 @@ export default function Support() {
   const [tickets, setTickets] = useState<TicketData[]>([])
   const [initTickets, setInitTickets] = useState<TicketData[]>([])
   const [group, setGroupID] = useState(0)
-  const infos = useSelector((state: RootState) => state.infos)
+  const { data: infoData, error } = useInfo()
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
   const [value, setValue] = React.useState(false)
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = infos.length
-    const tmpData = infos[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          Get().then()
-        }
-      } else if (tmpData.data != null) {
-        if (tmpData.data?.ticket != null) {
-          setInitTickets(tmpData.data?.ticket)
-          setTickets(tmpData.data?.ticket)
-        }
-        if (tmpData.data.user != null) {
-          setGroupID(tmpData.data.user?.group_id)
-        }
-      }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
+    if (infoData == null) return
+    if (infoData.ticket != null) {
+      setInitTickets(infoData.ticket)
+      setTickets(infoData.ticket)
     }
-  }, [infos])
+    if (infoData.user != null) {
+      setGroupID(infoData.user.group_id)
+    }
+  }, [infoData])
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value === 'true')
@@ -94,7 +73,7 @@ export default function Support() {
     Put(id, { solved }).then((res) => {
       if (res.error === undefined) {
         enqueueSnackbar('OK', { variant: 'success' })
-        Get().then()
+        queryClient.invalidateQueries({ queryKey: infoQueryKey })
       } else {
         enqueueSnackbar(res.error, { variant: 'error' })
       }

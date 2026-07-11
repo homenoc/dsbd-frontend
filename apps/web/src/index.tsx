@@ -1,19 +1,19 @@
-import React from 'react'
-import './index.css'
-import App from './App'
-import reportWebVitals from './reportWebVitals'
-import { SnackbarProvider, closeSnackbar } from 'notistack'
-import { Provider } from 'react-redux'
-import { createRoot } from 'react-dom/client'
-import store from './store'
-import { IconButton } from '@mui/material'
+import React from 'react';
+import './index.css';
 import CloseIcon from '@mui/icons-material/Close';
+import { IconButton } from '@mui/material';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { SnackbarProvider, closeSnackbar } from 'notistack';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import { queryClient } from './lib/queryClient';
+import reportWebVitals from './reportWebVitals';
 
-const container = document.getElementById('root')
+const container = document.getElementById('root');
 if (container) {
-  const root = createRoot(container)
+  const root = createRoot(container);
   root.render(
-    <Provider store={store}>
+    <QueryClientProvider client={queryClient}>
       <SnackbarProvider
         maxSnack={3}
         autoHideDuration={5000}
@@ -25,11 +25,11 @@ if (container) {
       >
         <App />
       </SnackbarProvider>
-    </Provider>
-  )
+    </QueryClientProvider>,
+  );
 }
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals()
+reportWebVitals();

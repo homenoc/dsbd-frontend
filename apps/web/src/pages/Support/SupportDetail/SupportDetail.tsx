@@ -6,11 +6,8 @@ import { MessageLeft, MessageRight } from './Message'
 import { TextInput } from './TextInput'
 import { useSnackbar } from 'notistack'
 import { useParams } from 'react-router-dom'
-import { useSelector } from 'react-redux'
-import store, { RootState } from '../../../store'
 import Cookies from 'js-cookie'
-import { clearInfos, clearTemplates } from '../../../store/action/Actions'
-import { Get } from '../../../api/Info'
+import { useInfo } from '../../../hooks/useInfo'
 import DashboardComponent from '../../../components/Dashboard/Dashboard'
 import { StyledPaperMessage } from '../styles'
 
@@ -36,7 +33,7 @@ export default function SupportDetail() {
   const [inputChatData, setInputChatData] = useState('')
   const [ticket, setTicket] = useState<TicketData>()
   const [userList, setUserList] = useState<UserData[]>()
-  const infos = useSelector((state: RootState) => state.infos)
+  const { data: infoData, error } = useInfo()
   const [sendPush, setSendPush] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -45,53 +42,35 @@ export default function SupportDetail() {
   }, [ticket])
 
   useEffect(() => {
-    // info
-    const length = infos.length
-    const tmpData = infos[length - 1]
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-        }
-      } else if (tmpData.data != null) {
-        if (tmpData.data.user_list != null) {
-          setUserList(tmpData.data.user_list)
-        }
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
-        if (tmpData.data.ticket != null) {
-          const ticketOne = tmpData.data.ticket.filter(
-            (ticket) => ticket.id === Number(id)
-          )
-          if (ticketOne != null && ticketOne.length !== 0) {
-            setTicket(ticketOne[0])
-          }
-        }
-
-        if (tmpData.data.request != null) {
-          const requestOne = tmpData.data.request.filter(
-            (ticket) => ticket.id === Number(id)
-          )
-          if (requestOne != null && requestOne.length !== 0) {
-            setTicket(requestOne[0])
-          }
-        }
-        enqueueSnackbar('データがありません ', { variant: 'info' })
-        return
+  // 401 is handled centrally by the shared API client (redirect to /login).
+  useEffect(() => {
+    if (infoData == null) return
+    if (infoData.user_list != null) {
+      setUserList(infoData.user_list)
+    }
+    if (infoData.ticket != null) {
+      const ticketOne = infoData.ticket.filter(
+        (ticket: TicketData) => ticket.id === Number(id)
+      )
+      if (ticketOne.length !== 0) {
+        setTicket(ticketOne[0])
       }
-    } else {
-      Get().then()
-      enqueueSnackbar('Info情報の更新: ' + tmpData.lastUpdated, {
-        variant: 'info',
-      })
+    }
+    if (infoData.request != null) {
+      const requestOne = infoData.request.filter(
+        (ticket: TicketData) => ticket.id === Number(id)
+      )
+      if (requestOne.length !== 0) {
+        setTicket(requestOne[0])
+      }
     }
     ref.current?.scrollIntoView()
-  }, [infos])
+  }, [infoData, id])
 
   useEffect(() => {
     if (lastMessage !== null) {
@@ -113,8 +92,7 @@ export default function SupportDetail() {
           ],
         })
       }
-      const tmpData = infos[infos.length - 1]
-      if (obj.user_id === tmpData.data?.user?.id) {
+      if (obj.user_id === infoData?.user?.id) {
         enqueueSnackbar('送信しました', { variant: 'success' })
       } else {
         enqueueSnackbar('新規メッセージがあります', { variant: 'success' })
