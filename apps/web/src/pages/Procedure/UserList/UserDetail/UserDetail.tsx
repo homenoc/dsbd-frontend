@@ -14,11 +14,8 @@ import {
 import { useNavigate, useParams } from 'react-router-dom'
 import { UserData } from '../../../../interface'
 import { useSnackbar } from 'notistack'
-import Cookies from 'js-cookie'
-import store, { RootState } from '../../../../store'
-import { clearInfos, clearTemplates } from '../../../../store/action/Actions'
-import { useSelector } from 'react-redux'
-import { Get } from '../../../../api/Info'
+import { queryClient } from '../../../../lib/queryClient'
+import { useInfo, infoQueryKey } from '../../../../hooks/useInfo'
 import Dashboard from '../../../../components/Dashboard/Dashboard'
 import { Delete, Put } from '../../../../api/User'
 import shaJS from 'sha.js'
@@ -67,7 +64,7 @@ export default function UserDetail() {
   const theme = useTheme()
   const [loginUserID, setLoginUserID] = useState<number>()
   const [user, setUser] = useState<UserData>()
-  const infos = useSelector((state: RootState) => state.infos)
+  const { data: infoData, error } = useInfo()
   const navigate = useNavigate()
   const { id } = useParams()
   const { enqueueSnackbar } = useSnackbar()
@@ -82,46 +79,29 @@ export default function UserDetail() {
 
   useEffect(() => {
     if (reload) {
-      Get().then()
+      queryClient.invalidateQueries({ queryKey: infoQueryKey })
       setReload(false)
     }
   }, [reload])
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = infos.length
-    const tmpData = infos[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          Get().then()
-        }
-      } else if (tmpData.data != null && tmpData.data?.user_list != null) {
-        const tmpUser = tmpData.data?.user_list.filter(
-          (user) => user.id === Number(id)
-        )
-        setUser(tmpUser[0])
-        if (tmpData.data.user != null) {
-          setLoginUserID(tmpData.data.user.id)
-        }
+    if (infoData?.user_list != null) {
+      const tmpUser = infoData.user_list.filter(
+        (user: UserData) => user.id === Number(id),
+      )
+      setUser(tmpUser[0])
+      if (infoData.user != null) {
+        setLoginUserID(infoData.user.id)
       }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
     }
-  }, [infos])
+  }, [infoData, id])
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const handleChange = (event: React.ChangeEvent<any>, newValue: number) => {
     setValue(newValue)
@@ -135,7 +115,7 @@ export default function UserDetail() {
     Delete(Number(id)).then((res) => {
       if (res.error === undefined) {
         enqueueSnackbar('OK', { variant: 'success' })
-        Get().then()
+        queryClient.invalidateQueries({ queryKey: infoQueryKey })
         navigate('/dashboard/procedure/user')
       } else {
         enqueueSnackbar(res.error, { variant: 'error' })

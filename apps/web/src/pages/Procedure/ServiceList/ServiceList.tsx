@@ -3,11 +3,7 @@ import { CardActions, CardContent, Chip, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { ServiceData } from '../../../interface'
 import { useSnackbar } from 'notistack'
-import Cookies from 'js-cookie'
-import store, { RootState } from '../../../store'
-import { clearInfos, clearTemplates } from '../../../store/action/Actions'
-import { useSelector } from 'react-redux'
-import { Get } from '../../../api/Info'
+import { useInfo } from '../../../hooks/useInfo'
 import Dashboard from '../../../components/Dashboard/Dashboard'
 import { ServiceListChangeDialog } from './ServiceListChangeDialog'
 import { ServiceListDeleteDialog } from './ServiceListDeleteDialog'
@@ -21,40 +17,23 @@ import {
 export default function ServiceList() {
   const [services, setServices] = useState<ServiceData[]>([])
   const [initServices, setInitServices] = useState<ServiceData[]>([])
-  const infos = useSelector((state: RootState) => state.infos)
+  const { data: infoData, error } = useInfo()
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = infos.length
-    const tmpData = infos[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          Get().then()
-        }
-      } else if (tmpData.data != null && tmpData.data?.service != null) {
-        setInitServices(tmpData.data?.service)
-        setServices(tmpData.data?.service)
-      }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
+    if (infoData?.service != null) {
+      setInitServices(infoData.service)
+      setServices(infoData.service)
     }
-  }, [infos])
+  }, [infoData])
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const handleFilter = (search: string) => {
     let tmp: ServiceData[]

@@ -9,11 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { UserData } from '../../../interface'
 import { useSnackbar } from 'notistack'
-import Cookies from 'js-cookie'
-import store, { RootState } from '../../../store'
-import { clearInfos, clearTemplates } from '../../../store/action/Actions'
-import { useSelector } from 'react-redux'
-import { Get } from '../../../api/Info'
+import { useInfo } from '../../../hooks/useInfo'
 import Dashboard from '../../../components/Dashboard/Dashboard'
 import {
   StyledCardRoot3,
@@ -25,40 +21,23 @@ import {
 export default function UserList() {
   const [users, setUsers] = useState<UserData[]>([])
   const [initUsers, setInitUsers] = useState<UserData[]>([])
-  const infos = useSelector((state: RootState) => state.infos)
+  const { data: infoData, error } = useInfo()
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = infos.length
-    const tmpData = infos[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          Get().then()
-        }
-      } else if (tmpData.data != null && tmpData.data?.user_list != null) {
-        setInitUsers(tmpData.data?.user_list)
-        setUsers(tmpData.data?.user_list)
-      }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
+    if (infoData?.user_list != null) {
+      setInitUsers(infoData.user_list)
+      setUsers(infoData.user_list)
     }
-  }, [infos])
+  }, [infoData])
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const handleFilter = (search: string) => {
     let tmp: UserData[]

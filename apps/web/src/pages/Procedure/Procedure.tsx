@@ -16,13 +16,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import { clearInfos, clearTemplates } from '../../store/action/Actions'
-import store, { RootState } from '../../store'
 import { InfoData, TicketData } from '../../interface'
 import { useSnackbar } from 'notistack'
-import { useSelector } from 'react-redux'
-import { Get } from '../../api/Info'
-import Cookies from 'js-cookie'
+import { useInfo } from '../../hooks/useInfo'
 import { useNavigate } from 'react-router-dom'
 import { UserAddDialog } from './UserAddDialog/UserAddDialog'
 import { RequestAddDialog } from './RequestAddDialog/RequestAddDialog'
@@ -31,41 +27,22 @@ import { StyledCardRoot3, StyledTable2 } from '../../style'
 
 export default function Procedure() {
   const [data, setData] = React.useState<InfoData>()
-  const infos = useSelector((state: RootState) => state.infos)
-  const templates = useSelector((state: RootState) => state.templates)
+  const { data: infoData, error } = useInfo()
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = infos.length
-    const tmpData = infos[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/login')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-        }
-      } else if (tmpData.data != null) {
-        setData(tmpData.data)
-      }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
+    if (infoData != null) {
+      setData(infoData)
     }
+  }, [infoData])
 
-    // template
-  }, [infos, templates])
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const UserListPage = () => navigate('/dashboard/procedure/user')
   const ServiceListPage = () => navigate('/dashboard/procedure/service')

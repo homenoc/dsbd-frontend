@@ -3,11 +3,7 @@ import { CardActions, CardContent, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { InfosData } from '../../../interface'
 import { useSnackbar } from 'notistack'
-import Cookies from 'js-cookie'
-import store, { RootState } from '../../../store'
-import { clearInfos, clearTemplates } from '../../../store/action/Actions'
-import { useSelector } from 'react-redux'
-import { Get } from '../../../api/Info'
+import { useInfo } from '../../../hooks/useInfo'
 import Dashboard from '../../../components/Dashboard/Dashboard'
 import { ConnectionListDeleteDialog } from './ConnectionListDeleteDialog'
 import { ConnectionListChangeDialog } from './ConnectionListChangeDialog'
@@ -21,40 +17,22 @@ import {
 export default function ConnectionList() {
   const [infos, setInfos] = useState<InfosData[]>([])
   const [initInfos, setInitInfos] = useState<InfosData[]>([])
-  const info = useSelector((state: RootState) => state.infos)
-  const navigate = useNavigate()
+  const { data: infoData, error } = useInfo()
   const { enqueueSnackbar } = useSnackbar()
 
+  // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
-    // info
-    const length = info.length
-    const tmpData = info[length - 1]
-
-    if (tmpData.error !== undefined || tmpData.data != null) {
-      if (tmpData.error !== undefined) {
-        if (tmpData.error?.indexOf('[401]') !== -1) {
-          Cookies.remove('user_token')
-          Cookies.remove('access_token')
-          store.dispatch(clearInfos())
-          store.dispatch(clearTemplates())
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          navigate('/')
-        } else {
-          enqueueSnackbar(tmpData.error, { variant: 'error' })
-          Get().then()
-        }
-      } else if (tmpData.data != null && tmpData.data?.info != null) {
-        setInitInfos(tmpData.data?.info)
-        setInfos(tmpData.data?.info)
-      }
-    } else {
-      Get().then()
-      const date = new Date()
-      enqueueSnackbar('Info情報の更新: ' + date.toLocaleString(), {
-        variant: 'info',
-      })
+    if (infoData?.info != null) {
+      setInitInfos(infoData.info)
+      setInfos(infoData.info)
     }
-  }, [info])
+  }, [infoData])
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar((error as Error).message, { variant: 'error' })
+    }
+  }, [error, enqueueSnackbar])
 
   const handleFilter = (search: string) => {
     let tmp: InfosData[]
