@@ -4,4 +4,4 @@
 export * from './vlan';
 export * from './api';
 export * from './constants';
-// export * from './types';      // F4: wire types split from interface.ts
+export * from './types';

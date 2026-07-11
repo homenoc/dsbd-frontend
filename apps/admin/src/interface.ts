@@ -1,3 +1,31 @@
+import type {
+  BGPRouterDetailData,
+  NocTemplateData,
+  ServiceAddIPData,
+  ServiceAddIPv4PlanData,
+  ServiceTemplateData,
+  TemplateData,
+  TunnelEndPointRouterIPTemplateData,
+  TunnelEndPointRouterTemplateData,
+} from '@dsbd/shared';
+
+export type {
+  BGPRouterDetailData,
+  ConnectionTemplateData,
+  IXTemplateData,
+  MailTemplateData,
+  MemberTypeTemplateData,
+  NocTemplateData,
+  PaymentMembershipTemplate,
+  ServiceAddIPData,
+  ServiceAddIPv4PlanData,
+  ServiceTemplateData,
+  TemplateData,
+  TunnelEndPointRouterIPTemplateData,
+  TunnelEndPointRouterTemplateData,
+} from '@dsbd/shared';
+export { DefaultAddIP, DefaultServiceAddIPv4PlanData } from '@dsbd/shared';
+
 import { ExpiredStatus, MemberType } from '@dsbd/shared';
 
 export interface NoticeData {
@@ -172,25 +200,6 @@ export interface JPNICData {
   lock: boolean;
 }
 
-export interface ServiceTemplateData {
-  name: string;
-  comment: string;
-  hidden: boolean;
-  type: string;
-  need_comment: boolean;
-  need_global_as: boolean;
-  need_jpnic: boolean;
-  need_route: boolean;
-  need_bgp: boolean;
-}
-
-export interface PaymentMembershipTemplate {
-  title: string;
-  plan: string;
-  price_id: string;
-  fee: string;
-}
-
 export interface ConnectionDetailData {
   ID: number;
   CreatedAt: string;
@@ -224,84 +233,6 @@ export interface ConnectionDetailData {
   ix?: string;
   ix_peer_type?: string;
   ix_vlan_id?: string;
-}
-
-export interface BGPRouterDetailData {
-  CreatedAt: string;
-  DeletedAt: string;
-  ID: number;
-  UpdatedAt: string;
-  address: string;
-  comment: string;
-  enable: boolean;
-  hostname: string;
-  noc: NocTemplateData;
-  noc_id: number;
-  tunnel_endpoint_router: null;
-}
-
-export interface NocTemplateData {
-  CreatedAt: string;
-  DeletedAt: string;
-  ID: number;
-  UpdatedAt: string;
-  name: string;
-  bandwidth: string;
-  bgp_router?: BGPRouterDetailData;
-  comment: string;
-  enable: boolean;
-  location: string;
-}
-
-export interface MailTemplateData {
-  id: string;
-  title: string;
-  message: string;
-}
-
-export interface MemberTypeTemplateData {
-  id: string;
-  name: string;
-}
-
-export interface TunnelEndPointRouterTemplateData {
-  CreatedAt: string;
-  DeletedAt: string;
-  ID: number;
-  UpdatedAt: string;
-  capacity: number;
-  comment: string;
-  enable: boolean;
-  hostname: string;
-  noc_id: number;
-  tunnel_endpoint_router_ip: TunnelEndPointRouterIPTemplateData[];
-}
-
-export interface TunnelEndPointRouterIPTemplateData {
-  CreatedAt: string;
-  DeletedAt: string;
-  ID: number;
-  UpdatedAt: string;
-  ip: string;
-  enable: boolean;
-  tunnel_endpoint_router: TunnelEndPointRouterTemplateData;
-}
-
-export interface ConnectionTemplateData {
-  name: string;
-  type: string;
-  comment: string;
-  need_comment: boolean;
-  need_cross_connect: boolean;
-  need_internet: boolean;
-  is_l2: boolean;
-  is_l3: boolean;
-}
-
-export interface IXTemplateData {
-  name: string;
-  ipv4_address: string;
-  ipv6_address: string;
 }
 
 export interface GroupDetailData {
@@ -346,20 +277,6 @@ export interface MemoData {
 // Catalog payload (GET /catalog): type registry + config option lists. Entity
 // lists (nocs/bgp_router/tunnel_endpoint_router_ip/user/group) are no longer
 // here — fetched via per-resource queries (hooks/useResources).
-export interface TemplateData {
-  connections?: ConnectionTemplateData[];
-  services?: ServiceTemplateData[];
-  ipv4?: string[];
-  ipv6?: string[];
-  ntts?: string[];
-  ipv4_route?: string[];
-  ipv6_route?: string[];
-  preferred_ap?: string[];
-  mail_template?: MailTemplateData[];
-  member_type?: MemberTypeTemplateData[];
-  payment_membership?: PaymentMembershipTemplate[];
-  ix?: IXTemplateData[];
-}
 
 export interface MemoAddData {
   group_id: number;
@@ -417,22 +334,6 @@ export interface ServiceAddJPNICData {
   country: string;
   tel: string;
   fax: string;
-}
-
-export interface ServiceAddIPData {
-  version: number;
-  ip: string;
-  plan?: ServiceAddIPv4PlanData[];
-  name: string;
-  start_date: string;
-  end_date?: string;
-}
-
-export interface ServiceAddIPv4PlanData {
-  name: string;
-  after: number;
-  half_year: number;
-  one_year: number;
 }
 
 export interface ConnectionAddData {
@@ -674,13 +575,6 @@ export const DefaultServiceJPNICData: JPNICData = {
   lock: false,
 };
 
-export const DefaultServiceAddIPv4PlanData: ServiceAddIPv4PlanData = {
-  name: '',
-  after: 0,
-  half_year: 0,
-  one_year: 0,
-};
-
 export const DefaultChatData: ChatData = {
   CreatedAt: '',
   ID: 0,
@@ -852,15 +746,6 @@ export const DefaultNoticeRegisterData: NoticeRegisterData = {
   important: false,
   fault: false,
   info: false,
-};
-
-export const DefaultAddIP: ServiceAddIPData = {
-  version: 0,
-  ip: '',
-  plan: undefined,
-  name: '',
-  start_date: '',
-  end_date: undefined,
 };
 
 export const DefaultMemoAddData: MemoAddData = {
