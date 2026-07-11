@@ -613,13 +613,13 @@ export function GroupStatus(props: {
       <CardContent>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            {data.expired_status === ExpiredStatus.ByMaster && (
+            {data.expired_status === ExpiredStatus.ReviewFailed && (
               <Chip size="small" color="secondary" label={'審査落ち'} />
             )}
-            {data.expired_status === ExpiredStatus.ByCommittee && (
+            {data.expired_status === ExpiredStatus.ByMaster && (
               <Chip size="small" color="secondary" label={'ユーザより廃止'} />
             )}
-            {data.expired_status === ExpiredStatus.ReviewFailed && (
+            {data.expired_status === ExpiredStatus.ByCommittee && (
               <Chip size="small" color="secondary" label={'運営委員より廃止\n'} />
             )}
             <h4>Status</h4>

@@ -15,12 +15,16 @@ export function canManageServices(level: number): boolean {
   return level <= UserLevel.Member;
 }
 
-/** User/Group.ExpiredStatus (core/enums.go). 0 = active. */
+/**
+ * User/Group.ExpiredStatus (core/enums.go). 0 = active. Meanings follow the
+ * writers (admin UI 廃止 menu / Slack notifier): 1=審査落ち, 2=ユーザより廃止,
+ * 3=運営委員より廃止.
+ */
 export const ExpiredStatus = {
   None: 0,
-  ByMaster: 1,
-  ByCommittee: 2,
-  ReviewFailed: 3,
+  ReviewFailed: 1,
+  ByMaster: 2,
+  ByCommittee: 3,
 } as const;
 export type ExpiredStatus = (typeof ExpiredStatus)[keyof typeof ExpiredStatus];
 

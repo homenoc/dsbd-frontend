@@ -193,13 +193,13 @@ export default function Dashboard() {
               if (!expired_status0IsChecked && isActive(item.expired_status)) {
                 return false;
               }
-              if (!expired_status1IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
+              if (!expired_status1IsChecked && item.expired_status === ExpiredStatus.ReviewFailed) {
                 return false;
               }
-              if (!expired_status2IsChecked && item.expired_status === ExpiredStatus.ByCommittee) {
+              if (!expired_status2IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
                 return false;
               }
-              if (!expired_status3IsChecked && item.expired_status === ExpiredStatus.ReviewFailed) {
+              if (!expired_status3IsChecked && item.expired_status === ExpiredStatus.ByCommittee) {
                 return false;
               }
               if (!member_type90IsChecked && item.member_type === MemberType.CommitteeFree) {
@@ -308,18 +308,18 @@ export default function Dashboard() {
                   if (!expired_status0IsChecked && isActive(item.expired_status)) {
                     return false;
                   }
-                  if (!expired_status1IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
+                  if (
+                    !expired_status1IsChecked &&
+                    item.expired_status === ExpiredStatus.ReviewFailed
+                  ) {
                     return false;
                   }
-                  if (
-                    !expired_status2IsChecked &&
-                    item.expired_status === ExpiredStatus.ByCommittee
-                  ) {
+                  if (!expired_status2IsChecked && item.expired_status === ExpiredStatus.ByMaster) {
                     return false;
                   }
                   if (
                     !expired_status3IsChecked &&
-                    item.expired_status === ExpiredStatus.ReviewFailed
+                    item.expired_status === ExpiredStatus.ByCommittee
                   ) {
                     return false;
                   }

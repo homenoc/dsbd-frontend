@@ -206,9 +206,13 @@ export function GroupAbolition(props: {
         open={Boolean(anchorEl)}
         onClose={handleClose}
       >
-        <MenuItem onClick={() => handleClickExpire(1)}>審査落ち</MenuItem>
-        <MenuItem onClick={() => handleClickExpire(2)}>ユーザより廃止</MenuItem>
-        <MenuItem onClick={() => handleClickExpire(3)}>運営委員より廃止</MenuItem>
+        <MenuItem onClick={() => handleClickExpire(ExpiredStatus.ReviewFailed)}>審査落ち</MenuItem>
+        <MenuItem onClick={() => handleClickExpire(ExpiredStatus.ByMaster)}>
+          ユーザより廃止
+        </MenuItem>
+        <MenuItem onClick={() => handleClickExpire(ExpiredStatus.ByCommittee)}>
+          運営委員より廃止
+        </MenuItem>
       </Menu>
     </div>
   );
