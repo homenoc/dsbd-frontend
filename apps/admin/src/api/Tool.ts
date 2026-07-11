@@ -1,26 +1,20 @@
-import { useTemplate } from '../hooks/useTemplate';
 import type { ConnectionTemplateData, ServiceTemplateData } from '../interface';
 
-export function GetServiceWithTemplate(serviceType: string): ServiceTemplateData | undefined {
-  const { data: template } = useTemplate();
-
-  const serviceTemplate = template.services?.find((item) => item.type === serviceType);
-  if (serviceTemplate == null) {
-    return undefined;
-  }
-
-  return serviceTemplate;
+// Pure lookups over the catalog type registry. These must NOT call hooks:
+// they are invoked inside `.map()`/JSX render (e.g. GroupDetail lists), so a
+// hook here would violate the rules of hooks ("rendered more hooks than during
+// the previous render" once a list grows). Callers read the arrays once via
+// useTemplate() at component top and pass them in.
+export function findServiceType(
+  services: ServiceTemplateData[] | undefined,
+  serviceType: string,
+): ServiceTemplateData | undefined {
+  return services?.find((item) => item.type === serviceType);
 }
 
-export function GetConnectionWithTemplate(
+export function findConnectionType(
+  connections: ConnectionTemplateData[] | undefined,
   connectionType: string,
 ): ConnectionTemplateData | undefined {
-  const { data: template } = useTemplate();
-
-  const connectionTemplate = template.connections?.find((item) => item.type === connectionType);
-  if (connectionTemplate == null) {
-    return undefined;
-  }
-
-  return connectionTemplate;
+  return connections?.find((item) => item.type === connectionType);
 }

@@ -16,7 +16,7 @@ import React, { type Dispatch, type SetStateAction, useEffect, useState } from '
 import { useNavigate, useParams } from 'react-router-dom';
 import { Update } from '../../../api/Connection';
 import { Get, Put } from '../../../api/Connection';
-import { GetConnectionWithTemplate, GetServiceWithTemplate } from '../../../api/Tool';
+import { findConnectionType, findServiceType } from '../../../api/Tool';
 import Dashboard from '../../../components/Dashboard/Dashboard';
 import { Open } from '../../../components/Dashboard/Open/Open';
 import { GenServiceCode } from '../../../components/Tool';
@@ -388,6 +388,7 @@ export function ConnectionOpenL3User(props: {
 
 export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
   const { connection } = props;
+  const { data: template } = useTemplate();
   const serviceCode = GenServiceCode(connection);
   const createDate = '作成日: ' + connection.CreatedAt;
   const updateDate = '更新日: ' + connection.UpdatedAt;
@@ -403,7 +404,9 @@ export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
             <StyledChip2
               size="small"
               color="primary"
-              label={GetConnectionWithTemplate(connection.connection_type)?.name ?? ''}
+              label={
+                findConnectionType(template.connections, connection.connection_type)?.name ?? ''
+              }
             />
           </Grid>
           <Grid item xs={6}>
@@ -499,6 +502,7 @@ export function ConnectionUserDisplay(props: {
   connection: ConnectionDetailData;
 }) {
   const { connection } = props;
+  const { data: template } = useTemplate();
 
   const distinctionIPAssign = (our: boolean) => {
     if (our) {
@@ -526,7 +530,9 @@ export function ConnectionUserDisplay(props: {
               </tr>
               <tr>
                 <th>サービス種別</th>
-                <td>{GetConnectionWithTemplate(connection.connection_type)?.name ?? ''}</td>
+                <td>
+                  {findConnectionType(template.connections, connection.connection_type)?.name ?? ''}
+                </td>
               </tr>
               <tr>
                 <th>利用料金</th>
@@ -535,8 +541,8 @@ export function ConnectionUserDisplay(props: {
               <tr>
                 <th>当団体からのIPアドレスの割当</th>
                 {distinctionIPAssign(
-                  GetServiceWithTemplate(connection.service?.service_type ?? '')?.need_jpnic ??
-                    false,
+                  findServiceType(template.services, connection.service?.service_type ?? '')
+                    ?.need_jpnic ?? false,
                 )}
               </tr>
             </thead>
@@ -550,7 +556,7 @@ export function ConnectionUserDisplay(props: {
               <tr>
                 <th>接続方式</th>
                 <td colSpan={2}>
-                  {GetConnectionWithTemplate(connection.connection_type)?.name ?? ''}
+                  {findConnectionType(template.connections, connection.connection_type)?.name ?? ''}
                 </td>
               </tr>
               {connection.connection_type !== 'IXP' && (

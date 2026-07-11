@@ -1,4 +1,6 @@
-import { ServiceDetailData } from '../../../interface'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
   Accordion,
   AccordionSummary,
@@ -19,75 +21,67 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-} from '@mui/material'
-import React, { Dispatch, SetStateAction } from 'react'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { Delete, Put } from '../../../api/Service'
-import { useSnackbar } from 'notistack'
-import { RowConnectionCheck } from './Connection'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Delete, Put } from '../../../api/Service';
+import { findServiceType } from '../../../api/Tool';
+import { GenServiceCodeOnlyService } from '../../../components/Tool';
+import { useTemplate } from '../../../hooks/useTemplate';
+import type { ServiceDetailData } from '../../../interface';
 import {
   StyledAccordionDetails,
   StyledDiv1,
   StyledTableRowRoot,
   StyledTypographyHeading,
-} from '../../../style'
-import { GetServiceWithTemplate } from '../../../api/Tool'
-import { useNavigate } from 'react-router-dom'
-import { GenServiceCodeOnlyService } from '../../../components/Tool'
+} from '../../../style';
+import { RowConnectionCheck } from './Connection';
 
 export function ChipGet(props: {
-  open: boolean
-  pass: boolean
-  enable: boolean
+  open: boolean;
+  pass: boolean;
+  enable: boolean;
 }) {
-  const { pass, enable } = props
+  const { pass, enable } = props;
 
   if (!enable) {
-    return <Chip size="small" color="secondary" label="無効" />
+    return <Chip size="small" color="secondary" label="無効" />;
   }
   if (!pass) {
-    return <Chip size="small" color="secondary" label="未審査" />
+    return <Chip size="small" color="secondary" label="未審査" />;
   }
-  return <Chip size="small" color="primary" label="審査OK" />
+  return <Chip size="small" color="primary" label="審査OK" />;
 }
 
 function RowService(props: {
-  service: ServiceDetailData
-  autoMail: Dispatch<SetStateAction<string>>
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  autoMail: Dispatch<SetStateAction<string>>;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, autoMail, setReload } = props
-  const [open, setOpen] = React.useState(false)
-  const navigate = useNavigate()
-  const serviceCode = GenServiceCodeOnlyService(service)
+  const { service, autoMail, setReload } = props;
+  const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
+  const { data: template } = useTemplate();
+  const serviceCode = GenServiceCodeOnlyService(service);
 
-  const clickServicePage = (id: number) => navigate('/dashboard/service/' + id)
+  const clickServicePage = (id: number) => navigate('/dashboard/service/' + id);
 
   return (
     <React.Fragment>
       <StyledTableRowRoot>
         <TableCell align="left">
-          <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
+          <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
         <TableCell align="left">{service.ID}</TableCell>
         <TableCell align="left">{serviceCode}</TableCell>
         <TableCell align="left">
-          {GetServiceWithTemplate(service.service_type)?.name}
+          {findServiceType(template.services, service.service_type)?.name}
         </TableCell>
         <TableCell align="left">
-          <ChipGet
-            open={service.pass}
-            pass={service.pass}
-            enable={service.enable}
-          />
+          <ChipGet open={service.pass} pass={service.pass} enable={service.enable} />
           &nbsp;
           {service.enable && service.add_allow && (
             <Chip size="small" color="primary" label="接続申請追加許可中" />
@@ -105,11 +99,7 @@ function RowService(props: {
               />
             )}
             &nbsp;
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => clickServicePage(service.ID)}
-            >
+            <Button size="small" variant="outlined" onClick={() => clickServicePage(service.ID)}>
               Detail
             </Button>
             &nbsp;
@@ -141,50 +131,45 @@ function RowService(props: {
         </TableCell>
       </TableRow>
     </React.Fragment>
-  )
+  );
 }
 
 export function ExaminationDialog(props: {
-  autoMail?: Dispatch<SetStateAction<string>>
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  autoMail?: Dispatch<SetStateAction<string>>;
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { autoMail, service, setReload } = props
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { autoMail, service, setReload } = props;
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const updateService = () => {
-    service.pass = true
+    service.pass = true;
     Put(service.ID, service).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
       if (autoMail !== undefined) {
-        autoMail('pass_service')
+        autoMail('pass_service');
       }
-      setOpen(false)
-      setReload(true)
-    })
-  }
+      setOpen(false);
+      setReload(true);
+    });
+  };
 
   const handleClickOpen = () => {
-    setOpen(true)
-  }
+    setOpen(true);
+  };
 
   const handleClose = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   return (
     <div>
-      <Button
-        size="small"
-        variant="outlined"
-        color={'primary'}
-        onClick={handleClickOpen}
-      >
+      <Button size="small" variant="outlined" color={'primary'} onClick={handleClickOpen}>
         審査OK
       </Button>
       <Dialog
@@ -210,45 +195,40 @@ export function ExaminationDialog(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }
 
 export function DeleteDialog(props: {
-  id: number
-  setReload: Dispatch<SetStateAction<boolean>>
+  id: number;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { id, setReload } = props
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { id, setReload } = props;
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const deleteService = () => {
     Delete(id).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-      setOpen(false)
-      setReload(true)
-    })
-  }
+      setOpen(false);
+      setReload(true);
+    });
+  };
 
   const handleClickOpen = () => {
-    setOpen(true)
-  }
+    setOpen(true);
+  };
 
   const handleClose = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   return (
     <div>
-      <Button
-        size="small"
-        variant="outlined"
-        color={'secondary'}
-        onClick={handleClickOpen}
-      >
+      <Button size="small" variant="outlined" color={'secondary'} onClick={handleClickOpen}>
         Delete
       </Button>
       <Dialog
@@ -260,9 +240,7 @@ export function DeleteDialog(props: {
       >
         <DialogTitle id="alert-delete-dialog-title">削除</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-delete-dialog">
-            本当に削除しますか？
-          </DialogContentText>
+          <DialogContentText id="alert-delete-dialog">本当に削除しますか？</DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="primary">
@@ -274,38 +252,38 @@ export function DeleteDialog(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }
 
 export function EnableDialog(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, setReload } = props
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { service, setReload } = props;
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const updateService = () => {
-    const tmp = service
-    tmp.enable = !service.enable
+    const tmp = service;
+    tmp.enable = !service.enable;
     Put(service.ID, tmp).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-      setOpen(false)
-      setReload(true)
-    })
-  }
+      setOpen(false);
+      setReload(true);
+    });
+  };
 
   const handleClickOpen = () => {
-    setOpen(true)
-  }
+    setOpen(true);
+  };
 
   const handleClose = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   return (
     <div>
@@ -342,15 +320,15 @@ export function EnableDialog(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }
 
 export function Service(props: {
-  services: ServiceDetailData[] | undefined
-  autoMail: Dispatch<SetStateAction<string>>
-  setReload: Dispatch<SetStateAction<boolean>>
+  services: ServiceDetailData[] | undefined;
+  autoMail: Dispatch<SetStateAction<string>>;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { services, autoMail, setReload } = props
+  const { services, autoMail, setReload } = props;
 
   if (services !== undefined) {
     return (
@@ -392,7 +370,7 @@ export function Service(props: {
           </TableContainer>
         </StyledAccordionDetails>
       </Accordion>
-    )
+    );
   }
-  return <Accordion defaultExpanded>None</Accordion>
+  return <Accordion defaultExpanded>None</Accordion>;
 }

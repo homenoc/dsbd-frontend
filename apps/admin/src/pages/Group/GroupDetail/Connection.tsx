@@ -1,6 +1,3 @@
-import React, { Dispatch, SetStateAction } from 'react'
-import { useSnackbar } from 'notistack'
-import { Delete, Put } from '../../../api/Connection'
 import {
   Box,
   Button,
@@ -16,24 +13,28 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from '@mui/material'
-import { ConnectionDetailData, ServiceDetailData } from '../../../interface'
-import { GetConnectionWithTemplate } from '../../../api/Tool'
-import { useNavigate } from 'react-router-dom'
-import { GenServiceCodeFromService } from '../../../components/Tool'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Delete, Put } from '../../../api/Connection';
+import { findConnectionType } from '../../../api/Tool';
+import { GenServiceCodeFromService } from '../../../components/Tool';
+import { useTemplate } from '../../../hooks/useTemplate';
+import type { ConnectionDetailData, ServiceDetailData } from '../../../interface';
 
 export function RowConnectionCheck(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, setReload } = props
+  const { service, setReload } = props;
 
   if (service.connections === undefined) {
     return (
       <div>
         <p>データがありません。</p>
       </div>
-    )
+    );
   }
   return (
     <div>
@@ -50,26 +51,22 @@ export function RowConnectionCheck(props: {
             <TableCell align="right">Action</TableCell>
           </TableRow>
         </TableHead>
-        <RowConnection
-          key={'connection_table'}
-          service={service}
-          setReload={setReload}
-        />
+        <RowConnection key={'connection_table'} service={service} setReload={setReload} />
       </Table>
     </div>
-  )
+  );
 }
 
 export function RowConnection(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  service: ServiceDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const navigate = useNavigate()
-  const { service, setReload } = props
-  const clickConnectionPage = (id: number) =>
-    navigate('/dashboard/connection/' + id)
+  const navigate = useNavigate();
+  const { data: template } = useTemplate();
+  const { service, setReload } = props;
+  const clickConnectionPage = (id: number) => navigate('/dashboard/connection/' + id);
   const serviceCode = (connection: ConnectionDetailData) =>
-    GenServiceCodeFromService(service, connection)
+    GenServiceCodeFromService(service, connection);
 
   return (
     <TableBody>
@@ -80,12 +77,10 @@ export function RowConnection(props: {
           </TableCell>
           <TableCell align="left">{serviceCode(connection)}</TableCell>
           <TableCell align="left">
-            {GetConnectionWithTemplate(connection.connection_type)?.name}
+            {findConnectionType(template.connections, connection.connection_type)?.name}
           </TableCell>
           <TableCell align="left">
-            {!connection.enable && (
-              <Chip size="small" color="secondary" label="無効" />
-            )}
+            {!connection.enable && <Chip size="small" color="secondary" label="無効" />}
             {connection.enable && connection.open && (
               <Chip size="small" color="primary" label="開通" />
             )}
@@ -119,45 +114,40 @@ export function RowConnection(props: {
         </TableRow>
       ))}
     </TableBody>
-  )
+  );
 }
 
 export function DeleteDialog(props: {
-  id: number
-  setReload: Dispatch<SetStateAction<boolean>>
+  id: number;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { id, setReload } = props
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { id, setReload } = props;
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const deleteConnection = () => {
     Delete(id).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-      setOpen(false)
-      setReload(true)
-    })
-  }
+      setOpen(false);
+      setReload(true);
+    });
+  };
 
   const handleClickOpen = () => {
-    setOpen(true)
-  }
+    setOpen(true);
+  };
 
   const handleClose = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   return (
     <div>
-      <Button
-        size="small"
-        variant="outlined"
-        color={'secondary'}
-        onClick={handleClickOpen}
-      >
+      <Button size="small" variant="outlined" color={'secondary'} onClick={handleClickOpen}>
         Delete
       </Button>
       <Dialog
@@ -183,38 +173,38 @@ export function DeleteDialog(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }
 
 export function EnableDialog(props: {
-  connection: ConnectionDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  connection: ConnectionDetailData;
+  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { connection, setReload } = props
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { connection, setReload } = props;
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const updateConnection = () => {
-    const tmp = connection
-    tmp.enable = !connection.enable
+    const tmp = connection;
+    tmp.enable = !connection.enable;
     Put(connection.ID, tmp).then((res) => {
       if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
+        enqueueSnackbar('Request Success', { variant: 'success' });
       } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
+        enqueueSnackbar(String(res.error), { variant: 'error' });
       }
-      setOpen(false)
-      setReload(true)
-    })
-  }
+      setOpen(false);
+      setReload(true);
+    });
+  };
 
   const handleClickOpen = () => {
-    setOpen(true)
-  }
+    setOpen(true);
+  };
 
   const handleClose = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   return (
     <div>
@@ -252,5 +242,5 @@ export function EnableDialog(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }
