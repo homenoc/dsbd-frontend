@@ -1,7 +1,3 @@
-import React, { Dispatch, SetStateAction, useEffect } from 'react'
-import { DefaultMailSendData, MailTemplateData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { Post } from '../../api/Mail'
 import {
   Button,
   Dialog,
@@ -11,51 +7,50 @@ import {
   Grid,
   MenuItem,
   Select,
-  SelectChangeEvent,
+  type SelectChangeEvent,
   TextField,
-} from '@mui/material'
-import { useTemplate } from '../../hooks/useTemplate'
+} from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction, useEffect } from 'react';
+import { Post } from '../../api/Mail';
+import { useTemplate } from '../../hooks/useTemplate';
+import { DefaultMailSendData, type MailTemplateData } from '../../interface';
 
 export function MailAutoSendDialogs(props: {
-  open: string
-  setOpen: Dispatch<SetStateAction<string>>
-  mails: string
-  org: string
+  open: string;
+  setOpen: Dispatch<SetStateAction<string>>;
+  mails: string;
+  org: string;
 }) {
-  const { open, setOpen, mails, org } = props
-  const { data: template } = useTemplate()
-  const [data, setData] = React.useState(DefaultMailSendData)
-  const [toMail, setToMail] = React.useState('')
-  const { enqueueSnackbar } = useSnackbar()
+  const { open, setOpen, mails, org } = props;
+  const { data: template } = useTemplate();
+  const [data, setData] = React.useState(DefaultMailSendData);
+  const [toMail, setToMail] = React.useState('');
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (open !== '') {
-      setToMail(mails)
+      setToMail(mails);
 
       if (template.mail_template !== undefined) {
-        const getMailTemplate = template.mail_template.filter(
-          (item) => item.id === open
-        )
-        const mailSignature = template.mail_template.filter(
-          (item) => item.id === 'signature'
-        )
+        const getMailTemplate = template.mail_template.filter((item) => item.id === open);
+        const mailSignature = template.mail_template.filter((item) => item.id === 'signature');
         if (getMailTemplate !== undefined && mailSignature !== undefined) {
-          let message = getMailTemplate[0].message.replace('{GROUP_NAME}', org)
-          message += mailSignature[0].message
+          let message = getMailTemplate[0].message.replace('{GROUP_NAME}', org);
+          message += mailSignature[0].message;
           setData({
             to_mail: '',
             subject: getMailTemplate[0].title,
             content: message,
-          })
+          });
         }
       }
     }
-  }, [open])
+  }, [open]);
 
   const request = () => {
-    // data.group_id = baseData.ID
-    const mailArray = mails.split(',')
-    for (const mail of mailArray) {
+    for (const raw of mails.split(',')) {
+      const mail = raw.trim();
       if (mail !== '') {
         Post({
           to_mail: mail,
@@ -63,15 +58,15 @@ export function MailAutoSendDialogs(props: {
           content: data.content,
         }).then((res) => {
           if (res.error === '') {
-            enqueueSnackbar('Request Success', { variant: 'success' })
+            enqueueSnackbar('Request Success', { variant: 'success' });
           } else {
-            enqueueSnackbar(res.error, { variant: 'error' })
+            enqueueSnackbar(res.error, { variant: 'error' });
           }
-        })
+        });
       }
     }
-    setOpen('')
-  }
+    setOpen('');
+  };
 
   return (
     <Dialog
@@ -95,7 +90,7 @@ export function MailAutoSendDialogs(props: {
               variant="outlined"
               value={toMail}
               onChange={(event) => {
-                setToMail(event.target.value)
+                setToMail(event.target.value);
               }}
             />
           </Grid>
@@ -109,7 +104,7 @@ export function MailAutoSendDialogs(props: {
               fullWidth={true}
               value={data.subject}
               onChange={(event) => {
-                setData({ ...data, subject: event.target.value })
+                setData({ ...data, subject: event.target.value });
               }}
             />
           </Grid>
@@ -125,7 +120,7 @@ export function MailAutoSendDialogs(props: {
               variant="outlined"
               value={data.content}
               onChange={(event) => {
-                setData({ ...data, content: event.target.value })
+                setData({ ...data, content: event.target.value });
               }}
             />
           </Grid>
@@ -140,60 +135,58 @@ export function MailAutoSendDialogs(props: {
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }
 
 export function MailSendDialogs(props: {
-  open: boolean
-  setOpen: Dispatch<SetStateAction<boolean>>
-  mails: string
-  org: string
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  mails: string;
+  org: string;
 }) {
-  const { open, setOpen, mails, org } = props
-  const { data: template } = useTemplate()
-  const [data, setData] = React.useState(DefaultMailSendData)
-  const [processID, setProcessID] = React.useState('')
-  const [toMail, setToMail] = React.useState(mails)
-  const { enqueueSnackbar } = useSnackbar()
+  const { open, setOpen, mails, org } = props;
+  const { data: template } = useTemplate();
+  const [data, setData] = React.useState(DefaultMailSendData);
+  const [processID, setProcessID] = React.useState('');
+  const [toMail, setToMail] = React.useState(mails);
+  const { enqueueSnackbar } = useSnackbar();
 
   const request = () => {
-    // data.group_id = baseData.ID
-    const mailArray = mails.split(',')
-    for (const mail of mailArray) {
+    for (const raw of mails.split(',')) {
+      const mail = raw.trim();
+      if (mail === '') continue;
       Post({
         to_mail: mail,
         subject: data.subject,
         content: data.content,
       }).then((res) => {
         if (res.error === '') {
-          enqueueSnackbar('Request Success', { variant: 'success' })
+          enqueueSnackbar('Request Success', { variant: 'success' });
         } else {
-          enqueueSnackbar(res.error, { variant: 'error' })
+          enqueueSnackbar(res.error, { variant: 'error' });
         }
-      })
+      });
     }
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   const handleChangeProcessID = (event: SelectChangeEvent<any>) => {
-    setProcessID(event.target.value)
-    const mailSignature = template.mail_template?.filter(
-      (item) => item.id === 'signature'
-    )
+    setProcessID(event.target.value);
+    const mailSignature = template.mail_template?.filter((item) => item.id === 'signature');
     const getMailTemplate = template.mail_template?.filter(
-      (item) => item.id === event.target.value
-    )
+      (item) => item.id === event.target.value,
+    );
     if (getMailTemplate !== undefined && mailSignature !== undefined) {
-      let message = getMailTemplate[0].message.replace('{GROUP_NAME}', org)
-      message += mailSignature[0].message
+      let message = getMailTemplate[0].message.replace('{GROUP_NAME}', org);
+      message += mailSignature[0].message;
 
       setData({
         to_mail: '',
         subject: getMailTemplate[0].title,
         content: message,
-      })
+      });
     }
-  }
+  };
 
   return (
     <Dialog
@@ -231,7 +224,7 @@ export function MailSendDialogs(props: {
               variant="outlined"
               value={mails}
               onChange={(event) => {
-                setToMail(event.target.value)
+                setToMail(event.target.value);
               }}
             />
           </Grid>
@@ -245,7 +238,7 @@ export function MailSendDialogs(props: {
               fullWidth={true}
               value={data.subject}
               onChange={(event) => {
-                setData({ ...data, subject: event.target.value })
+                setData({ ...data, subject: event.target.value });
               }}
             />
           </Grid>
@@ -261,7 +254,7 @@ export function MailSendDialogs(props: {
               variant="outlined"
               value={data.content}
               onChange={(event) => {
-                setData({ ...data, content: event.target.value })
+                setData({ ...data, content: event.target.value });
               }}
             />
           </Grid>
@@ -276,51 +269,48 @@ export function MailSendDialogs(props: {
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }
 
 export function MailAutoNoticeSendDialogs(props: {
-  open: boolean
-  setOpen: Dispatch<SetStateAction<boolean>>
-  mails: string
-  template: MailTemplateData[] | undefined
-  title: string
-  body: string
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  mails: string;
+  template: MailTemplateData[] | undefined;
+  title: string;
+  body: string;
 }) {
-  const { open, setOpen, template, mails, title, body } = props
-  const [data, setData] = React.useState(DefaultMailSendData)
-  const [toMail, setToMail] = React.useState('')
-  const { enqueueSnackbar } = useSnackbar()
-  const templateID = 'notice'
+  const { open, setOpen, template, mails, title, body } = props;
+  const [data, setData] = React.useState(DefaultMailSendData);
+  const [toMail, setToMail] = React.useState('');
+  const { enqueueSnackbar } = useSnackbar();
+  const templateID = 'notice';
 
   useEffect(() => {
     if (open) {
-      setToMail(mails)
+      setToMail(mails);
 
       if (template !== undefined) {
-        const getMailTemplate = template.filter(
-          (item) => item.id === templateID
-        )
-        const mailSignature = template.filter((item) => item.id === 'signature')
+        const getMailTemplate = template.filter((item) => item.id === templateID);
+        const mailSignature = template.filter((item) => item.id === 'signature');
         if (getMailTemplate !== undefined && mailSignature !== undefined) {
-          let message = getMailTemplate[0].message.replace('{TITLE}', title)
-          message = message.replace('{BODY}', body)
-          message += mailSignature[0].message
-          const subject = getMailTemplate[0].title.replace('{TITLE}', title)
+          let message = getMailTemplate[0].message.replace('{TITLE}', title);
+          message = message.replace('{BODY}', body);
+          message += mailSignature[0].message;
+          const subject = getMailTemplate[0].title.replace('{TITLE}', title);
           setData({
             to_mail: '',
             subject: subject,
             content: message,
-          })
+          });
         }
       }
     }
-  }, [open])
+  }, [open]);
 
   const request = () => {
-    // data.group_id = baseData.ID
-    const mailArray = mails.split(',')
-    for (const mail of mailArray) {
+    for (const raw of mails.split(',')) {
+      const mail = raw.trim();
       if (mail !== '') {
         Post({
           to_mail: mail,
@@ -328,15 +318,15 @@ export function MailAutoNoticeSendDialogs(props: {
           content: data.content,
         }).then((res) => {
           if (res.error === '') {
-            enqueueSnackbar('Request Success', { variant: 'success' })
+            enqueueSnackbar('Request Success', { variant: 'success' });
           } else {
-            enqueueSnackbar(res.error, { variant: 'error' })
+            enqueueSnackbar(res.error, { variant: 'error' });
           }
-        })
+        });
       }
     }
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   return (
     <Dialog
@@ -360,7 +350,7 @@ export function MailAutoNoticeSendDialogs(props: {
               variant="outlined"
               value={toMail}
               onChange={(event) => {
-                setToMail(event.target.value)
+                setToMail(event.target.value);
               }}
             />
           </Grid>
@@ -374,7 +364,7 @@ export function MailAutoNoticeSendDialogs(props: {
               fullWidth={true}
               value={data.subject}
               onChange={(event) => {
-                setData({ ...data, subject: event.target.value })
+                setData({ ...data, subject: event.target.value });
               }}
             />
           </Grid>
@@ -390,7 +380,7 @@ export function MailAutoNoticeSendDialogs(props: {
               variant="outlined"
               value={data.content}
               onChange={(event) => {
-                setData({ ...data, content: event.target.value })
+                setData({ ...data, content: event.target.value });
               }}
             />
           </Grid>
@@ -405,5 +395,5 @@ export function MailAutoNoticeSendDialogs(props: {
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }
