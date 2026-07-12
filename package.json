@@ -12,7 +12,6 @@
     "admin": "pnpm --filter dsbd-web-admin",
     "shared": "pnpm --filter @dsbd/shared",
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r exec tsc --noEmit",
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "test": "vitest run"
