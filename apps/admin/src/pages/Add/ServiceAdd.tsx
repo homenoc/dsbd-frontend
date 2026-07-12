@@ -45,6 +45,89 @@ import {
   StyledTextFieldVeryShort1,
 } from './style';
 
+// .when()の条件成立時スキーマからは型推論が効かないため、
+// 平常時のスキーマにも全フィールドのshapeを持たせて型を確定させる
+const jpnicUserShapeSchema = Yup.object({
+  hidden: Yup.bool(),
+  is_group: Yup.bool(),
+  org: Yup.string(),
+  org_en: Yup.string(),
+  mail: Yup.string(),
+  postcode: Yup.string(),
+  address: Yup.string(),
+  address_en: Yup.string(),
+  name: Yup.string(),
+  name_en: Yup.string(),
+  dept: Yup.string(),
+  dept_en: Yup.string(),
+  title: Yup.string(),
+  title_en: Yup.string(),
+  country: Yup.string(),
+  tel: Yup.string(),
+  fax: Yup.string(),
+});
+
+const jpnicUserSchema = Yup.object({
+  hidden: Yup.bool(),
+  is_group: Yup.bool(),
+  org: Yup.string()
+    .required('組織名を入力してください')
+    .max(255, 'Org must not exceed 255 characters'),
+  org_en: Yup.string()
+    .required('組織名(English)を入力してください')
+    .max(255, 'Org(English) must not exceed 255 characters'),
+  mail: Yup.string()
+    .required('E-Mailを入力してください')
+    .max(255, 'E-Mail must not exceed 255 characters')
+    .email(),
+  postcode: Yup.string()
+    .required('郵便番号を入力してください')
+    .min(2, 'PostCode must be at least 2 characters')
+    .max(20, 'PostCode must not exceed 20 characters'),
+  address: Yup.string()
+    .required('住所を入力してください')
+    .min(6, 'Address must be at least 6 characters')
+    .max(255, 'Address must not exceed 255 characters'),
+  address_en: Yup.string()
+    .required('住所(English)を入力してください')
+    .min(6, 'Address(English) must be at least 6 characters')
+    .max(255, 'Address(English) must not exceed 255 characters'),
+  name: Yup.string()
+    .required('グループ名 or 氏名を入力してください')
+    .min(1, 'name must be at least 6 characters')
+    .max(255, 'name must not exceed 255 characters'),
+  name_en: Yup.string()
+    .required('グループ名(English) or 氏名(English)を入力してください')
+    .min(1, 'name(English) must be at least 6 characters')
+    .max(255, 'name(English) must not exceed 255 characters'),
+  dept: Yup.string().max(255, 'dept must not exceed 255 characters'),
+  dept_en: Yup.string().max(255, 'dept(English) must not exceed 255 characters'),
+  title: Yup.string().max(255, 'title must not exceed 255 characters'),
+  title_en: Yup.string().max(255, 'title(English) must not exceed 255 characters'),
+  country: Yup.string()
+    .required('居住国を入力してください')
+    .min(2, 'Country must be at least 2 characters')
+    .max(40, 'Country must not exceed 40 characters'),
+  tel: Yup.string()
+    .required('電話番号を入力してください')
+    .matches(phoneRegExp, '電話番号の形式に誤りがあります'),
+  fax: Yup.string(),
+});
+
+const planShapeSchema = Yup.object({
+  name: Yup.string(),
+  after: Yup.number(),
+  half_year: Yup.number(),
+  one_year: Yup.number(),
+});
+
+const planSchema = Yup.object({
+  name: Yup.string().min(1, '文字を入力してください'),
+  after: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
+  half_year: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
+  one_year: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
+});
+
 export default function ServiceAdd() {
   const { data: template } = useCatalog();
   const { enqueueSnackbar } = useSnackbar();
@@ -140,106 +223,16 @@ export default function ServiceAdd() {
           .max(255, 'Address(English) must not exceed 255 characters'),
     }),
     abuse: Yup.string().required('Abuse is required').email(),
-    jpnic_admin: Yup.object().when('service_type', {
+    jpnic_admin: jpnicUserShapeSchema.when('service_type', {
       is: (value: string) => isNeedJPNIC(value),
-      then: () =>
-        Yup.object({
-          is_group: Yup.bool(),
-          org: Yup.string()
-            .required('組織名を入力してください')
-            .max(255, 'Org must not exceed 255 characters'),
-          org_en: Yup.string()
-            .required('組織名(English)を入力してください')
-            .max(255, 'Org(English) must not exceed 255 characters'),
-          mail: Yup.string()
-            .required('E-Mailを入力してください')
-            .max(255, 'E-Mail must not exceed 255 characters')
-            .email(),
-          postcode: Yup.string()
-            .required('郵便番号を入力してください')
-            .min(2, 'PostCode must be at least 2 characters')
-            .max(20, 'PostCode must not exceed 20 characters'),
-          address: Yup.string()
-            .required('住所を入力してください')
-            .min(6, 'Address must be at least 6 characters')
-            .max(255, 'Address must not exceed 255 characters'),
-          address_en: Yup.string()
-            .required('住所(English)を入力してください')
-            .min(6, 'Address(English) must be at least 6 characters')
-            .max(255, 'Address(English) must not exceed 255 characters'),
-          name: Yup.string()
-            .required('グループ名 or 氏名を入力してください')
-            .min(1, 'name must be at least 6 characters')
-            .max(255, 'name must not exceed 255 characters'),
-          name_en: Yup.string()
-            .required('グループ名(English) or 氏名(English)を入力してください')
-            .min(1, 'name(English) must be at least 6 characters')
-            .max(255, 'name(English) must not exceed 255 characters'),
-          dept: Yup.string().max(255, 'dept must not exceed 255 characters'),
-          dept_en: Yup.string().max(255, 'dept(English) must not exceed 255 characters'),
-          title: Yup.string().max(255, 'title must not exceed 255 characters'),
-          title_en: Yup.string().max(255, 'title(English) must not exceed 255 characters'),
-          country: Yup.string()
-            .required('居住国を入力してください')
-            .min(2, 'Country must be at least 2 characters')
-            .max(40, 'Country must not exceed 40 characters'),
-          tel: Yup.string()
-            .required('電話番号を入力してください')
-            .matches(phoneRegExp, '電話番号の形式に誤りがあります'),
-          fax: Yup.string(),
-        }),
+      then: () => jpnicUserSchema,
     }),
-    jpnic_tech: Yup.array().when('service_type', {
-      is: (value: string) => isNeedJPNIC(value),
-      then: (value) =>
-        value.of(
-          Yup.object({
-            is_group: Yup.bool(),
-            org: Yup.string()
-              .required('組織名を入力してください')
-              .max(255, 'Org must not exceed 255 characters'),
-            org_en: Yup.string()
-              .required('組織名(English)を入力してください')
-              .max(255, 'Org(English) must not exceed 255 characters'),
-            mail: Yup.string()
-              .required('E-Mailを入力してください')
-              .max(255, 'E-Mail must not exceed 255 characters')
-              .email(),
-            postcode: Yup.string()
-              .required('郵便番号を入力してください')
-              .min(2, 'PostCode must be at least 2 characters')
-              .max(20, 'PostCode must not exceed 20 characters'),
-            address: Yup.string()
-              .required('住所を入力してください')
-              .min(6, 'Address must be at least 6 characters')
-              .max(255, 'Address must not exceed 255 characters'),
-            address_en: Yup.string()
-              .required('住所(English)を入力してください')
-              .min(6, 'Address(English) must be at least 6 characters')
-              .max(255, 'Address(English) must not exceed 255 characters'),
-            name: Yup.string()
-              .required('グループ名 or 氏名を入力してください')
-              .min(1, 'name must be at least 6 characters')
-              .max(255, 'name must not exceed 255 characters'),
-            name_en: Yup.string()
-              .required('グループ名(English) or 氏名(English)を入力してください')
-              .min(1, 'name(English) must be at least 6 characters')
-              .max(255, 'name(English) must not exceed 255 characters'),
-            dept: Yup.string().max(255, 'dept must not exceed 255 characters'),
-            dept_en: Yup.string().max(255, 'dept(English) must not exceed 255 characters'),
-            title: Yup.string().max(255, 'title must not exceed 255 characters'),
-            title_en: Yup.string().max(255, 'title(English) must not exceed 255 characters'),
-            country: Yup.string()
-              .required('居住国を入力してください')
-              .min(2, 'Country must be at least 2 characters')
-              .max(40, 'Country must not exceed 40 characters'),
-            tel: Yup.string()
-              .required('電話番号を入力してください')
-              .matches(phoneRegExp, '電話番号の形式に誤りがあります'),
-            fax: Yup.string(),
-          }),
-        ),
-    }),
+    jpnic_tech: Yup.array()
+      .of(jpnicUserShapeSchema)
+      .when('service_type', {
+        is: (value: string) => isNeedJPNIC(value),
+        then: (value) => value.of(jpnicUserSchema),
+      }),
     // Transit AS
     bgp_comment: Yup.string().when('service_type', {
       is: (value: string) => isTransitUser(value),
@@ -263,18 +256,12 @@ export default function ServiceAdd() {
         (value) => !isIpv4 || !value || (value.length <= 12 && v4NetworkNameRegExp.test(value)),
       ),
     // L2, L3 Static, L3 BGP, CoLocation
-    plan: Yup.array().when('service_type', {
-      is: (value: string) => isIpv4 && isNeedJPNIC(value),
-      then: (value) =>
-        value.of(
-          Yup.object().shape({
-            name: Yup.string().min(1, '文字を入力してください'),
-            after: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
-            half_year: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
-            one_year: Yup.number().moreThan(-1, '0以上の数字を入れてください'),
-          }),
-        ),
-    }),
+    plan: Yup.array()
+      .of(planShapeSchema)
+      .when('service_type', {
+        is: (value: string) => isIpv4 && isNeedJPNIC(value),
+        then: (value) => value.of(planSchema),
+      }),
 
     // is_ipv6
     route_v6: Yup.string()
@@ -384,7 +371,7 @@ export default function ServiceAdd() {
   const controlledPlanFields = fieldsPlan.map((field, index) => {
     return {
       ...field,
-      ...planFieldArray[index],
+      ...planFieldArray?.[index],
     };
   });
   const jpnicAdmin = watch('jpnic_admin');
@@ -418,7 +405,7 @@ export default function ServiceAdd() {
   const controlledJpnicTechFields = fieldsJpnicTech.map((field, index) => {
     return {
       ...field,
-      ...jpnicTechFieldArray[index],
+      ...jpnicTechFieldArray?.[index],
     };
   });
 

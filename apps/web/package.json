@@ -34,12 +34,8 @@
     "yup": "^1.7.1"
   },
   "scripts": {
-    "start": "vite --mode development",
-    "start-prod": "vite --mode production",
-    "build": "vite build --mode development",
-    "build-staging": "vite build --mode staging",
-    "build-prod": "vite build",
-    "test": "jest",
+    "start": "vite",
+    "build": "tsc --noEmit && vite build",
     "eject": "vite eject"
   },
   "browserslist": {
