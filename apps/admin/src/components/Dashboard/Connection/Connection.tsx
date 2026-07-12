@@ -1,4 +1,3 @@
-import { ConnectionDetailData, TemplateData } from '../../../interface'
 import {
   Box,
   Button,
@@ -12,73 +11,58 @@ import {
   TablePagination,
   TableRow,
   Toolbar,
-} from '@mui/material'
-import React, { Dispatch, SetStateAction } from 'react'
-import {
-  DeleteDialog,
-  EnableDialog,
-} from '../../../pages/Group/GroupDetail/Connection'
-import { useNavigate } from 'react-router-dom'
-import { StyledTable1, StyledTypographyHeading } from '../../../style'
-import { GenServiceCode } from '../../Tool'
+} from '@mui/material';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { CatalogData, ConnectionDetailData } from '../../../interface';
+import { DeleteDialog, EnableDialog } from '../../../pages/Group/GroupDetail/Connection';
+import { StyledTable1, StyledTypographyHeading } from '../../../style';
+import { GenServiceCode } from '../../Tool';
 
 export default function Connection(props: {
-  data: ConnectionDetailData[] | undefined
-  template: TemplateData | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: ConnectionDetailData[] | undefined;
+  template: CatalogData | undefined;
 }) {
-  const { data, template, setReload } = props
+  const { data, template } = props;
 
   return (
     <TableContainer component={Paper}>
       <Toolbar variant="dense">
-        <StyledTypographyHeading id="connection">
-          Connection
-        </StyledTypographyHeading>
+        <StyledTypographyHeading id="connection">Connection</StyledTypographyHeading>
       </Toolbar>
       {data === undefined && <h3>データがありません</h3>}
       {template === undefined && <h3>Templateデータを取得できません</h3>}
       {data !== undefined && template !== undefined && (
         <StatusTable
           key={'connection_status_table'}
-          setReload={setReload}
           connection={data.sort((a, b) => b.ID - a.ID)}
         />
       )}
     </TableContainer>
-  )
+  );
 }
 
-export function StatusTable(props: {
-  connection: ConnectionDetailData[]
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { connection, setReload } = props
-  const navigate = useNavigate()
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(5)
+export function StatusTable(props: { connection: ConnectionDetailData[] }) {
+  const { connection } = props;
+  const navigate = useNavigate();
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, connection.length - page * rowsPerPage)
+  const emptyRows = rowsPerPage - Math.min(rowsPerPage, connection.length - page * rowsPerPage);
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage)
-  }
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPage(newPage);
+  };
 
   const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-  const clickGroupPage = (groupID: number | undefined) =>
-    navigate('/dashboard/group/' + groupID)
-  const clickConnectionPage = (id: number) =>
-    navigate('/dashboard/connection/' + id)
+  const clickGroupPage = (groupID: number | undefined) => navigate('/dashboard/group/' + groupID);
+  const clickConnectionPage = (id: number) => navigate('/dashboard/connection/' + id);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -94,10 +78,7 @@ export function StatusTable(props: {
           </TableHead>
           <TableBody>
             {(rowsPerPage > 0
-              ? connection.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
+              ? connection.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               : connection
             ).map((row) => (
               <TableRow key={'service_detail_' + row.ID}>
@@ -108,9 +89,7 @@ export function StatusTable(props: {
                   {row.CreatedAt}
                 </TableCell>
                 <TableCell style={{ width: 160 }} align="right">
-                  {row.enable && row.open && (
-                    <Chip size="small" color="primary" label="開通" />
-                  )}
+                  {row.enable && row.open && <Chip size="small" color="primary" label="開通" />}
                   {row.enable && !row.open && (
                     <Chip size="small" color="secondary" label="未開通" />
                   )}
@@ -128,16 +107,11 @@ export function StatusTable(props: {
                     )}
                     &nbsp;
                     {/* eslint-disable-next-line react/jsx-no-undef */}
-                    <DeleteDialog
-                      key={'connection_delete_alert_dialog_' + row.ID}
-                      id={row.ID}
-                      setReload={setReload}
-                    />
+                    <DeleteDialog key={'connection_delete_alert_dialog_' + row.ID} id={row.ID} />
                     &nbsp;
                     <EnableDialog
                       key={'connection_enable_alert_dialog_' + row.ID}
                       connection={row}
-                      setReload={setReload}
                     />
                     &nbsp;
                     <Button
@@ -172,5 +146,5 @@ export function StatusTable(props: {
         />
       </FormControl>
     </Box>
-  )
+  );
 }

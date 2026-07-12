@@ -1,60 +1,71 @@
-import React, { useEffect } from 'react'
-import { Button, Checkbox, FormControlLabel, Grid } from '@mui/material'
-import { DefaultNoticeData, NoticeData } from '../../interface'
-import { Get, Put } from '../../api/Notice'
-import { useSnackbar } from 'notistack'
-import { StyledTextFieldWrap, StyledTextFieldWrapTitle } from '../../style'
-import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import Dashboard from '../../components/Dashboard/Dashboard'
-import { useTemplate } from '../../hooks/useTemplate'
-import { useParams } from 'react-router-dom'
-import { DateToString1 } from '../../components/Tool'
+import { Button, Checkbox, FormControlLabel, Grid } from '@mui/material';
+import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React, { useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useParams } from 'react-router-dom';
+import remarkGfm from 'remark-gfm';
+import Dashboard from '../../components/Dashboard/Dashboard';
+import { DateToString1 } from '../../components/Tool';
+import { useNotice } from '../../hooks/useResources';
+import { DefaultNoticeData, type NoticeData } from '../../interface';
+import { api } from '../../lib/api';
+import { StyledTextFieldWrap, StyledTextFieldWrapTitle } from '../../style';
 
 export default function NoticeDetail() {
-  const { data: template } = useTemplate()
-  const [isPermanent, setIsPermanent] = React.useState(false)
-  const [startTime, setStartTime] = React.useState<Date>(new Date())
-  const [endTime, setEndTime] = React.useState<Date>(new Date())
-  const [data, setData] = React.useState<NoticeData>(DefaultNoticeData)
-  const { enqueueSnackbar } = useSnackbar()
-  const { id } = useParams()
+  const [isPermanent, setIsPermanent] = React.useState(false);
+  const [startTime, setStartTime] = React.useState<Date>(new Date());
+  const [endTime, setEndTime] = React.useState<Date>(new Date());
+  // The form edits a local copy; the query only seeds it.
+  const [data, setData] = React.useState<NoticeData>(DefaultNoticeData);
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const { id } = useParams();
+  const { data: notice, error } = useNotice(Number(id));
 
   useEffect(() => {
-    Get(Number(id)).then((res) => {
-      if (res.error !== '') {
-        enqueueSnackbar('' + res.error, { variant: 'error' })
-        return
-      }
-      setData(res.data)
-      setStartTime(new Date(res.data.start_time))
-      if (res.data.end_time === '9999-12-31T23:59:59+09:00') {
-        setIsPermanent(true)
+    if (notice) {
+      setData(notice);
+      setStartTime(new Date(notice.start_time));
+      if (notice.end_time === '9999-12-31T23:59:59+09:00') {
+        setIsPermanent(true);
       } else {
-        setEndTime(new Date(res.data.end_time))
+        // biome-ignore lint/style/noNonNullAssertion: matches the old untyped behavior
+        setEndTime(new Date(notice.end_time!));
       }
-    })
-  }, [template])
+    }
+  }, [notice]);
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
+    }
+  }, [error]);
+
+  const updateNoticeMutation = useMutation({
+    mutationFn: (req: NoticeData) => api.put('/notice/' + Number(id), req),
+    onSuccess: () => {
+      enqueueSnackbar('登録しました。', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['notice'] });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
 
   const request = () => {
-    const start_time = DateToString1(startTime)
-    let end_time = undefined
+    const start_time = DateToString1(startTime);
+    let end_time = undefined;
     if (!isPermanent) {
-      end_time = DateToString1(endTime)
+      end_time = DateToString1(endTime);
     }
 
-    data.start_time = start_time
-    data.end_time = end_time
-    Put(Number(id), data).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('登録しました。', { variant: 'success' })
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
-    })
-  }
+    data.start_time = start_time;
+    data.end_time = end_time;
+    updateNoticeMutation.mutate(data);
+  };
 
   return (
     <Dashboard title="通知機能の追加">
@@ -72,7 +83,7 @@ export default function NoticeDetail() {
               shrink: true,
             }}
             onChange={(event) => {
-              setData({ ...data, title: event.target.value })
+              setData({ ...data, title: event.target.value });
             }}
             variant="outlined"
           />
@@ -87,7 +98,7 @@ export default function NoticeDetail() {
             multiline
             rows={10}
             onChange={(event) => {
-              setData({ ...data, data: event.target.value })
+              setData({ ...data, data: event.target.value });
             }}
             variant="outlined"
           />
@@ -147,9 +158,7 @@ export default function NoticeDetail() {
         <Grid item xs={6}></Grid>
         <Grid item xs={12}>
           <h2>通知先</h2>
-          <p>
-            通知先を変更する場合は、該当通知を削除してから再追加してください。
-          </p>
+          <p>通知先を変更する場合は、該当通知を削除してから再追加してください。</p>
         </Grid>
         <Grid item xs={12}>
           <h2>Option</h2>
@@ -158,9 +167,7 @@ export default function NoticeDetail() {
               <Checkbox
                 color="secondary"
                 checked={data.important}
-                onChange={(event) =>
-                  setData({ ...data, important: event.target.checked })
-                }
+                onChange={(event) => setData({ ...data, important: event.target.checked })}
               />
             }
             label="重要"
@@ -171,9 +178,7 @@ export default function NoticeDetail() {
               <Checkbox
                 color="primary"
                 checked={data.info}
-                onChange={(event) =>
-                  setData({ ...data, info: event.target.checked })
-                }
+                onChange={(event) => setData({ ...data, info: event.target.checked })}
               />
             }
             label="情報"
@@ -184,9 +189,7 @@ export default function NoticeDetail() {
               <Checkbox
                 color="secondary"
                 checked={data.fault}
-                onChange={(event) =>
-                  setData({ ...data, fault: event.target.checked })
-                }
+                onChange={(event) => setData({ ...data, fault: event.target.checked })}
               />
             }
             label="障害"
@@ -199,5 +202,5 @@ export default function NoticeDetail() {
         更新
       </Button>
     </Dashboard>
-  )
+  );
 }

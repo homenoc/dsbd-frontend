@@ -9,16 +9,17 @@ import {
   RadioGroup,
   Typography,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { ReactMarkdown } from 'react-markdown/lib/react-markdown';
 import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
-import { Delete, GetAll } from '../../api/Notice';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { getStringFromDate } from '../../components/Tool';
-import { useTemplate } from '../../hooks/useTemplate';
+import { useNotices } from '../../hooks/useResources';
 import type { NoticeData } from '../../interface';
+import { api } from '../../lib/api';
 import {
   StyledCard,
   StyledInputBase,
@@ -27,28 +28,19 @@ import {
 } from '../Dashboard/styles';
 
 export default function Notice() {
-  const [tickets, setTickets] = useState<NoticeData[]>([]);
-  const [initTickets, setInitTickets] = useState<NoticeData[]>([]);
-  const { data: template } = useTemplate();
+  const { data: initTickets, error } = useNotices();
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
-  const [reload, setReload] = useState(true);
+  const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [value, setValue] = React.useState(2);
   const now = new Date();
 
   useEffect(() => {
-    if (reload) {
-      GetAll().then((res) => {
-        if (res.error === '') {
-          setTickets(res.data);
-          setInitTickets(res.data);
-          setReload(false);
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-        }
-      });
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
     }
-  }, [reload]);
+  }, [error]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(Number((event.target as HTMLInputElement).value));
@@ -58,27 +50,30 @@ export default function Notice() {
     return new Date(date);
   };
 
+  const deleteNoticeMutation = useMutation({
+    mutationFn: (id: number) => api.delete('/notice/' + id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notice'] });
+      enqueueSnackbar('OK', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const noticeDelete = (id: number) => {
-    Delete(id).then((res) => {
-      if (res.error === '') {
-        setReload(true);
-        enqueueSnackbar('OK', { variant: 'success' });
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-    });
+    deleteNoticeMutation.mutate(id);
   };
 
-  const handleFilter = (search: string) => {
-    let tmp: NoticeData[];
-    if (search === '') {
-      tmp = initTickets;
-    } else {
-      tmp = initTickets.filter((notice: NoticeData) => {
-        return notice.title.toLowerCase().includes(search.toLowerCase());
-      });
-    }
-    setTickets(tmp);
+  const tickets =
+    search === ''
+      ? (initTickets ?? [])
+      : (initTickets ?? []).filter((notice: NoticeData) => {
+          return notice.title.toLowerCase().includes(search.toLowerCase());
+        });
+
+  const handleFilter = (value: string) => {
+    setSearch(value);
   };
 
   const checkDate = (startTime: string, endTime: string | undefined) => {

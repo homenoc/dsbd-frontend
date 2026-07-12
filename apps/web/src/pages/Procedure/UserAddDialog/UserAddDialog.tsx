@@ -1,4 +1,3 @@
-import React, { useState } from 'react'
 import {
   Button,
   Dialog,
@@ -8,51 +7,68 @@ import {
   Grid,
   MenuItem,
   Select,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { useSnackbar } from 'notistack'
-import { DefaultUserAddData, UserAddData } from '../../../interface'
-import { PostGroup } from '../../../api/User'
-import { Get } from '../../../api/Info'
-import { StyledTextFieldShort, StyledTextFieldVeryLong } from '../../../style'
+} from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { infoQueryKey } from '../../../hooks/useInfo';
+import { DefaultUserAddData, type UserAddData } from '../../../interface';
+import { api } from '../../../lib/api';
+import { queryClient } from '../../../lib/queryClient';
+import { StyledTextFieldShort, StyledTextFieldVeryLong } from '../../../style';
 
 export function UserAddDialog(props: { groupID: number }) {
-  const { groupID } = props
-  const navigate = useNavigate()
-  const [data, setData] = React.useState(DefaultUserAddData)
-  const [open, setOpen] = React.useState(false)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [firstNameEn, setFirstNameEn] = useState('')
-  const [lastNameEn, setLastNameEn] = useState('')
-  const { enqueueSnackbar } = useSnackbar()
+  const { groupID } = props;
+  const navigate = useNavigate();
+  const [data, setData] = React.useState(DefaultUserAddData);
+  const [open, setOpen] = React.useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [firstNameEn, setFirstNameEn] = useState('');
+  const [lastNameEn, setLastNameEn] = useState('');
+  const { enqueueSnackbar } = useSnackbar();
+
+  const userAddMutation = useMutation({
+    mutationFn: (sendData: UserAddData) => api.post<void>(`/group/${groupID}/user`, sendData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: infoQueryKey }).then(() => {
+        navigate('/dashboard/procedure');
+      });
+      enqueueSnackbar('ユーザ追加しました。', { variant: 'success' });
+      setOpen(false);
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
 
   const request = () => {
     if (firstName === '') {
-      enqueueSnackbar('First Nameが入力されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('First Nameが入力されていません。', { variant: 'error' });
+      return;
     }
     if (lastName === '') {
-      enqueueSnackbar('Last Nameが入力されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('Last Nameが入力されていません。', { variant: 'error' });
+      return;
     }
     if (firstNameEn === '') {
       enqueueSnackbar('First Name(English)が入力されていません。', {
         variant: 'error',
-      })
-      return
+      });
+      return;
     }
     if (lastNameEn === '') {
       enqueueSnackbar('Last Name(English)が入力されていません。', {
         variant: 'error',
-      })
-      return
+      });
+      return;
     }
     if (!~data.email.indexOf('@')) {
       enqueueSnackbar('メールアドレスが正しくありません。', {
         variant: 'error',
-      })
-      return
+      });
+      return;
     }
 
     const sendData: UserAddData = {
@@ -61,20 +77,10 @@ export function UserAddDialog(props: { groupID: number }) {
       email: data.email,
       pass: '',
       level: data.level,
-    }
+    };
 
-    PostGroup(groupID, sendData).then((res) => {
-      if (res.error === undefined) {
-        Get().then(() => {
-          navigate('/dashboard/procedure')
-        })
-        enqueueSnackbar('ユーザ追加しました。', { variant: 'success' })
-        setOpen(false)
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-    })
-  }
+    userAddMutation.mutate(sendData);
+  };
 
   return (
     <div>
@@ -153,9 +159,7 @@ export function UserAddDialog(props: { groupID: number }) {
               label="Email Address"
               name="email"
               value={data.email}
-              onChange={(event) =>
-                setData({ ...data, email: event.target.value })
-              }
+              onChange={(event) => setData({ ...data, email: event.target.value })}
               autoComplete="email"
             />
           </Grid>
@@ -166,9 +170,7 @@ export function UserAddDialog(props: { groupID: number }) {
               id="ipv4_subnet"
               value={data.level}
               variant="outlined"
-              onChange={(event) =>
-                setData({ ...data, level: Number(event.target.value) })
-              }
+              onChange={(event) => setData({ ...data, level: Number(event.target.value) })}
             >
               <MenuItem value={2}>追加・変更・閲覧権限(Master)</MenuItem>
               <MenuItem value={3}>閲覧権限のみ(User)</MenuItem>
@@ -186,5 +188,5 @@ export function UserAddDialog(props: { groupID: number }) {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }

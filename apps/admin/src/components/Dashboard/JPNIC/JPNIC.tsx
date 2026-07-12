@@ -7,104 +7,89 @@ import {
   DialogTitle,
   FormControlLabel,
   Grid,
-} from '@mui/material'
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
-import { DefaultServiceJPNICData, JPNICData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import {
-  DeleteJPNICTech,
-  PostJPNICAdmin,
-  PostJPNICTech,
-  PutJPNICAdmin,
-  PutJPNICTech,
-} from '../../../api/Service'
-import { DeleteAlertDialog } from '../Alert/Alert'
+} from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useState } from 'react';
+import { DefaultServiceJPNICData, type JPNICData } from '../../../interface';
+import { api } from '../../../lib/api';
 import {
   StyledDivRoot2,
   StyledRootForm,
   StyledTextFieldMedium,
   StyledTextFieldShort,
   StyledTextFieldVeryShort1,
-} from '../../../style'
+} from '../../../style';
+import { DeleteAlertDialog } from '../Alert/Alert';
 
 export function JPNICDetail(props: {
-  serviceID: number
-  jpnic: JPNICData
-  jpnicAdmin: boolean
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  jpnic: JPNICData;
+  jpnicAdmin: boolean;
 }) {
-  const { jpnic, jpnicAdmin, serviceID, setReload } = props
-  const [lockInfo, setLockInfo] = React.useState(true)
-  const [jpnicCopy, setJPNICCopy] = useState(jpnic)
-  const [deleteJPNICTech, setDeleteJPNICTech] = useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { jpnic, jpnicAdmin, serviceID } = props;
+  const [lockInfo, setLockInfo] = React.useState(true);
+  const [jpnicCopy, setJPNICCopy] = useState(jpnic);
+  const [deleteJPNICTech, setDeleteJPNICTech] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   const clickLockInfo = () => {
-    setLockInfo(!lockInfo)
-  }
+    setLockInfo(!lockInfo);
+  };
   const resetAction = () => {
-    setJPNICCopy(jpnic)
-    setLockInfo(true)
-  }
+    setJPNICCopy(jpnic);
+    setLockInfo(true);
+  };
+
+  const updateJPNICMutation = useMutation({
+    mutationFn: (req: JPNICData) => {
+      if (jpnicAdmin) {
+        // データ存在しない場合
+        if (jpnic.ID === 0) {
+          return api.post('/service/' + serviceID + '/jpnic_admin', req);
+        }
+        return api.put('/jpnic_admin/' + req.ID, req);
+      }
+      return api.put('/jpnic_tech/' + req.ID, req);
+    },
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setLockInfo(true);
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   // Update Service Information
   const updateInfo = () => {
-    if (jpnicAdmin) {
-      // データ存在しない場合
-      if (jpnic.ID === 0) {
-        PostJPNICAdmin(serviceID, jpnicCopy).then((res) => {
-          if (res.error === '') {
-            enqueueSnackbar('Request Success', { variant: 'success' })
-            setLockInfo(true)
-          } else {
-            enqueueSnackbar(res.error, { variant: 'error' })
-          }
+    updateJPNICMutation.mutate(jpnicCopy);
+  };
 
-          setLockInfo(true)
-          setReload(true)
-        })
-      } else {
-        PutJPNICAdmin(jpnicCopy.ID, jpnicCopy).then((res) => {
-          if (res.error === '') {
-            enqueueSnackbar('Request Success', { variant: 'success' })
-            setLockInfo(true)
-          } else {
-            enqueueSnackbar(String(res.error), { variant: 'error' })
-          }
-
-          setLockInfo(true)
-          setReload(true)
-        })
-      }
-    } else {
-      PutJPNICTech(jpnicCopy.ID, jpnicCopy).then((res) => {
-        if (res.error === '') {
-          enqueueSnackbar('Request Success', { variant: 'success' })
-          setLockInfo(true)
-        } else {
-          enqueueSnackbar(String(res.error), { variant: 'error' })
-        }
-
-        setLockInfo(true)
-        setReload(true)
-      })
-    }
-  }
+  const deleteJPNICTechMutation = useMutation({
+    mutationFn: (id: number) => api.delete('/jpnic_tech/' + id),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      setLockInfo(true);
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   useEffect(() => {
     if (deleteJPNICTech) {
-      DeleteJPNICTech(jpnicCopy.ID).then((res) => {
-        if (res.error === '') {
-          enqueueSnackbar('Request Success', { variant: 'success' })
-          setLockInfo(true)
-        } else {
-          enqueueSnackbar(String(res.error), { variant: 'error' })
-        }
-        setReload(true)
-      })
-      setDeleteJPNICTech(false)
+      deleteJPNICTechMutation.mutate(jpnicCopy.ID);
+      setDeleteJPNICTech(false);
     }
-  }, [deleteJPNICTech])
+  }, [deleteJPNICTech]);
 
   return (
     <StyledDivRoot2>
@@ -116,7 +101,7 @@ export function JPNICDetail(props: {
           labelPlacement="end"
           checked={jpnicCopy.is_group}
           onChange={() => {
-            setJPNICCopy({ ...jpnicCopy, is_group: !jpnicCopy.is_group })
+            setJPNICCopy({ ...jpnicCopy, is_group: !jpnicCopy.is_group });
           }}
         />
         <FormControlLabel
@@ -126,7 +111,7 @@ export function JPNICDetail(props: {
           labelPlacement="end"
           checked={jpnicCopy.hidden}
           onChange={() => {
-            setJPNICCopy({ ...jpnicCopy, hidden: !jpnicCopy.hidden })
+            setJPNICCopy({ ...jpnicCopy, hidden: !jpnicCopy.hidden });
           }}
         />
         <br />
@@ -140,7 +125,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.v4_jpnic_handle}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, v4_jpnic_handle: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, v4_jpnic_handle: event.target.value });
           }}
         />
         <StyledTextFieldVeryShort1
@@ -153,7 +138,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.v6_jpnic_handle}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, v6_jpnic_handle: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, v6_jpnic_handle: event.target.value });
           }}
         />
         <br />
@@ -167,7 +152,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.org}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, org: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, org: event.target.value });
           }}
         />
         <StyledTextFieldVeryShort1
@@ -180,7 +165,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.org_en}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, org_en: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, org_en: event.target.value });
           }}
         />
         <br />
@@ -194,7 +179,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.name}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, name: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, name: event.target.value });
           }}
         />
         <StyledTextFieldVeryShort1
@@ -207,7 +192,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.name_en}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, name_en: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, name_en: event.target.value });
           }}
         />
         <br />
@@ -221,7 +206,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.postcode}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, postcode: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, postcode: event.target.value });
           }}
         />
         <br />
@@ -235,7 +220,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.address}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, address: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, address: event.target.value });
           }}
         />
         <StyledTextFieldMedium
@@ -248,7 +233,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.address_en}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, address_en: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, address_en: event.target.value });
           }}
         />
         <br />
@@ -262,7 +247,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.dept}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, dept: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, dept: event.target.value });
           }}
         />
         <StyledTextFieldVeryShort1
@@ -275,7 +260,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.dept_en}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, dept_en: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, dept_en: event.target.value });
           }}
         />
         <br />
@@ -289,7 +274,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.title}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, title: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, title: event.target.value });
           }}
         />
         <StyledTextFieldVeryShort1
@@ -302,7 +287,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.title_en}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, title_en: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, title_en: event.target.value });
           }}
         />
         <br />
@@ -316,7 +301,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.tel}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, tel: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, tel: event.target.value });
           }}
         />
         <StyledTextFieldVeryShort1
@@ -329,7 +314,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.fax}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, fax: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, fax: event.target.value });
           }}
         />
         <br />
@@ -343,7 +328,7 @@ export function JPNICDetail(props: {
           value={jpnicCopy.mail}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, mail: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, mail: event.target.value });
           }}
         />
         <StyledTextFieldVeryShort1
@@ -356,29 +341,19 @@ export function JPNICDetail(props: {
           value={jpnicCopy.country}
           variant="outlined"
           onChange={(event) => {
-            setJPNICCopy({ ...jpnicCopy, country: event.target.value })
+            setJPNICCopy({ ...jpnicCopy, country: event.target.value });
           }}
         />
       </StyledRootForm>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={8}>
-          <Button
-            size="small"
-            color="secondary"
-            disabled={!lockInfo}
-            onClick={clickLockInfo}
-          >
+          <Button size="small" color="secondary" disabled={!lockInfo} onClick={clickLockInfo}>
             ロック解除
           </Button>
           <Button size="small" disabled={lockInfo} onClick={resetAction}>
             Reset
           </Button>
-          <Button
-            size="small"
-            color={'primary'}
-            disabled={lockInfo}
-            onClick={updateInfo}
-          >
+          <Button size="small" color={'primary'} disabled={lockInfo} onClick={updateInfo}>
             Apply
           </Button>
         </Grid>
@@ -392,38 +367,43 @@ export function JPNICDetail(props: {
         )}
       </Grid>
     </StyledDivRoot2>
-  )
+  );
 }
 
 export function JPNICTechAdd(props: {
-  serviceID: number
-  jpnicAdmin: JPNICData | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  jpnicAdmin: JPNICData | undefined;
 }) {
-  const { jpnicAdmin, serviceID, setReload } = props
-  const [jpnic, setJPNIC] = useState(DefaultServiceJPNICData)
-  const [open, setOpen] = useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { jpnicAdmin, serviceID } = props;
+  const [jpnic, setJPNIC] = useState(DefaultServiceJPNICData);
+  const [open, setOpen] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   const sameJPNICAdminAction = () => {
     if (jpnicAdmin !== undefined) {
-      setJPNIC(jpnicAdmin)
+      setJPNIC(jpnicAdmin);
     }
-  }
+  };
+
+  const addJPNICTechMutation = useMutation({
+    mutationFn: (req: JPNICData) => api.post('/service/' + serviceID + '/jpnic_tech', req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      setOpen(false);
+    },
+  });
 
   // Update Service Information
   const addInfo = () => {
-    PostJPNICTech(serviceID, jpnic).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
-
-      setReload(true)
-      setOpen(false)
-    })
-  }
+    addJPNICTechMutation.mutate(jpnic);
+  };
 
   return (
     <StyledRootForm>
@@ -441,9 +421,7 @@ export function JPNICTechAdd(props: {
           },
         }}
       >
-        <DialogTitle id="customized-dialog-title">
-          JPNIC管理連絡窓口の追加
-        </DialogTitle>
+        <DialogTitle id="customized-dialog-title">JPNIC管理連絡窓口の追加</DialogTitle>
         <DialogContent dividers>
           <StyledRootForm noValidate autoComplete="off">
             <FormControlLabel
@@ -453,7 +431,7 @@ export function JPNICTechAdd(props: {
               labelPlacement="end"
               checked={jpnic.is_group}
               onChange={() => {
-                setJPNIC({ ...jpnic, is_group: !jpnic.is_group })
+                setJPNIC({ ...jpnic, is_group: !jpnic.is_group });
               }}
             />
             <FormControlLabel
@@ -463,7 +441,7 @@ export function JPNICTechAdd(props: {
               labelPlacement="end"
               checked={jpnic.hidden}
               onChange={() => {
-                setJPNIC({ ...jpnic, hidden: !jpnic.hidden })
+                setJPNIC({ ...jpnic, hidden: !jpnic.hidden });
               }}
             />
             <br />
@@ -474,7 +452,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.v4_jpnic_handle}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, v4_jpnic_handle: event.target.value })
+                setJPNIC({ ...jpnic, v4_jpnic_handle: event.target.value });
               }}
             />
             <StyledTextFieldVeryShort1
@@ -484,7 +462,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.v6_jpnic_handle}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, v6_jpnic_handle: event.target.value })
+                setJPNIC({ ...jpnic, v6_jpnic_handle: event.target.value });
               }}
             />
             <br />
@@ -495,7 +473,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.org}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, org: event.target.value })
+                setJPNIC({ ...jpnic, org: event.target.value });
               }}
             />
             <StyledTextFieldVeryShort1
@@ -505,7 +483,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.org_en}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, org_en: event.target.value })
+                setJPNIC({ ...jpnic, org_en: event.target.value });
               }}
             />
             <br />
@@ -516,7 +494,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.name}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, name: event.target.value })
+                setJPNIC({ ...jpnic, name: event.target.value });
               }}
             />
             <StyledTextFieldVeryShort1
@@ -526,7 +504,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.name_en}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, name_en: event.target.value })
+                setJPNIC({ ...jpnic, name_en: event.target.value });
               }}
             />
             <br />
@@ -537,7 +515,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.postcode}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, postcode: event.target.value })
+                setJPNIC({ ...jpnic, postcode: event.target.value });
               }}
             />
             <br />
@@ -548,7 +526,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.address}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, address: event.target.value })
+                setJPNIC({ ...jpnic, address: event.target.value });
               }}
             />
             <StyledTextFieldMedium
@@ -558,7 +536,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.address_en}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, address_en: event.target.value })
+                setJPNIC({ ...jpnic, address_en: event.target.value });
               }}
             />
             <br />
@@ -568,7 +546,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.dept}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, dept: event.target.value })
+                setJPNIC({ ...jpnic, dept: event.target.value });
               }}
             />
             <StyledTextFieldVeryShort1
@@ -577,7 +555,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.dept_en}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, dept_en: event.target.value })
+                setJPNIC({ ...jpnic, dept_en: event.target.value });
               }}
             />
             <br />
@@ -588,7 +566,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.title}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, title: event.target.value })
+                setJPNIC({ ...jpnic, title: event.target.value });
               }}
             />
             <StyledTextFieldVeryShort1
@@ -598,7 +576,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.title_en}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, title_en: event.target.value })
+                setJPNIC({ ...jpnic, title_en: event.target.value });
               }}
             />
             <br />
@@ -609,7 +587,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.tel}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, tel: event.target.value })
+                setJPNIC({ ...jpnic, tel: event.target.value });
               }}
             />
             <StyledTextFieldVeryShort1
@@ -618,7 +596,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.fax}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, fax: event.target.value })
+                setJPNIC({ ...jpnic, fax: event.target.value });
               }}
             />
             <br />
@@ -629,7 +607,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.mail}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, mail: event.target.value })
+                setJPNIC({ ...jpnic, mail: event.target.value });
               }}
             />
             <StyledTextFieldVeryShort1
@@ -639,7 +617,7 @@ export function JPNICTechAdd(props: {
               value={jpnic.country}
               variant="outlined"
               onChange={(event) => {
-                setJPNIC({ ...jpnic, country: event.target.value })
+                setJPNIC({ ...jpnic, country: event.target.value });
               }}
             />
           </StyledRootForm>
@@ -657,5 +635,5 @@ export function JPNICTechAdd(props: {
         </DialogActions>
       </Dialog>
     </StyledRootForm>
-  )
+  );
 }

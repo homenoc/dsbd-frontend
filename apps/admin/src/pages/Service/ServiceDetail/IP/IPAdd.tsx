@@ -1,12 +1,4 @@
 import {
-  DefaultAddIP,
-  DefaultServiceAddIPv4PlanData,
-  ServiceAddIPData,
-  ServiceAddIPv4PlanData,
-} from '../../../../interface'
-import React, { Dispatch, SetStateAction } from 'react'
-import { useSnackbar } from 'notistack'
-import {
   Button,
   Checkbox,
   Dialog,
@@ -25,42 +17,46 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-} from '@mui/material'
-import { PostIP } from '../../../../api/Service'
+} from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction } from 'react';
+import { useCatalog } from '../../../../hooks/useCatalog';
+import {
+  DefaultAddIP,
+  DefaultServiceAddIPv4PlanData,
+  type ServiceAddIPData,
+  type ServiceAddIPv4PlanData,
+} from '../../../../interface';
+import { api } from '../../../../lib/api';
 import {
   StyledRootForm,
   StyledTableRoot,
   StyledTextFieldMedium,
   StyledTextFieldTooVeryShort,
-} from '../../../../style'
-import { useTemplate } from '../../../../hooks/useTemplate'
+} from '../../../../style';
 
-export function AddAssignIPDialog(props: {
-  serviceID: number
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { serviceID, setReload } = props
-  const { data: template } = useTemplate()
-  const [checkBoxIPv4, setCheckBoxIPv4] = React.useState(false)
-  const [data, setData] = React.useState(DefaultAddIP)
-  const [ipv4PlanSubnetCount, setIPv4PlanSubnetCount] = React.useState(0)
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+export function AddAssignIPDialog(props: { serviceID: number }) {
+  const { serviceID } = props;
+  const { data: template } = useCatalog();
+  const [checkBoxIPv4, setCheckBoxIPv4] = React.useState(false);
+  const [data, setData] = React.useState(DefaultAddIP);
+  const [ipv4PlanSubnetCount, setIPv4PlanSubnetCount] = React.useState(0);
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleClickOpen = () => {
-    setOpen(true)
-  }
+    setOpen(true);
+  };
 
   const handleClose = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
-  const handleIPv4CheckBoxChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setCheckBoxIPv4(event.target.checked)
+  const handleIPv4CheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCheckBoxIPv4(event.target.checked);
     if (!event.target.checked) {
-      setIPv4PlanSubnetCount(0)
+      setIPv4PlanSubnetCount(0);
       setData({
         end_date: undefined,
         ip: '',
@@ -68,7 +64,7 @@ export function AddAssignIPDialog(props: {
         plan: [],
         start_date: '',
         version: 4,
-      })
+      });
     } else {
       setData({
         end_date: undefined,
@@ -77,52 +73,53 @@ export function AddAssignIPDialog(props: {
         plan: [],
         start_date: '',
         version: 6,
-      })
+      });
     }
-  }
+  };
 
   const getSubnetID = (type: number) => {
     if (data.ip === undefined || data.ip.length === 0) {
-      return 'None'
+      return 'None';
     }
 
     //Todo データ不正検知
     if (type === 4) {
-      const dataCheck = template.ipv4?.filter((item) => item === data.ip)
+      const dataCheck = template.ipv4?.filter((item) => item === data.ip);
       if (dataCheck === undefined || dataCheck.length !== 1) {
         // console.log("Warning: Illegal data\n")
       }
     } else if (type === 6) {
-      const dataCheck = template.ipv6?.filter((item) => item === data.ip)
+      const dataCheck = template.ipv6?.filter((item) => item === data.ip);
       if (dataCheck === undefined || dataCheck.length !== 1) {
         // console.log("Warning: Illegal data\n")
       }
     }
 
-    return data.ip
-  }
+    return data.ip;
+  };
+
+  const queryClient = useQueryClient();
+  const addIPMutation = useMutation({
+    mutationFn: () => api.post('/service/' + serviceID + '/ip', data),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      setOpen(false);
+    },
+  });
 
   const request = () => {
-    PostIP(serviceID, data).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
-
-      setReload(true)
-      setOpen(false)
-    })
-  }
+    addIPMutation.mutate();
+  };
 
   return (
     <div>
-      <Button
-        size="small"
-        variant="outlined"
-        color={'primary'}
-        onClick={handleClickOpen}
-      >
+      <Button size="small" variant="outlined" color={'primary'} onClick={handleClickOpen}>
         追加
       </Button>
       <br />
@@ -134,9 +131,7 @@ export function AddAssignIPDialog(props: {
         aria-labelledby="alert-dialog-slide-title"
         aria-describedby="alert-dialog-slide-description"
       >
-        <DialogTitle id="customized-dialog-title">
-          Connection Detail
-        </DialogTitle>
+        <DialogTitle id="customized-dialog-title">Connection Detail</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={3}>
             <Grid item xs={6}>
@@ -167,9 +162,7 @@ export function AddAssignIPDialog(props: {
                         inputProps={{
                           maxLength: 12,
                         }}
-                        onChange={(event) =>
-                          setData({ ...data, name: event.target.value })
-                        }
+                        onChange={(event) => setData({ ...data, name: event.target.value })}
                       />
                     </StyledRootForm>
                     <FormControl component="fieldset">
@@ -179,17 +172,14 @@ export function AddAssignIPDialog(props: {
                         value={getSubnetID(4)}
                         onChange={(event) => {
                           const tmpPrefix = template.ipv4?.find(
-                            (item) => item === event.target.value
-                          )
+                            (item) => item === event.target.value,
+                          );
                           if (tmpPrefix !== undefined) {
                             setIPv4PlanSubnetCount(
-                              Math.pow(
-                                2,
-                                32 - parseInt(tmpPrefix.substr(1), 10)
-                              )
-                            )
+                              Math.pow(2, 32 - Number.parseInt(tmpPrefix.substr(1), 10)),
+                            );
                           }
-                          setData({ ...data, ip: String(event.target.value) })
+                          setData({ ...data, ip: String(event.target.value) });
                         }}
                       >
                         <MenuItem value={'None'} disabled={true}>
@@ -218,9 +208,7 @@ export function AddAssignIPDialog(props: {
                         inputProps={{
                           maxLength: 24,
                         }}
-                        onChange={(event) =>
-                          setData({ ...data, name: event.target.value })
-                        }
+                        onChange={(event) => setData({ ...data, name: event.target.value })}
                       />
                     </StyledRootForm>
                     <FormControl component="fieldset">
@@ -228,9 +216,7 @@ export function AddAssignIPDialog(props: {
                         aria-label="gender"
                         id="ipv6_subnet"
                         value={getSubnetID(6)}
-                        onChange={(event) =>
-                          setData({ ...data, ip: String(event.target.value) })
-                        }
+                        onChange={(event) => setData({ ...data, ip: String(event.target.value) })}
                       >
                         <MenuItem value={'None'} disabled={true}>
                           なし
@@ -248,11 +234,7 @@ export function AddAssignIPDialog(props: {
               </div>
             </Grid>
             <Grid item xs={6}>
-              <AddJPNICIPv4Plan
-                data={data}
-                setData={setData}
-                subnetCount={ipv4PlanSubnetCount}
-              />
+              <AddJPNICIPv4Plan data={data} setData={setData} subnetCount={ipv4PlanSubnetCount} />
             </Grid>
           </Grid>
         </DialogContent>
@@ -266,71 +248,69 @@ export function AddAssignIPDialog(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }
 
 export function AddJPNICIPv4Plan(props: {
-  data: ServiceAddIPData
-  setData: Dispatch<SetStateAction<ServiceAddIPData>>
-  subnetCount: number
+  data: ServiceAddIPData;
+  setData: Dispatch<SetStateAction<ServiceAddIPData>>;
+  subnetCount: number;
 }) {
-  const { data, setData, subnetCount } = props
-  const [inputPlan, setInputPlan] = React.useState(
-    DefaultServiceAddIPv4PlanData
-  )
-  const [planSum, setPlanSum] = React.useState(DefaultServiceAddIPv4PlanData)
-  const { enqueueSnackbar } = useSnackbar()
+  const { data, setData, subnetCount } = props;
+  const [inputPlan, setInputPlan] = React.useState(DefaultServiceAddIPv4PlanData);
+  const [planSum, setPlanSum] = React.useState(DefaultServiceAddIPv4PlanData);
+  const { enqueueSnackbar } = useSnackbar();
 
   const add = () => {
-    let tmpPlan: ServiceAddIPv4PlanData[] | undefined
+    let tmpPlan: ServiceAddIPv4PlanData[] | undefined;
 
     if (inputPlan.name === '') {
-      enqueueSnackbar('Planの名前が入力されていません', { variant: 'error' })
+      enqueueSnackbar('Planの名前が入力されていません', { variant: 'error' });
     }
     if (inputPlan.after < 1) {
-      enqueueSnackbar('直後のアドレス数が不正です。', { variant: 'error' })
+      enqueueSnackbar('直後のアドレス数が不正です。', { variant: 'error' });
     }
     if (inputPlan.half_year < 1) {
-      enqueueSnackbar('半年後のアドレス数が不正です。', { variant: 'error' })
+      enqueueSnackbar('半年後のアドレス数が不正です。', { variant: 'error' });
     }
     if (inputPlan.one_year < 1) {
-      enqueueSnackbar('１年後の名前が入力されていません', { variant: 'error' })
+      enqueueSnackbar('１年後の名前が入力されていません', { variant: 'error' });
     }
 
     if (data.plan === undefined || data.plan?.length === 0) {
-      tmpPlan = [inputPlan]
+      tmpPlan = [inputPlan];
     } else {
-      tmpPlan = data.plan
+      tmpPlan = data.plan;
       if (tmpPlan !== undefined) {
-        tmpPlan.push(inputPlan)
+        tmpPlan.push(inputPlan);
       }
     }
-    setData({ ...data, plan: tmpPlan })
+    setData({ ...data, plan: tmpPlan });
     setPlanSum({
       name: '',
       after: planSum.after + inputPlan.after,
       half_year: planSum.half_year + inputPlan.half_year,
       one_year: planSum.one_year + inputPlan.one_year,
-    })
-  }
+    });
+  };
 
   const deletePlan = (index: number) => {
-    let tmpPlan: ServiceAddIPv4PlanData[] | undefined
+    let tmpPlan: ServiceAddIPv4PlanData[] | undefined;
 
     if (!(data.plan === undefined || data.plan?.length === 0)) {
-      tmpPlan = data.plan
+      tmpPlan = data.plan;
       if (tmpPlan !== undefined) {
         setPlanSum({
           name: '',
           after: planSum.after - tmpPlan[index].after,
           half_year: planSum.half_year - tmpPlan[index].half_year,
           one_year: planSum.one_year - tmpPlan[index].one_year,
-        })
-        tmpPlan?.splice(index, 1)
-        setData({ ...data, plan: tmpPlan })
+        });
+        tmpPlan?.splice(index, 1);
+        setData({ ...data, plan: tmpPlan });
       }
     }
-  }
+  };
 
   return (
     <div>
@@ -357,7 +337,7 @@ export function AddJPNICIPv4Plan(props: {
               value={inputPlan.name}
               variant="outlined"
               onChange={(event) => {
-                setInputPlan({ ...inputPlan, name: event.target.value })
+                setInputPlan({ ...inputPlan, name: event.target.value });
               }}
             />
             <StyledTextFieldTooVeryShort
@@ -370,8 +350,8 @@ export function AddJPNICIPv4Plan(props: {
               onChange={(event) => {
                 setInputPlan({
                   ...inputPlan,
-                  after: parseInt(event.target.value, 10),
-                })
+                  after: Number.parseInt(event.target.value, 10),
+                });
               }}
             />
             <StyledTextFieldTooVeryShort
@@ -384,8 +364,8 @@ export function AddJPNICIPv4Plan(props: {
               onChange={(event) => {
                 setInputPlan({
                   ...inputPlan,
-                  half_year: parseInt(event.target.value, 10),
-                })
+                  half_year: Number.parseInt(event.target.value, 10),
+                });
               }}
             />
             <StyledTextFieldTooVeryShort
@@ -398,17 +378,12 @@ export function AddJPNICIPv4Plan(props: {
               onChange={(event) => {
                 setInputPlan({
                   ...inputPlan,
-                  one_year: parseInt(event.target.value, 10),
-                })
+                  one_year: Number.parseInt(event.target.value, 10),
+                });
               }}
             />
             <br />
-            <Button
-              size="small"
-              variant="contained"
-              color="primary"
-              onClick={add}
-            >
+            <Button size="small" variant="contained" color="primary" onClick={add}>
               追加
             </Button>
           </StyledRootForm>
@@ -433,11 +408,7 @@ export function AddJPNICIPv4Plan(props: {
                     <TableCell align="right">{row.half_year}</TableCell>
                     <TableCell align="right">{row.one_year}</TableCell>
                     <TableCell>
-                      <Button
-                        size="small"
-                        color="secondary"
-                        onClick={() => deletePlan(index)}
-                      >
+                      <Button size="small" color="secondary" onClick={() => deletePlan(index)}>
                         削除
                       </Button>
                     </TableCell>
@@ -483,5 +454,5 @@ export function AddJPNICIPv4Plan(props: {
         </div>
       )}
     </div>
-  )
+  );
 }

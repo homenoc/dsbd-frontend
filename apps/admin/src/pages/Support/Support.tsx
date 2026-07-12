@@ -9,13 +9,15 @@ import {
   RadioGroup,
   Typography,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GetAll, Put } from '../../api/Support';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { Solved } from '../../components/Dashboard/Solved/Open';
+import { useSupportTickets } from '../../hooks/useResources';
 import type { TicketDetailData } from '../../interface';
+import { api } from '../../lib/api';
 import {
   StyledCard,
   StyledInputBase,
@@ -24,50 +26,50 @@ import {
 } from '../Dashboard/styles';
 
 export default function Support() {
-  const [tickets, setTickets] = useState<TicketDetailData[]>([]);
-  const [initTickets, setInitTickets] = useState<TicketDetailData[]>([]);
+  const { data: initTickets, error } = useSupportTickets();
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [value, setValue] = React.useState(false);
-  const [reload, setReload] = React.useState(true);
 
   useEffect(() => {
-    GetAll().then((res) => {
-      if (res.error === '') {
-        setTickets(res.data);
-        setInitTickets(res.data);
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-      setReload(false);
-    });
-  }, [reload]);
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
+    }
+  }, [error]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value === 'true');
   };
 
-  const handleFilter = (search: string) => {
-    let tmp: TicketDetailData[];
-    if (search === '') {
-      tmp = initTickets;
-    } else {
-      tmp = initTickets.filter((grp: TicketDetailData) => {
-        return grp.title.toLowerCase().includes(search.toLowerCase());
-      });
-    }
-    setTickets(tmp);
+  const tickets =
+    search === ''
+      ? (initTickets ?? [])
+      : (initTickets ?? []).filter((grp: TicketDetailData) => {
+          return grp.title.toLowerCase().includes(search.toLowerCase());
+        });
+
+  const handleFilter = (value: string) => {
+    setSearch(value);
   };
 
+  const solvedMutation = useMutation({
+    mutationFn: ({ id, solved }: { id: number; solved: boolean }) =>
+      api.put('/support/' + id, { solved }),
+    onSuccess: () => {
+      enqueueSnackbar('OK', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['support'] });
+    },
+  });
+
   const clickSolvedStatus = (id: number, solved: boolean) => {
-    Put(id, { solved }).then((res) => {
-      if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' });
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' });
-      }
-      setReload(true);
-    });
+    solvedMutation.mutate({ id, solved });
   };
   const clickAddPage = () => navigate('/dashboard/support/add');
   const clickDetailPage = (id: number) => navigate('/dashboard/support/' + id);

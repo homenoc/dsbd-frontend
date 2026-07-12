@@ -14,20 +14,18 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
-import React, { type Dispatch, type SetStateAction } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Delete, Put } from '../../../api/Connection';
-import { findConnectionType } from '../../../api/Tool';
 import { GenServiceCodeFromService } from '../../../components/Tool';
-import { useTemplate } from '../../../hooks/useTemplate';
+import { useCatalog } from '../../../hooks/useCatalog';
 import type { ConnectionDetailData, ServiceDetailData } from '../../../interface';
+import { api } from '../../../lib/api';
+import { findConnectionType } from '../../../lib/tool';
 
-export function RowConnectionCheck(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { service, setReload } = props;
+export function RowConnectionCheck(props: { service: ServiceDetailData }) {
+  const { service } = props;
 
   if (service.connections === undefined) {
     return (
@@ -51,19 +49,16 @@ export function RowConnectionCheck(props: {
             <TableCell align="right">Action</TableCell>
           </TableRow>
         </TableHead>
-        <RowConnection key={'connection_table'} service={service} setReload={setReload} />
+        <RowConnection key={'connection_table'} service={service} />
       </Table>
     </div>
   );
 }
 
-export function RowConnection(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
+export function RowConnection(props: { service: ServiceDetailData }) {
   const navigate = useNavigate();
-  const { data: template } = useTemplate();
-  const { service, setReload } = props;
+  const { data: template } = useCatalog();
+  const { service } = props;
   const clickConnectionPage = (id: number) => navigate('/dashboard/connection/' + id);
   const serviceCode = (connection: ConnectionDetailData) =>
     GenServiceCodeFromService(service, connection);
@@ -101,13 +96,11 @@ export function RowConnection(props: {
               <DeleteDialog
                 key={'connection_delete_alert_dialog_' + connection.ID}
                 id={connection.ID}
-                setReload={setReload}
               />
               &nbsp;
               <EnableDialog
                 key={'connection_enable_alert_dialog_' + connection.ID}
                 connection={connection}
-                setReload={setReload}
               />
             </Box>
           </TableCell>
@@ -117,24 +110,30 @@ export function RowConnection(props: {
   );
 }
 
-export function DeleteDialog(props: {
-  id: number;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { id, setReload } = props;
+export function DeleteDialog(props: { id: number }) {
+  const { id } = props;
   const [open, setOpen] = React.useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete('/connection/' + id),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['connection'] });
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
 
   const deleteConnection = () => {
-    Delete(id).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-      setOpen(false);
-      setReload(true);
-    });
+    deleteMutation.mutate();
   };
 
   const handleClickOpen = () => {
@@ -176,26 +175,32 @@ export function DeleteDialog(props: {
   );
 }
 
-export function EnableDialog(props: {
-  connection: ConnectionDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { connection, setReload } = props;
+export function EnableDialog(props: { connection: ConnectionDetailData }) {
+  const { connection } = props;
   const [open, setOpen] = React.useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const enableMutation = useMutation({
+    mutationFn: (req: ConnectionDetailData) => api.put('/connection/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['connection'] });
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
 
   const updateConnection = () => {
     const tmp = connection;
     tmp.enable = !connection.enable;
-    Put(connection.ID, tmp).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-      setOpen(false);
-      setReload(true);
-    });
+    enableMutation.mutate(tmp);
   };
 
   const handleClickOpen = () => {

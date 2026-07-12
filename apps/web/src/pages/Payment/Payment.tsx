@@ -1,22 +1,23 @@
 import { isActive, isPaidMemberType } from '@dsbd/shared';
 import { Button, Card, CardActions, CardContent, Container, Grid, Typography } from '@mui/material';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
+import { useCatalog } from '../../hooks/useCatalog';
 import { useInfo } from '../../hooks/useInfo';
-import { useTemplate } from '../../hooks/useTemplate';
 import type { InfoData } from '../../interface';
 import { StyledCardHeader1, StyledDivCardPricing } from './styles';
 import './payment.scss';
-import { restfulApiConfig } from '../../api/Config';
-import { GetPayment, PostSubscribe } from '../../api/payment';
+import { api } from '../../lib/api';
+import { restfulApiConfig } from '../../lib/config';
 import { StyledContainer1 } from '../../style';
 
 export default function Payment() {
   const [data, setData] = React.useState<InfoData>();
   const { data: infoData, error } = useInfo();
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const navigate = useNavigate();
   const [isStatus, setIsStatus] = React.useState(0);
   const { enqueueSnackbar } = useSnackbar();
@@ -48,24 +49,37 @@ export default function Payment() {
     }
   }, [error, enqueueSnackbar]);
 
+  const subscribeMutation = useMutation({
+    mutationFn: (plan: string) =>
+      api.post<{ url: string }>('/payment/subscribe', { plan }).then((r) => r.url),
+    onSuccess: (url: string) => {
+      window.open(url, '_blank');
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
+
   const subscribe = (plan: string) => {
-    PostSubscribe(plan).then((res) => {
-      if (res.error === '') {
-        window.open(res.data, '_blank');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    subscribeMutation.mutate(plan);
   };
 
-  const getPayment = () => {
-    GetPayment().then((res) => {
-      if (res.error === '') {
-        window.open(res.data, '_blank');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+  // On-demand read: the payment portal URL is fetched only when the user
+  // clicks (enabled: false), then opened in a new tab.
+  const paymentQuery = useQuery({
+    queryKey: ['payment'],
+    queryFn: () => api.get<{ url: string }>('/payment').then((r) => r.url),
+    enabled: false,
+  });
+
+  const getPayment = async () => {
+    const result = await paymentQuery.refetch();
+    const url = result.data as string | undefined;
+    if (url != null) {
+      window.open(url, '_blank');
+    } else if (result.error) {
+      enqueueSnackbar(String((result.error as Error).message), { variant: 'error' });
+    }
   };
 
   const DonatePage = () => {

@@ -1,3 +1,4 @@
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {
   Checkbox,
   Container,
@@ -8,76 +9,82 @@ import {
   TextField,
   ThemeProvider,
   Typography,
-} from '@mui/material'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import React, { FormEvent, useState } from 'react'
-import { muiColorTheme } from '../../components/Theme'
-import { DefaultUserAddData, UserAddData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { restfulApiConfig } from '../../api/Config'
-import { Post } from '../../api/User'
-import { useNavigate } from 'react-router-dom'
-import shaJS from 'sha.js'
-import {
-  StyledAvatar,
-  StyledButtonSubmit,
-  StyledForm,
-  StyledPaper,
-} from './styles'
+} from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React, { type FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import shaJS from 'sha.js';
+import { muiColorTheme } from '../../components/Theme';
+import { DefaultUserAddData, type UserAddData } from '../../interface';
+import { api } from '../../lib/api';
+import { restfulApiConfig } from '../../lib/config';
+import { StyledAvatar, StyledButtonSubmit, StyledForm, StyledPaper } from './styles';
 
 export default function SignUp() {
-  const [data, setData] = useState(DefaultUserAddData)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [firstNameEn, setFirstNameEn] = useState('')
-  const [lastNameEn, setLastNameEn] = useState('')
-  const [passwordAgain, setPasswordAgain] = useState('')
-  const [agree, setAgree] = useState(false)
-  const { enqueueSnackbar } = useSnackbar()
-  const navigate = useNavigate()
-  let hCaptchaSiteKey = ''
+  const [data, setData] = useState(DefaultUserAddData);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [firstNameEn, setFirstNameEn] = useState('');
+  const [lastNameEn, setLastNameEn] = useState('');
+  const [passwordAgain, setPasswordAgain] = useState('');
+  const [agree, setAgree] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
+  let hCaptchaSiteKey = '';
 
   if (restfulApiConfig.hCaptchaSiteKey != null) {
-    hCaptchaSiteKey = restfulApiConfig.hCaptchaSiteKey
+    hCaptchaSiteKey = restfulApiConfig.hCaptchaSiteKey;
   }
+
+  const signUpMutation = useMutation({
+    mutationFn: (sendData: UserAddData) => api.post<void>('/user', sendData),
+    onSuccess: () => {
+      enqueueSnackbar('OK', { variant: 'success' });
+      navigate('/login');
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
 
   const request = (e: FormEvent) => {
     if (!agree) {
-      enqueueSnackbar('利用規約に同意されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('利用規約に同意されていません。', { variant: 'error' });
+      return;
     }
     if (data.pass !== passwordAgain) {
-      enqueueSnackbar('パスワードが一致しません。', { variant: 'error' })
-      return
+      enqueueSnackbar('パスワードが一致しません。', { variant: 'error' });
+      return;
     }
     if (firstName === '') {
-      enqueueSnackbar('First Nameが入力されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('First Nameが入力されていません。', { variant: 'error' });
+      return;
     }
     if (lastName === '') {
-      enqueueSnackbar('Last Nameが入力されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('Last Nameが入力されていません。', { variant: 'error' });
+      return;
     }
     if (firstNameEn === '') {
       enqueueSnackbar('First Name(English)が入力されていません。', {
         variant: 'error',
-      })
-      return
+      });
+      return;
     }
     if (lastNameEn === '') {
       enqueueSnackbar('Last Name(English)が入力されていません。', {
         variant: 'error',
-      })
-      return
+      });
+      return;
     }
     if (!~data.email.indexOf('@')) {
       enqueueSnackbar('メールアドレスが正しくありません。', {
         variant: 'error',
-      })
-      return
+      });
+      return;
     }
 
-    const passHash: string = shaJS('sha256').update(data.pass).digest('hex')
+    const passHash: string = shaJS('sha256').update(data.pass).digest('hex');
 
     const sendData: UserAddData = {
       name: firstName + ' ' + lastName,
@@ -85,18 +92,11 @@ export default function SignUp() {
       email: data.email,
       pass: passHash,
       level: 0,
-    }
+    };
 
-    Post(sendData).then((res) => {
-      if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' })
-        navigate('/login')
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-    })
-    e.preventDefault()
-  }
+    signUpMutation.mutate(sendData);
+    e.preventDefault();
+  };
 
   return (
     <ThemeProvider theme={muiColorTheme}>
@@ -174,9 +174,7 @@ export default function SignUp() {
                   label="Email Address"
                   name="email"
                   value={data.email}
-                  onChange={(event) =>
-                    setData({ ...data, email: event.target.value })
-                  }
+                  onChange={(event) => setData({ ...data, email: event.target.value })}
                   autoComplete="email"
                 />
               </Grid>
@@ -190,9 +188,7 @@ export default function SignUp() {
                   type="password"
                   id="password"
                   value={data.pass}
-                  onChange={(event) =>
-                    setData({ ...data, pass: event.target.value })
-                  }
+                  onChange={(event) => setData({ ...data, pass: event.target.value })}
                   autoComplete="current-password"
                 />
               </Grid>
@@ -217,10 +213,7 @@ export default function SignUp() {
                   </Link>
                 </Grid>
                 <Grid item>
-                  <Link
-                    href="https://www.homenoc.ad.jp/about/privacy/"
-                    variant="body2"
-                  >
+                  <Link href="https://www.homenoc.ad.jp/about/privacy/" variant="body2">
                     Privacy Policy：https://www.homenoc.ad.jp/about/privacy/
                   </Link>
                 </Grid>
@@ -231,11 +224,7 @@ export default function SignUp() {
                 </div>
                 <FormControlLabel
                   control={
-                    <Checkbox
-                      value={agree}
-                      onChange={() => setAgree(!agree)}
-                      color="primary"
-                    />
+                    <Checkbox value={agree} onChange={() => setAgree(!agree)} color="primary" />
                   }
                   label="利用規約に同意しますか？"
                 />
@@ -248,12 +237,7 @@ export default function SignUp() {
               {/*    />*/}
               {/*</Grid>*/}
             </Grid>
-            <StyledButtonSubmit
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-            >
+            <StyledButtonSubmit type="submit" fullWidth variant="contained" color="primary">
               Sign Up
             </StyledButtonSubmit>
             <Grid container justifyContent="flex-end">
@@ -267,5 +251,5 @@ export default function SignUp() {
         </StyledPaper>
       </Container>
     </ThemeProvider>
-  )
+  );
 }

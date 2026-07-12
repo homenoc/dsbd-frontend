@@ -1,6 +1,6 @@
 import { createApiClient } from '@dsbd/shared';
 import Cookies from 'js-cookie';
-import { restfulApiConfig } from '../api/Config';
+import { restfulApiConfig } from './config';
 
 /**
  * Shared API client for the user app. Auth uses the dual USER_TOKEN /

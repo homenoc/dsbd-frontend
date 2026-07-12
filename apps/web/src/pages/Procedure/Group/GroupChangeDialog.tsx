@@ -1,52 +1,33 @@
-import React, { useEffect } from 'react'
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { DefaultSupportAddData, GroupData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { Get } from '../../../api/Info'
-import { Post } from '../../../api/Request'
-import { GroupGet } from '../../../components/Dashboard/Group/Group'
-import { StyledTextFieldVeryLong } from '../../../style'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect } from 'react';
+import { GroupGet } from '../../../components/Dashboard/Group/Group';
+import { useRequestMutation } from '../../../hooks/useRequest';
+import { DefaultSupportAddData, type GroupData } from '../../../interface';
+import { StyledTextFieldVeryLong } from '../../../style';
 
 export function GroupChangeDialog(props: { group: GroupData }) {
-  const { group } = props
-  const navigate = useNavigate()
-  const [data, setData] = React.useState(DefaultSupportAddData)
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { group } = props;
+  const [data, setData] = React.useState(DefaultSupportAddData);
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const requestMutation = useRequestMutation({ onSuccess: () => setOpen(false) });
 
   const request = () => {
     if (data.data === '') {
-      enqueueSnackbar('本文が入力されていません。', { variant: 'error' })
+      enqueueSnackbar('本文が入力されていません。', { variant: 'error' });
     }
-    Post(data).then((res) => {
-      if (res.error === undefined) {
-        Get().then(() => {
-          navigate('/dashboard/support/' + res.data.id)
-        })
-        setOpen(false)
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-    })
-  }
+    requestMutation.mutate(data);
+  };
 
   useEffect(() => {
     setData({
       ...data,
       title: '[変更]グループ情報変更手続き',
-      data:
-        '例)\n---Group情報の変更---\n変更理由: \n\n' +
-        '---変更前---\n\n---変更後---\n',
-    })
-  }, [])
+      data: '例)\n---Group情報の変更---\n変更理由: \n\n' + '---変更前---\n\n---変更後---\n',
+    });
+  }, []);
 
   return (
     <div>
@@ -64,9 +45,7 @@ export function GroupChangeDialog(props: { group: GroupData }) {
           },
         }}
       >
-        <DialogTitle id="connection_list_change_dialog">
-          {data.title}
-        </DialogTitle>
+        <DialogTitle id="connection_list_change_dialog">{data.title}</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -78,16 +57,12 @@ export function GroupChangeDialog(props: { group: GroupData }) {
                 multiline
                 rows={1}
                 value={data.title}
-                onChange={(event) =>
-                  setData({ ...data, title: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, title: event.target.value })}
                 variant="outlined"
               />
               <br />
               <div>変更前、変更後のことも詳しく説明してください。</div>
-              <div>
-                内容によりまして、承諾できない可能性がありますがご了承ください。
-              </div>
+              <div>内容によりまして、承諾できない可能性がありますがご了承ください。</div>
               <br />
               <StyledTextFieldVeryLong
                 id="data"
@@ -95,9 +70,7 @@ export function GroupChangeDialog(props: { group: GroupData }) {
                 multiline
                 rows={10}
                 value={data.data}
-                onChange={(event) =>
-                  setData({ ...data, data: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, data: event.target.value })}
                 variant="outlined"
               />
             </Grid>
@@ -116,5 +89,5 @@ export function GroupChangeDialog(props: { group: GroupData }) {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }

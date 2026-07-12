@@ -12,8 +12,8 @@ import {
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GetAll } from '../../api/Group';
 import Dashboard from '../../components/Dashboard/Dashboard';
+import { useGroups } from '../../hooks/useResources';
 import type { GroupDetailData } from '../../interface';
 import {
   StyledCard,
@@ -23,23 +23,18 @@ import {
 } from '../Dashboard/styles';
 
 export default function Group() {
-  const [groups, setGroups] = useState<GroupDetailData[]>([]);
-  const [initGroups, setInitGroups] = useState<GroupDetailData[]>([]);
+  const { data: initGroups, error } = useGroups();
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効
   const [value, setValue] = React.useState(1);
 
   useEffect(() => {
-    GetAll().then((res) => {
-      if (res.error === '') {
-        setGroups(res.data);
-        setInitGroups(res.data);
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-    });
-  }, []);
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
+    }
+  }, [error]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(Number(event.target.value));
@@ -55,16 +50,15 @@ export default function Group() {
     return true;
   };
 
-  const handleFilter = (search: string) => {
-    let tmp: GroupDetailData[];
-    if (search === '') {
-      tmp = initGroups;
-    } else {
-      tmp = initGroups.filter((grp: GroupDetailData) => {
-        return grp.org_en.toLowerCase().includes(search.toLowerCase());
-      });
-    }
-    setGroups(tmp);
+  const groups =
+    search === ''
+      ? initGroups
+      : initGroups.filter((grp: GroupDetailData) => {
+          return grp.org_en.toLowerCase().includes(search.toLowerCase());
+        });
+
+  const handleFilter = (value: string) => {
+    setSearch(value);
   };
 
   const clickDetailPage = (id: number) => navigate('/dashboard/group/' + id);

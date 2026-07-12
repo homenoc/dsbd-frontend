@@ -23,14 +23,15 @@ import {
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { Fragment, useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as Yup from 'yup';
-import { Post } from '../../api/Service';
 import Dashboard from '../../components/Dashboard/Dashboard';
-import { useTemplate } from '../../hooks/useTemplate';
+import { useCatalog } from '../../hooks/useCatalog';
+import { api } from '../../lib/api';
 import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from './reg';
 import {
   StyledRootForm,
@@ -45,9 +46,10 @@ import {
 } from './style';
 
 export default function ServiceAdd() {
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const today = new Date();
   const start_date = new Date();
   const end_date = new Date();
@@ -560,15 +562,21 @@ export default function ServiceAdd() {
     // eslint-disable-next-line no-console
     console.log(groupID, request);
 
-    Post(Number(groupID), request).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        navigate('/dashboard/group/' + groupID);
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    addServiceMutation.mutate(request);
   };
+
+  const addServiceMutation = useMutation({
+    mutationFn: (request: any) => api.post('/group/' + Number(groupID) + '/service', request),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+      navigate('/dashboard/group/' + groupID);
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console
     console.log('error', errors);

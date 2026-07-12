@@ -14,30 +14,23 @@ import {
 } from '@mui/material';
 import { format, parseISO } from 'date-fns';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Get } from '../../../api/User';
 import Dashboard from '../../../components/Dashboard/Dashboard';
-import type { UserDetailData } from '../../../interface';
+import { useUser } from '../../../hooks/useResources';
 import { StyledCardRoot1, StyledDivRoot1 } from '../../../style';
 
 export default function UserDetail() {
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<UserDetailData>();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
+  const { data: user, error, isLoading: loading } = useUser(id);
 
   useEffect(() => {
-    Get(id!).then((res) => {
-      if (res.error === '') {
-        setUser(res.data);
-        setLoading(false);
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-    });
-  }, []);
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
+    }
+  }, [error]);
 
   return (
     <Dashboard title="User Info">

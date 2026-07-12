@@ -1,15 +1,14 @@
-import { JPNICData } from '../../../../interface'
-import React, { Dispatch, SetStateAction } from 'react'
-import { Card, CardContent } from '@mui/material'
-import cssModule from '../../../Connection/ConnectionDetail/ConnectionDialog.module.scss'
-import { JPNICDetail } from '../../../../components/Dashboard/JPNIC/JPNIC'
+import { Card, CardContent } from '@mui/material';
+import React from 'react';
+import { JPNICDetail } from '../../../../components/Dashboard/JPNIC/JPNIC';
+import type { JPNICData } from '../../../../interface';
+import cssModule from '../../../Connection/ConnectionDetail/ConnectionDialog.module.scss';
 
 export function ServiceJPNICAdminBase(props: {
-  serviceID: number
-  jpnic: JPNICData | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  jpnic: JPNICData | undefined;
 }) {
-  const { jpnic, serviceID, setReload } = props
+  const { jpnic, serviceID } = props;
 
   if (jpnic === undefined) {
     return (
@@ -21,20 +20,14 @@ export function ServiceJPNICAdminBase(props: {
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
   return (
     <Card className={cssModule.contract}>
       <CardContent>
         <h3>JPNIC管理者連絡窓口</h3>
-        <JPNICDetail
-          key={serviceID}
-          jpnicAdmin={true}
-          serviceID={serviceID}
-          jpnic={jpnic}
-          setReload={setReload}
-        />
+        <JPNICDetail key={serviceID} jpnicAdmin={true} serviceID={serviceID} jpnic={jpnic} />
       </CardContent>
     </Card>
-  )
+  );
 }

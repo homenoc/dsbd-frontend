@@ -22,14 +22,15 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { type Dispatch, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Delete, Put } from '../../../api/Service';
-import { findServiceType } from '../../../api/Tool';
 import { GenServiceCodeOnlyService } from '../../../components/Tool';
-import { useTemplate } from '../../../hooks/useTemplate';
+import { useCatalog } from '../../../hooks/useCatalog';
 import type { ServiceDetailData } from '../../../interface';
+import { api } from '../../../lib/api';
+import { findServiceType } from '../../../lib/tool';
 import {
   StyledAccordionDetails,
   StyledDiv1,
@@ -57,12 +58,11 @@ export function ChipGet(props: {
 function RowService(props: {
   service: ServiceDetailData;
   autoMail: Dispatch<SetStateAction<string>>;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, autoMail, setReload } = props;
+  const { service, autoMail } = props;
   const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const serviceCode = GenServiceCodeOnlyService(service);
 
   const clickServicePage = (id: number) => navigate('/dashboard/service/' + id);
@@ -95,7 +95,6 @@ function RowService(props: {
                 key={'service_examination_dialog_' + service.ID}
                 autoMail={autoMail}
                 service={service}
-                setReload={setReload}
               />
             )}
             &nbsp;
@@ -103,17 +102,9 @@ function RowService(props: {
               Detail
             </Button>
             &nbsp;
-            <DeleteDialog
-              key={'service_delete_alert_dialog_' + service.ID}
-              id={service.ID}
-              setReload={setReload}
-            />
+            <DeleteDialog key={'service_delete_alert_dialog_' + service.ID} id={service.ID} />
             &nbsp;
-            <EnableDialog
-              key={'service_enable_alert_dialog_' + service.ID}
-              service={service}
-              setReload={setReload}
-            />
+            <EnableDialog key={'service_enable_alert_dialog_' + service.ID} service={service} />
           </Box>
         </TableCell>
       </StyledTableRowRoot>
@@ -121,11 +112,7 @@ function RowService(props: {
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box margin={1}>
-              <RowConnectionCheck
-                key={service.ID + 'Connection'}
-                service={service}
-                setReload={setReload}
-              />
+              <RowConnectionCheck key={service.ID + 'Connection'} service={service} />
             </Box>
           </Collapse>
         </TableCell>
@@ -137,26 +124,33 @@ function RowService(props: {
 export function ExaminationDialog(props: {
   autoMail?: Dispatch<SetStateAction<string>>;
   service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { autoMail, service, setReload } = props;
+  const { autoMail, service } = props;
   const [open, setOpen] = React.useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
-  const updateService = () => {
-    service.pass = true;
-    Put(service.ID, service).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
+  const examineMutation = useMutation({
+    mutationFn: (req: ServiceDetailData) => api.put('/service/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
       if (autoMail !== undefined) {
         autoMail('pass_service');
       }
       setOpen(false);
-      setReload(true);
-    });
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
+
+  const updateService = () => {
+    service.pass = true;
+    examineMutation.mutate(service);
   };
 
   const handleClickOpen = () => {
@@ -198,24 +192,29 @@ export function ExaminationDialog(props: {
   );
 }
 
-export function DeleteDialog(props: {
-  id: number;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { id, setReload } = props;
+export function DeleteDialog(props: { id: number }) {
+  const { id } = props;
   const [open, setOpen] = React.useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete('/service/' + id),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
 
   const deleteService = () => {
-    Delete(id).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-      setOpen(false);
-      setReload(true);
-    });
+    deleteMutation.mutate();
   };
 
   const handleClickOpen = () => {
@@ -255,26 +254,31 @@ export function DeleteDialog(props: {
   );
 }
 
-export function EnableDialog(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { service, setReload } = props;
+export function EnableDialog(props: { service: ServiceDetailData }) {
+  const { service } = props;
   const [open, setOpen] = React.useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const enableMutation = useMutation({
+    mutationFn: (req: ServiceDetailData) => api.put('/service/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
 
   const updateService = () => {
     const tmp = service;
     tmp.enable = !service.enable;
-    Put(service.ID, tmp).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-      setOpen(false);
-      setReload(true);
-    });
+    enableMutation.mutate(tmp);
   };
 
   const handleClickOpen = () => {
@@ -326,9 +330,8 @@ export function EnableDialog(props: {
 export function Service(props: {
   services: ServiceDetailData[] | undefined;
   autoMail: Dispatch<SetStateAction<string>>;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { services, autoMail, setReload } = props;
+  const { services, autoMail } = props;
 
   if (services !== undefined) {
     return (
@@ -358,12 +361,7 @@ export function Service(props: {
               </TableHead>
               <TableBody>
                 {services.map((row: ServiceDetailData) => (
-                  <RowService
-                    key={'service_row_' + row.ID}
-                    autoMail={autoMail}
-                    service={row}
-                    setReload={setReload}
-                  />
+                  <RowService key={'service_row_' + row.ID} autoMail={autoMail} service={row} />
                 ))}
               </TableBody>
             </Table>

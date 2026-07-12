@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   Box,
   Button,
@@ -11,40 +10,47 @@ import {
   Radio,
   RadioGroup,
   Typography,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { DefaultSupportAddData } from '../../interface'
-import { useSnackbar } from 'notistack'
-import { Post } from '../../api/Support'
-import { Get } from '../../api/Info'
-import { StyledTextFieldVeryLong } from '../../style'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+} from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
+import remarkGfm from 'remark-gfm';
+import { infoQueryKey } from '../../hooks/useInfo';
+import { DefaultSupportAddData, type SupportAddData } from '../../interface';
+import { api } from '../../lib/api';
+import { queryClient } from '../../lib/queryClient';
+import { StyledTextFieldVeryLong } from '../../style';
 
 export function SupportAddDialog(props: { groupEnable: boolean }) {
-  const { groupEnable } = props
-  const navigate = useNavigate()
-  const [data, setData] = React.useState(DefaultSupportAddData)
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { groupEnable } = props;
+  const navigate = useNavigate();
+  const [data, setData] = React.useState(DefaultSupportAddData);
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const requestMutation = useMutation({
+    mutationFn: (sendData: SupportAddData) => api.post<any>('/support', sendData),
+    onSuccess: (resData: any) => {
+      queryClient.invalidateQueries({ queryKey: infoQueryKey }).then(() => {
+        navigate('/dashboard/support/' + resData.id);
+      });
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
 
   const request = () => {
     if (data.title === '') {
-      enqueueSnackbar('タイトルが入力されていません。', { variant: 'error' })
+      enqueueSnackbar('タイトルが入力されていません。', { variant: 'error' });
     }
     if (data.data === '') {
-      enqueueSnackbar('本文が入力されていません。', { variant: 'error' })
+      enqueueSnackbar('本文が入力されていません。', { variant: 'error' });
     }
-    Post(data).then((res) => {
-      if (res.error === undefined) {
-        Get().then(() => {
-          navigate('/dashboard/support/' + res.data.id)
-        })
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-    })
-  }
+    requestMutation.mutate(data);
+  };
 
   return (
     <Box>
@@ -62,19 +68,14 @@ export function SupportAddDialog(props: { groupEnable: boolean }) {
           },
         }}
       >
-        <DialogTitle id="customized-dialog-title">
-          Support情報の追加
-        </DialogTitle>
+        <DialogTitle id="customized-dialog-title">Support情報の追加</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <h3>ユーザチャットとグループチャットの違い</h3>
+              <div>ユーザチャット: ログインユーザと1対1のチャット</div>
               <div>
-                ユーザチャット: ログインユーザと1対1のチャット
-              </div>
-              <div>
-                グループチャット:
-                ログインユーザのグループとのチャット（基本はこちらでお願いします）
+                グループチャット: ログインユーザのグループとのチャット（基本はこちらでお願いします）
               </div>
               <RadioGroup
                 row
@@ -82,7 +83,7 @@ export function SupportAddDialog(props: { groupEnable: boolean }) {
                 name="position"
                 defaultValue="top"
                 onChange={(event) => {
-                  setData({ ...data, is_group: event.target.value === 'group' })
+                  setData({ ...data, is_group: event.target.value === 'group' });
                 }}
               >
                 <FormControlLabel
@@ -98,9 +99,7 @@ export function SupportAddDialog(props: { groupEnable: boolean }) {
                 />
               </RadioGroup>
               <br />
-              <Typography variant="inherit">
-                このチャットはMarkdownに準拠しております。
-              </Typography>
+              <Typography variant="inherit">このチャットはMarkdownに準拠しております。</Typography>
               <br />
               <StyledTextFieldVeryLong
                 id="title"
@@ -108,9 +107,7 @@ export function SupportAddDialog(props: { groupEnable: boolean }) {
                 multiline
                 rows={1}
                 value={data.title}
-                onChange={(event) =>
-                  setData({ ...data, title: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, title: event.target.value })}
                 variant="outlined"
               />
               <br />
@@ -120,18 +117,13 @@ export function SupportAddDialog(props: { groupEnable: boolean }) {
                 multiline
                 rows={6}
                 value={data.data}
-                onChange={(event) =>
-                  setData({ ...data, data: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, data: event.target.value })}
                 variant="outlined"
               />
             </Grid>
             <Grid item xs={12}>
               <h3>内容のプレビュー ↓</h3>
-              <ReactMarkdown
-                skipHtml={true}
-                remarkPlugins={[remarkGfm]}
-              >
+              <ReactMarkdown skipHtml={true} remarkPlugins={[remarkGfm]}>
                 {data.data}
               </ReactMarkdown>
               内容のプレビュー ↑
@@ -148,5 +140,5 @@ export function SupportAddDialog(props: { groupEnable: boolean }) {
         </DialogActions>
       </Dialog>
     </Box>
-  )
+  );
 }

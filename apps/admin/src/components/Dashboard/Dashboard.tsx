@@ -37,11 +37,12 @@ import {
 import MuiAppBar, { type AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import MuiDrawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Logout } from '../../api/Auth';
-import { useTemplate } from '../../hooks/useTemplate';
+import { useCatalog } from '../../hooks/useCatalog';
+import { logout } from '../../lib/auth';
 import { muiColorTheme } from '../Theme';
 import { StyledDivDashboardRoot, StyledDivDashboardToolBarIcon } from './styles';
 
@@ -133,7 +134,7 @@ export default function Dashboard(props: DashboardProps) {
     }
   }, [isMobile, props.forceDrawerClosed]);
 
-  const { error: templateError } = useTemplate();
+  const { error: templateError } = useCatalog();
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
@@ -307,11 +308,18 @@ export function UserMenu() {
     setAnchorEl(null);
   };
 
-  const clickLogout = () => {
-    Logout().then(() => {
+  // The old Logout wrapper swallowed failures, so the cleanup + redirect ran
+  // on both outcomes; onSettled keeps that behavior.
+  const logoutMutation = useMutation({
+    mutationFn: () => logout(),
+    onSettled: () => {
       sessionStorage.removeItem('ACCESS_TOKEN');
       navigate('/login');
-    });
+    },
+  });
+
+  const clickLogout = () => {
+    logoutMutation.mutate();
   };
 
   return (

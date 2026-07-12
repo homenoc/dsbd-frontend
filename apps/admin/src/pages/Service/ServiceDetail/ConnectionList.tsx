@@ -1,20 +1,10 @@
-import { ServiceDetailData } from '../../../interface'
-import React, { Dispatch, SetStateAction } from 'react'
-import {
-  Card,
-  Table,
-  TableCell,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material'
-import { RowConnection } from '../../Group/GroupDetail/Connection'
+import { Card, Table, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import React from 'react';
+import type { ServiceDetailData } from '../../../interface';
+import { RowConnection } from '../../Group/GroupDetail/Connection';
 
-export function ConnectionList(props: {
-  service: ServiceDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { service, setReload } = props
+export function ConnectionList(props: { service: ServiceDetailData }) {
+  const { service } = props;
   return (
     <Card>
       <Typography variant="h6" gutterBottom component="div">
@@ -30,12 +20,8 @@ export function ConnectionList(props: {
             <TableCell align="right">Action</TableCell>
           </TableRow>
         </TableHead>
-        <RowConnection
-          key={'table_connection'}
-          service={service}
-          setReload={setReload}
-        />
+        <RowConnection key={'table_connection'} service={service} />
       </Table>
     </Card>
-  )
+  );
 }

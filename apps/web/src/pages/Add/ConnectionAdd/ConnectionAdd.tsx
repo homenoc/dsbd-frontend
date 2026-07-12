@@ -15,16 +15,17 @@ import {
   Select,
   Typography,
 } from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { Fragment, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
-import { Post } from '../../../api/Connection';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import { useCatalog } from '../../../hooks/useCatalog';
 import { infoQueryKey, useInfo } from '../../../hooks/useInfo';
-import { useTemplate } from '../../../hooks/useTemplate';
 import type { ServiceData } from '../../../interface';
+import { api } from '../../../lib/api';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledFormControlFormSelect,
@@ -34,7 +35,7 @@ import {
 
 export default function ConnectionAdd() {
   const { enqueueSnackbar } = useSnackbar();
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const { data: infoData, error } = useInfo();
   const navigate = useNavigate();
   const [serviceType, setServiceType] = React.useState('');
@@ -205,7 +206,22 @@ export default function ConnectionAdd() {
   const ixPeerType = watch('ix_peer_type');
   const rfc8950 = watch('rfc8950');
 
-  const onSubmit = (data: any, e: any) => {
+  const connectionAddMutation = useMutation({
+    mutationFn: (request: any) =>
+      api
+        .post<{ service: any }>(`/service/${serviceID}/connection`, request)
+        .then((r) => r.service),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
+      navigate('/dashboard/add');
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
+
+  const onSubmit = (data: any) => {
     const request: any = {
       connection_type: data.connection_type,
       preferred_ap: data.preferred_ap,
@@ -258,15 +274,7 @@ export default function ConnectionAdd() {
       return;
     }
 
-    Post(serviceID, request).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        queryClient.invalidateQueries({ queryKey: infoQueryKey });
-        navigate('/dashboard/add');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    connectionAddMutation.mutate(request);
   };
 
   const onError = (errors: any) => {

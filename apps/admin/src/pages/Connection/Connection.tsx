@@ -12,9 +12,9 @@ import {
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GetAll } from '../../api/Connection';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { GenServiceCode } from '../../components/Tool';
+import { useConnections } from '../../hooks/useResources';
 import type { ConnectionDetailData } from '../../interface';
 import {
   StyledCard,
@@ -25,26 +25,17 @@ import {
 
 export default function Connection() {
   const navigate = useNavigate();
-  const [connections, setConnections] = useState<ConnectionDetailData[]>([]);
-  const [initConnections, setInitConnections] = useState<ConnectionDetailData[]>([]);
-  const [reload, setReload] = useState(true);
+  const { data: initConnections, error } = useConnections();
+  const [search, setSearch] = useState('');
   const { enqueueSnackbar } = useSnackbar();
   // 1:開通 2:未開通
   const [value, setValue] = React.useState(1);
 
   useEffect(() => {
-    if (reload) {
-      GetAll().then((res) => {
-        if (res.error === '') {
-          setConnections(res.data);
-          setInitConnections(res.data);
-          setReload(false);
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-        }
-      });
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
     }
-  }, []);
+  }, [error]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(Number(event.target.value));
@@ -60,16 +51,15 @@ export default function Connection() {
     return true;
   };
 
-  const handleFilter = (search: string) => {
-    let tmp: ConnectionDetailData[];
-    if (search === '') {
-      tmp = initConnections;
-    } else {
-      tmp = initConnections.filter((connection: ConnectionDetailData) => {
-        return GenServiceCode(connection).toLowerCase().includes(search.toLowerCase());
-      });
-    }
-    setConnections(tmp);
+  const connections =
+    search === ''
+      ? (initConnections ?? [])
+      : (initConnections ?? []).filter((connection: ConnectionDetailData) => {
+          return GenServiceCode(connection).toLowerCase().includes(search.toLowerCase());
+        });
+
+  const handleFilter = (value: string) => {
+    setSearch(value);
   };
   const clickGroupPage = (id: number) => navigate('/dashboard/group/' + id);
   const clickServicePage = (id: number) => navigate('/dashboard/service/' + id);

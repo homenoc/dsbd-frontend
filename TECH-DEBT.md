@@ -6,21 +6,16 @@
 ## F2/F3（共有クライアント・TanStack Query 移行）
 
 ### 1. `@tanstack/react-query` の型が解決していない（要根治）
-- **場所**: `apps/web`（`tsconfig.json` moduleResolution=bundler でも `useQuery` が `any` になる）
-- **何をした**: `hooks/useInfo.ts` / `hooks/useTemplate.ts` の戻り値に **明示的な返り型**（`UseInfoResult` / `UseTemplateResult`）を付けて、`data` を `InfoData`/`TemplateData` に固定した。`useQuery<T>()` の明示ジェネリックでも `data` が `any` になったため、hook 境界で型を張り直している。
+- **場所**: 両アプリ（`tsconfig.json` moduleResolution=bundler でも `useQuery` が `any` になる）
+- **何をした**: `hooks/useInfo.ts` / `hooks/useCatalog.ts` / admin `hooks/useResources.ts` の戻り値に**明示的な返り型**を付けて、`data` を実型に固定した。`useQuery<T>()` の明示ジェネリックでも `data` が `any` になったため、hook 境界で型を張り直している。インラインの `useQuery`/`useMutation`（各コンポーネント内）もコールバック引数に手動注釈。
 - **なぜ暫定**: react-query v5.101 の型宣言（`build/modern/index.d.ts`）がこのツールチェーンで読めておらず、`useQuery`/`QueryClient`/`QueryClientProvider` が軒並み `any`。実行時は正常。原因未特定（`target: es5` / query-core の型解決 / exports 条件のいずれか疑い）。
 - **あるべき姿**: react-query の型が正しく解決する構成に直す（`target` を ES2020 に上げる、`@types` 整合、`tsconfig` の module/moduleResolution 見直し等）。解決すれば hook の手張り返り型は不要になり、`isLoading`/`refetch` 等も型付きで使える。
 
-### 2. hook が `isLoading`/`refetch` 等を返していない
-- **場所**: `apps/web/src/hooks/useInfo.ts`, `useTemplate.ts`
-- **何をした**: 返り型を `{ data, error, isLoading }` に絞った（消費側が `data`/`error` しか使っていないため）。
+### 2. hook が react-query のフル返り値型を返せていない
+- **場所**: 両アプリの hooks（`useInfo.ts`, `useCatalog.ts`, admin `useResources.ts`）
+- **何をした**: 返り型を `{ data, error, isLoading }`（+一部 `refetch`）に絞った手張り型。
 - **なぜ暫定**: 上記#1 で react-query が `any` のため、フル型（`UseQueryResult<T>`）を返せない。
-- **あるべき姿**: #1 解決後、`UseQueryResult<InfoData>` をそのまま返す。
-
-### 3. `api/Info.ts` の `Get()`/`GetTemplate()` が「invalidate だけする」名残関数
-- **場所**: `apps/web/src/api/Info.ts`
-- **何をした**: 旧 Redux dispatch を捨て、`queryClient.invalidateQueries` を呼ぶだけの薄い関数に。多数のダイアログが `Get().then()` で呼ぶのを壊さないための互換シム。
-- **あるべき姿**: 各ダイアログを直接 `queryClient.invalidateQueries({queryKey: infoQueryKey})` もしくは mutation の `onSuccess` に置き換え、`api/Info.ts` を削除。
+- **あるべき姿**: #1 解決後、`UseQueryResult<T>` をそのまま返す。
 
 ### 4. `onUnauthorized` が `window.location.href` でリダイレクト
 - **場所**: `apps/web/src/lib/api.ts`, `apps/admin/src/lib/api.ts`
@@ -38,24 +33,17 @@
 - **何をした**: #1 の影響で `infoData` が一時 `any` に見えていた名残で明示注釈を付けた箇所がある。hook 返り型を張った今は本来不要。
 - **あるべき姿**: #1 解決後に不要な注釈を掃除。
 
-### 7. admin アプリの Recoil→TanStack Query 移行は未着手
-- **場所**: `apps/admin`（`api/Recoil.ts` の `TemplateState` atom がまだ生きている）
-- **状態**: web の F3 は完了。admin はこれから（同じ useTemplate パターンを適用予定）。
+### 11. 型名 `CatalogData` は `TemplateData` の re-export エイリアス
+- **場所**: 両アプリ `interface.ts`（`export type { TemplateData as CatalogData }`）
+- **何をした**: useCatalog リネーム時、shared/interface の実体型名 `TemplateData` は据え置き、アプリ側だけエイリアスで `CatalogData` に。
+- **あるべき姿**: 実体の型名自体を `CatalogData` にリネーム（shared 含む）。
 
-### 9. Dashboard(admin) で /group を二重取得
-- **場所**: `apps/admin/src/pages/Dashboard/Dashboard.tsx`
-- **何をした**: 統計チップ用に `GroupGetAll()`(imperative)で `group` state を、Group ウィジェット用に `useGroups()`(TanStack Query)で `groups` を、それぞれ取得している。/group を2回叩く。
-- **あるべき姿**: `useGroups()` に一本化し `GroupGetAll` を撤去。
-
-### 10. useTemplate/TemplateData の名称が実体(catalog)と不一致
-- **場所**: 両アプリ `hooks/useTemplate.ts`, `interface.ts TemplateData`
-- **何をした**: B5 で `/template`→`/catalog` に repoint したが、churn 抑制のため hook 名 `useTemplate`・型名 `TemplateData` を据え置き。
-- **あるべき姿**: `useCatalog`/`CatalogData` にリネーム。
-
-### 8. 各 API ファイル（Service.ts 等）の共有クライアント移行は未完
-- **場所**: `apps/web/src/api/*`, `apps/admin/src/api/*`
-- **何をした**: 共有 `createApiClient` は用意し info/template は移行したが、命令的 API（Service.Post 等）は旧 axios のまま。
-- **あるべき姿**: 全 API ファイルを `lib/api` の共有クライアントに載せ替え、`{error,data}` 契約を throw + 型付き返却に統一（F3 の呼び出し元更新と一緒に）。
+## 解消済み（記録）
+- ~~#3 `api/Info.ts` の invalidate シム~~ → 全 mutation が `invalidateQueries` 直呼びに置換し**ファイル削除**（2026-07-12）
+- ~~#7 admin の TanStack Query 移行~~ → 完了。読み=useQuery（useResources の list/detail hooks）、書き=useMutation+invalidate（2026-07-12）
+- ~~#8 命令的 API の共有クライアント移行~~ → **axios 全廃・`src/api/` ディレクトリごと解体**。薄いラッパーは queryFn/mutationFn にインライン、実ロジックは lib/（auth/config/tool）へ移設。reload/setReload 機構も全廃（2026-07-12）
+- ~~#9 Dashboard(admin) の /group 二重取得~~ → `useGroups()` に一本化（2026-07-12）
+- ~~#10 useTemplate 名称不一致~~ → `useCatalog`/`CatalogData` にリネーム（型実体名は #11 に残件）（2026-07-12）
 
 ## backend（参考: 別リポ dsbd-backend / refactor/backend-all）
 - B3 で store のトランザクション導入は未実施（service/connection 追加・承認）→ 承認ワークフロー（workflow パッケージ）と一緒に実装予定。

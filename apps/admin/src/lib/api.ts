@@ -1,5 +1,5 @@
 import { createApiClient } from '@dsbd/shared';
-import { restfulApiConfig } from '../api/Config';
+import { restfulApiConfig } from './config';
 
 /**
  * Shared API client for the admin app. Auth is the ACCESS_TOKEN header sourced

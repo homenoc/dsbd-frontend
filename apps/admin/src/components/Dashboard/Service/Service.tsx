@@ -1,4 +1,3 @@
-import { ServiceDetailData, TemplateData } from '../../../interface'
 import {
   Box,
   Button,
@@ -12,72 +11,59 @@ import {
   TablePagination,
   TableRow,
   Toolbar,
-} from '@mui/material'
-import React, { Dispatch, SetStateAction } from 'react'
+} from '@mui/material';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { CatalogData, ServiceDetailData } from '../../../interface';
 import {
   DeleteDialog,
   EnableDialog,
   ExaminationDialog,
-} from '../../../pages/Group/GroupDetail/Service'
-import { useNavigate } from 'react-router-dom'
-import { StyledTable2, StyledTypographyHeading } from '../../../style'
-import { GenServiceCodeOnlyService } from '../../Tool'
+} from '../../../pages/Group/GroupDetail/Service';
+import { StyledTable2, StyledTypographyHeading } from '../../../style';
+import { GenServiceCodeOnlyService } from '../../Tool';
 
 export default function Service(props: {
-  data: ServiceDetailData[] | undefined
-  template: TemplateData | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: ServiceDetailData[] | undefined;
+  template: CatalogData | undefined;
 }) {
-  const { data, template, setReload } = props
+  const { data, template } = props;
 
   return (
     <TableContainer component={Paper}>
       <Toolbar variant="dense">
-        <StyledTypographyHeading id="services">
-          Services
-        </StyledTypographyHeading>
+        <StyledTypographyHeading id="services">Services</StyledTypographyHeading>
       </Toolbar>
       {data === undefined && <h3>データがありません</h3>}
       {template === undefined && <h3>Templateデータを取得できません</h3>}
       {data !== undefined && template !== undefined && (
-        <StatusTable
-          key={'service_status_table'}
-          setReload={setReload}
-          service={data.sort((a, b) => b.ID - a.ID)}
-        />
+        <StatusTable key={'service_status_table'} service={data.sort((a, b) => b.ID - a.ID)} />
       )}
     </TableContainer>
-  )
+  );
 }
 
-export function StatusTable(props: {
-  service: ServiceDetailData[]
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { service, setReload } = props
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(5)
-  const navigate = useNavigate()
+export function StatusTable(props: { service: ServiceDetailData[] }) {
+  const { service } = props;
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const navigate = useNavigate();
 
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, service.length - page * rowsPerPage)
+  const emptyRows = rowsPerPage - Math.min(rowsPerPage, service.length - page * rowsPerPage);
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage)
-  }
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPage(newPage);
+  };
 
   const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-  const clickGroupPage = (id: number) => navigate('/dashboard/group/' + id)
-  const clickServicePage = (id: number) => navigate('/dashboard/service/' + id)
+  const clickGroupPage = (id: number) => navigate('/dashboard/group/' + id);
+  const clickServicePage = (id: number) => navigate('/dashboard/service/' + id);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -93,10 +79,7 @@ export function StatusTable(props: {
           </TableHead>
           <TableBody>
             {(rowsPerPage > 0
-              ? service.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
+              ? service.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               : service
             ).map((row, index) => (
               <TableRow key={'service_detail_' + index}>
@@ -107,12 +90,8 @@ export function StatusTable(props: {
                   {row.CreatedAt}
                 </TableCell>
                 <TableCell style={{ width: 160 }} align="right">
-                  {!row.pass && (
-                    <Chip size="small" color="secondary" label="未審査" />
-                  )}
-                  {row.pass && (
-                    <Chip size="small" color="primary" label="審査済み" />
-                  )}
+                  {!row.pass && <Chip size="small" color="secondary" label="未審査" />}
+                  {row.pass && <Chip size="small" color="primary" label="審査済み" />}
                 </TableCell>
                 <TableCell style={{ width: 300 }} align="right">
                   <Box display="flex" justifyContent="flex-end">
@@ -120,7 +99,6 @@ export function StatusTable(props: {
                       <ExaminationDialog
                         key={'service_examination_dialog_' + index}
                         service={row}
-                        setReload={setReload}
                       />
                     )}
                     &nbsp;
@@ -132,17 +110,9 @@ export function StatusTable(props: {
                       Detail
                     </Button>
                     &nbsp;
-                    <DeleteDialog
-                      key={'service_delete_dialog_' + index}
-                      id={row.ID}
-                      setReload={setReload}
-                    />
+                    <DeleteDialog key={'service_delete_dialog_' + index} id={row.ID} />
                     &nbsp;
-                    <EnableDialog
-                      key={'service_enable_dialog_' + row.ID}
-                      service={row}
-                      setReload={setReload}
-                    />
+                    <EnableDialog key={'service_enable_dialog_' + row.ID} service={row} />
                     &nbsp;
                     <Button
                       size="small"
@@ -175,5 +145,5 @@ export function StatusTable(props: {
         />
       </FormControl>
     </Box>
-  )
+  );
 }

@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -19,13 +20,12 @@ import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import remarkGfm from 'remark-gfm';
 import * as Yup from 'yup';
-import { GetAll as ConnectionGetAll } from '../../api/Connection';
-import { Post } from '../../api/Notice';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { DateToString1 } from '../../components/Tool';
-import { useGroups, useNOCs, useUsers } from '../../hooks/useResources';
-import { useTemplate } from '../../hooks/useTemplate';
+import { useCatalog } from '../../hooks/useCatalog';
+import { useConnections, useGroups, useNOCs, useUsers } from '../../hooks/useResources';
 import type { ConnectionDetailData } from '../../interface';
+import { api } from '../../lib/api';
 import { StyledTextFieldWrap, StyledTextFieldWrapTitle } from '../../style';
 import { MailAutoNoticeSendDialogs } from '../Group/Mail';
 
@@ -37,7 +37,7 @@ export default function NoticeAdd() {
   const { data: users } = useUsers();
   const { data: groups } = useGroups();
   const { data: nocs } = useNOCs();
-  const { data: catalog } = useTemplate();
+  const { data: catalog } = useCatalog();
   const navigate = useNavigate();
   const nowDate = new Date();
   const [isPermanent, setIsPermanent] = React.useState(true);
@@ -49,8 +49,12 @@ export default function NoticeAdd() {
   const [templateUser, setTemplateUser] = React.useState<OptionType[]>([]);
   const [templateGroup, setTemplateGroup] = React.useState<OptionType[]>([]);
   const [templateNOC, setTemplateNOC] = React.useState<OptionType[]>([]);
-  const [connections, setConnections] = useState<ConnectionDetailData[]>();
+  const { data: allConnections, error: connectionsError } = useConnections();
+  const connections = allConnections?.filter(
+    (item: ConnectionDetailData) => item.enable && item.open,
+  );
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (email && !openMailSendDialog) {
@@ -75,14 +79,10 @@ export default function NoticeAdd() {
   }, [nocs]);
 
   useEffect(() => {
-    ConnectionGetAll().then((res) => {
-      if (res.error === '') {
-        setConnections(res.data.filter((item: ConnectionDetailData) => item.enable && item.open));
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-    });
-  }, []);
+    if (connectionsError) {
+      enqueueSnackbar(String((connectionsError as Error).message), { variant: 'error' });
+    }
+  }, [connectionsError]);
 
   const validationSchema = Yup.object().shape({
     title: Yup.string().required('タイトルを入力してください'),
@@ -121,6 +121,18 @@ export default function NoticeAdd() {
   const body = watch('body');
   const isEveryone = watch('everyone');
 
+  const addNoticeMutation = useMutation({
+    mutationFn: (request: any) => api.post('/notice', request),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      setOpenMailSendDialog(true);
+      queryClient.invalidateQueries({ queryKey: ['notice'] });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const onSubmit = (data: any, e: any) => {
     const start_time = DateToString1(data.start_time);
     let end_time = undefined;
@@ -146,14 +158,7 @@ export default function NoticeAdd() {
     console.log('request', request);
     setEmail(getEMail());
 
-    Post(request).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        setOpenMailSendDialog(true);
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    addNoticeMutation.mutate(request);
   };
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console

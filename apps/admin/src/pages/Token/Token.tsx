@@ -9,8 +9,8 @@ import {
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
-import { GetAll } from '../../api/Token';
 import Dashboard from '../../components/Dashboard/Dashboard';
+import { useTokens } from '../../hooks/useResources';
 import type { TokenDetailData } from '../../interface';
 import {
   StyledCard,
@@ -20,22 +20,17 @@ import {
 } from '../Dashboard/styles';
 
 export default function Token() {
-  const [tokens, setTokens] = useState<TokenDetailData[]>([]);
-  const [initTokens, setInitTokens] = useState<TokenDetailData[]>([]);
+  const { data: initTokens, error } = useTokens();
+  const [search, setSearch] = useState('');
   const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効
   const [value, setValue] = React.useState(1);
 
   useEffect(() => {
-    GetAll().then((res) => {
-      if (res.error === '') {
-        setTokens(res.data);
-        setInitTokens(res.data);
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-    });
-  }, []);
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
+    }
+  }, [error]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(Number(event.target.value));
@@ -51,17 +46,16 @@ export default function Token() {
     return true;
   };
 
-  const handleFilter = (search: string) => {
-    let tmp: TokenDetailData[];
-    if (search === '') {
-      tmp = initTokens;
-    } else {
-      tmp = initTokens.filter((token: TokenDetailData) => {
-        const tmpToken = token.access_token + token.user_token + token.tmp_token;
-        return tmpToken.toLowerCase().includes(search.toLowerCase());
-      });
-    }
-    setTokens(tmp);
+  const tokens =
+    search === ''
+      ? (initTokens ?? [])
+      : (initTokens ?? []).filter((token: TokenDetailData) => {
+          const tmpToken = token.access_token + token.user_token + token.tmp_token;
+          return tmpToken.toLowerCase().includes(search.toLowerCase());
+        });
+
+  const handleFilter = (value: string) => {
+    setSearch(value);
   };
 
   return (

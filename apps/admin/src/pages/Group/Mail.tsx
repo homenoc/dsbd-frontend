@@ -10,11 +10,12 @@ import {
   type SelectChangeEvent,
   TextField,
 } from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { type Dispatch, type SetStateAction, useEffect } from 'react';
-import { Post } from '../../api/Mail';
-import { useTemplate } from '../../hooks/useTemplate';
+import { useCatalog } from '../../hooks/useCatalog';
 import { DefaultMailSendData, type MailTemplateData } from '../../interface';
+import { api } from '../../lib/api';
 
 export function MailAutoSendDialogs(props: {
   open: string;
@@ -23,7 +24,7 @@ export function MailAutoSendDialogs(props: {
   org: string;
 }) {
   const { open, setOpen, mails, org } = props;
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const [data, setData] = React.useState(DefaultMailSendData);
   const [toMail, setToMail] = React.useState('');
   const { enqueueSnackbar } = useSnackbar();
@@ -48,21 +49,26 @@ export function MailAutoSendDialogs(props: {
     }
   }, [open]);
 
+  const sendMailMutation = useMutation({
+    mutationFn: (mail: string) =>
+      api.post('/mail', {
+        to_mail: mail,
+        subject: data.subject,
+        content: data.content,
+      }),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const request = () => {
     for (const raw of mails.split(',')) {
       const mail = raw.trim();
       if (mail !== '') {
-        Post({
-          to_mail: mail,
-          subject: data.subject,
-          content: data.content,
-        }).then((res) => {
-          if (res.error === '') {
-            enqueueSnackbar('Request Success', { variant: 'success' });
-          } else {
-            enqueueSnackbar(res.error, { variant: 'error' });
-          }
-        });
+        sendMailMutation.mutate(mail);
       }
     }
     setOpen('');
@@ -145,27 +151,32 @@ export function MailSendDialogs(props: {
   org: string;
 }) {
   const { open, setOpen, mails, org } = props;
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const [data, setData] = React.useState(DefaultMailSendData);
   const [processID, setProcessID] = React.useState('');
   const [toMail, setToMail] = React.useState(mails);
   const { enqueueSnackbar } = useSnackbar();
 
+  const sendMailMutation = useMutation({
+    mutationFn: (mail: string) =>
+      api.post('/mail', {
+        to_mail: mail,
+        subject: data.subject,
+        content: data.content,
+      }),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const request = () => {
     for (const raw of mails.split(',')) {
       const mail = raw.trim();
       if (mail === '') continue;
-      Post({
-        to_mail: mail,
-        subject: data.subject,
-        content: data.content,
-      }).then((res) => {
-        if (res.error === '') {
-          enqueueSnackbar('Request Success', { variant: 'success' });
-        } else {
-          enqueueSnackbar(res.error, { variant: 'error' });
-        }
-      });
+      sendMailMutation.mutate(mail);
     }
     setOpen(false);
   };
@@ -308,21 +319,26 @@ export function MailAutoNoticeSendDialogs(props: {
     }
   }, [open]);
 
+  const sendMailMutation = useMutation({
+    mutationFn: (mail: string) =>
+      api.post('/mail', {
+        to_mail: mail,
+        subject: data.subject,
+        content: data.content,
+      }),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const request = () => {
     for (const raw of mails.split(',')) {
       const mail = raw.trim();
       if (mail !== '') {
-        Post({
-          to_mail: mail,
-          subject: data.subject,
-          content: data.content,
-        }).then((res) => {
-          if (res.error === '') {
-            enqueueSnackbar('Request Success', { variant: 'success' });
-          } else {
-            enqueueSnackbar(res.error, { variant: 'error' });
-          }
-        });
+        sendMailMutation.mutate(mail);
       }
     }
     setOpen(false);

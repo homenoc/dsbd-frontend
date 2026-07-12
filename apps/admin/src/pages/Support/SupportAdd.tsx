@@ -13,15 +13,16 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
-import { Post } from '../../api/Support';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { useGroups, useUsers } from '../../hooks/useResources';
 import { DefaultTicketAddData } from '../../interface';
+import { api } from '../../lib/api';
 import { StyledTextFieldVeryLong } from '../Dashboard/styles';
 import { MailAutoSendDialogs } from '../Group/Mail';
 
@@ -41,6 +42,19 @@ export default function SupportAdd() {
     }
   }, [openMailAutoSendDialog]);
 
+  const queryClient = useQueryClient();
+  const addTicketMutation = useMutation({
+    mutationFn: () => api.post('/support', data),
+    onSuccess: () => {
+      enqueueSnackbar('OK', { variant: 'success' });
+      setOpenMailAutoSendDialog('new_ticket_from_admin');
+      queryClient.invalidateQueries({ queryKey: ['support'] });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const request = () => {
     if (data.is_group && data.group_id === 0) {
       enqueueSnackbar('Groupが指定されていません。', { variant: 'error' });
@@ -59,13 +73,7 @@ export default function SupportAdd() {
       return;
     }
 
-    Post(data).then((res) => {
-      if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' });
-        setOpenMailAutoSendDialog('new_ticket_from_admin');
-      }
-      enqueueSnackbar(res.error, { variant: 'error' });
-    });
+    addTicketMutation.mutate();
   };
 
   return (

@@ -5,10 +5,10 @@ import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
-import { restfulApiConfig } from '../../api/Config';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
 import { useInfo } from '../../hooks/useInfo';
 import type { InfoData } from '../../interface';
+import { restfulApiConfig } from '../../lib/config';
 import { StyledCardRoot3, StyledTypographyTitle } from '../../style';
 
 export default function Dashboard() {

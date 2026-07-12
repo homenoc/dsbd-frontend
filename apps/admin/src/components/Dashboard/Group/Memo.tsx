@@ -1,5 +1,3 @@
-import { GroupDetailData, MemoData } from '../../../interface'
-import React, { Dispatch, SetStateAction } from 'react'
 import {
   Box,
   Button,
@@ -12,94 +10,85 @@ import {
   TablePagination,
   TableRow,
   Toolbar,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { Delete } from '../../../api/Memo'
-import { useSnackbar } from 'notistack'
-import { MemoDetailDialogs } from '../../../pages/Group/GroupDetail/Memo'
-import {
-  StyledChip2,
-  StyledTable2,
-  StyledTypographyHeading,
-} from '../../../style'
+} from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { GroupDetailData, MemoData } from '../../../interface';
+import { api } from '../../../lib/api';
+import { MemoDetailDialogs } from '../../../pages/Group/GroupDetail/Memo';
+import { StyledChip2, StyledTable2, StyledTypographyHeading } from '../../../style';
 
-export function MemoGroup(props: {
-  data: GroupDetailData[] | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { data, setReload } = props
+export function MemoGroup(props: { data: GroupDetailData[] | undefined }) {
+  const { data } = props;
 
   return (
     <TableContainer component={Paper}>
       <Toolbar variant="dense">
-        <StyledTypographyHeading id="groups_memo">
-          Groups(Memo)
-        </StyledTypographyHeading>
+        <StyledTypographyHeading id="groups_memo">Groups(Memo)</StyledTypographyHeading>
       </Toolbar>
       {data === undefined && <h3>データがありません</h3>}
       {data !== undefined && (
         <StatusTable
           key={'group_memo_status_table'}
-          setReload={setReload}
           group={data.filter((grp) => {
-            const tmp = grp.memos?.filter((memo) => memo.type === 1)
+            const tmp = grp.memos?.filter((memo) => memo.type === 1);
             if (tmp === undefined) {
-              return false
+              return false;
             }
-            return tmp.length !== 0
+            return tmp.length !== 0;
           })}
         />
       )}
     </TableContainer>
-  )
+  );
 }
 
-export function StatusTable(props: {
-  group: GroupDetailData[]
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { group, setReload } = props
-  const navigate = useNavigate()
-  const [detailOpenMemoDialog, setDetailOpenMemoDialog] = React.useState(false)
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(5)
-  const [memoData, setMemoData] = React.useState<MemoData>()
-  const { enqueueSnackbar } = useSnackbar()
+export function StatusTable(props: { group: GroupDetailData[] }) {
+  const { group } = props;
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [detailOpenMemoDialog, setDetailOpenMemoDialog] = React.useState(false);
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [memoData, setMemoData] = React.useState<MemoData>();
+  const { enqueueSnackbar } = useSnackbar();
 
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, group.length - page * rowsPerPage)
+  const emptyRows = rowsPerPage - Math.min(rowsPerPage, group.length - page * rowsPerPage);
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage)
-  }
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPage(newPage);
+  };
 
   const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-  const GroupPage = (id: number) => navigate('/dashboard/group/' + id)
+  const GroupPage = (id: number) => navigate('/dashboard/group/' + id);
+
+  const deleteMemoMutation = useMutation({
+    mutationFn: (id: number) => api.delete('/memo/' + id),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
 
   const handleDelete = (id: number) => {
-    Delete(id).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        setReload(true)
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
-    })
-  }
+    deleteMemoMutation.mutate(id);
+  };
 
   const handleClickDetail = (data: MemoData) => {
-    setMemoData(data)
-    setDetailOpenMemoDialog(true)
-  }
+    setMemoData(data);
+    setDetailOpenMemoDialog(true);
+  };
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -114,10 +103,7 @@ export function StatusTable(props: {
           </TableHead>
           <TableBody>
             {(rowsPerPage > 0
-              ? group.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
+              ? group.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               : group
             ).map((row, index) => (
               <TableRow key={'group_memo_detail_' + index}>
@@ -140,11 +126,7 @@ export function StatusTable(props: {
                 </TableCell>
                 <TableCell style={{ width: 300 }} align="right">
                   &nbsp;
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => GroupPage(row.ID)}
-                  >
+                  <Button size="small" variant="outlined" onClick={() => GroupPage(row.ID)}>
                     Detail
                   </Button>
                 </TableCell>
@@ -178,5 +160,5 @@ export function StatusTable(props: {
         />
       </FormControl>
     </Box>
-  )
+  );
 }

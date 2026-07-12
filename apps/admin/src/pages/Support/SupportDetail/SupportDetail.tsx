@@ -2,10 +2,10 @@ import { useSnackbar } from 'notistack';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useWebSocket from 'react-use-websocket';
-import { restfulApiConfig } from '../../../api/Config';
-import { Get } from '../../../api/Support';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import { useSupportTicket } from '../../../hooks/useResources';
 import type { TicketDetailData, UserDetailData } from '../../../interface';
+import { restfulApiConfig } from '../../../lib/config';
 import { StyledPaperMessage } from '../styles';
 import { MessageLeft, MessageRight } from './Message';
 import { TextInput } from './TextInput';
@@ -28,21 +28,26 @@ export default function SupportDetail() {
     },
   );
   const { enqueueSnackbar } = useSnackbar();
+  // The ticket lives in local state because the websocket appends chat entries
+  // to it; the query only seeds it.
   const [ticket, setTicket] = useState<TicketDetailData>();
   const [inputChatData, setInputChatData] = useState('');
   const [sendPush, setSendPush] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { data: ticketData, error: ticketError } = useSupportTicket(Number(id));
 
   useEffect(() => {
-    Get(Number(id)).then((res) => {
-      if (res.error !== '') {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-        return;
-      }
-      setTicket(res.data);
+    if (ticketData) {
+      setTicket(ticketData);
       ref.current?.scrollIntoView();
-    });
-  }, []);
+    }
+  }, [ticketData]);
+
+  useEffect(() => {
+    if (ticketError) {
+      enqueueSnackbar(String((ticketError as Error).message), { variant: 'error' });
+    }
+  }, [ticketError]);
 
   useEffect(() => {
     if (lastMessage !== null) {

@@ -1,3 +1,4 @@
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {
   Box,
   Checkbox,
@@ -7,27 +8,33 @@ import {
   TextField,
   ThemeProvider,
   Typography,
-} from '@mui/material'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import { muiColorTheme } from '../../components/Theme'
-import React, { FormEvent, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Login } from '../../api/Auth'
-import { SubmitButton, StyledAvatar, StyledLoginForm } from '../../style'
+} from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
+import React, { type FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { muiColorTheme } from '../../components/Theme';
+import { login } from '../../lib/auth';
+import { StyledAvatar, StyledLoginForm, SubmitButton } from '../../style';
 
 export default function SignIn() {
-  const navigate = useNavigate()
-  const [mail, setMail] = useState('')
-  const [password, setPassword] = useState('')
+  const navigate = useNavigate();
+  const [mail, setMail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // The old Login helper resolved with the error instead of rejecting, and the
+  // form silently stayed put on failure — an empty onError keeps that.
+  const loginMutation = useMutation({
+    mutationFn: () => login(mail, password),
+    onSuccess: () => {
+      navigate('/dashboard');
+    },
+    onError: () => {},
+  });
 
   const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    Login(mail, password).then((res) => {
-      if (res === '') {
-        navigate('/dashboard')
-      }
-    })
-  }
+    e.preventDefault();
+    loginMutation.mutate();
+  };
 
   return (
     <ThemeProvider theme={muiColorTheme}>
@@ -79,12 +86,7 @@ export default function SignIn() {
                 control={<Checkbox value="remember" color="primary" />}
                 label="Remember me"
               />
-              <SubmitButton
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-              >
+              <SubmitButton type="submit" fullWidth variant="contained" color="primary">
                 Sign In
               </SubmitButton>
             </form>
@@ -95,5 +97,5 @@ export default function SignIn() {
         {/*</Box>*/}
       </Container>
     </ThemeProvider>
-  )
+  );
 }

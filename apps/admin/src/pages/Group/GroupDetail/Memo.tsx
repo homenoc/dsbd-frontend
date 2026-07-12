@@ -1,9 +1,4 @@
 import {
-  DefaultMemoAddData,
-  GroupDetailData,
-  MemoData,
-} from '../../../interface'
-import {
   Button,
   CardContent,
   Chip,
@@ -19,50 +14,54 @@ import {
   Radio,
   RadioGroup,
   TextField,
-} from '@mui/material'
-import React, { Dispatch, SetStateAction } from 'react'
-import { useSnackbar } from 'notistack'
-import { Delete, Post } from '../../../api/Memo'
-import { StyledButton1, StyledCardRoot1, StyledDivMemo } from '../../../style'
+} from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction } from 'react';
+import { DefaultMemoAddData, type GroupDetailData, type MemoData } from '../../../interface';
+import { api } from '../../../lib/api';
+import { StyledButton1, StyledCardRoot1, StyledDivMemo } from '../../../style';
 
-export function GroupMemo(props: {
-  data: GroupDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const [detailOpenMemoDialog, setDetailOpenMemoDialog] = React.useState(false)
-  const [openAddMemoDialog, setAddOpenMemoDialog] = React.useState(false)
-  const [memoData, setMemoData] = React.useState<MemoData>()
-  const { data, setReload } = props
-  const { enqueueSnackbar } = useSnackbar()
+export function GroupMemo(props: { data: GroupDetailData }) {
+  const [detailOpenMemoDialog, setDetailOpenMemoDialog] = React.useState(false);
+  const [openAddMemoDialog, setAddOpenMemoDialog] = React.useState(false);
+  const [memoData, setMemoData] = React.useState<MemoData>();
+  const { data } = props;
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const deleteMemoMutation = useMutation({
+    mutationFn: (id: number) => api.delete('/memo/' + id),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
 
   const handleDelete = (id: number) => {
-    Delete(id).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        setReload(true)
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
-    })
-  }
+    deleteMemoMutation.mutate(id);
+  };
 
   const handleClickDetail = (data: MemoData) => {
-    setMemoData(data)
-    setDetailOpenMemoDialog(true)
-  }
+    setMemoData(data);
+    setDetailOpenMemoDialog(true);
+  };
 
   const getColor = (type: number) => {
     if (type === 1) {
-      return 'secondary'
+      return 'secondary';
     }
     if (type === 2) {
-      return 'primary'
+      return 'primary';
     }
     if (type === 3) {
-      return 'default'
+      return 'default';
     }
-    return 'default'
-  }
+    return 'default';
+  };
 
   return (
     <StyledCardRoot1>
@@ -94,7 +93,6 @@ export function GroupMemo(props: {
           open={openAddMemoDialog}
           setOpen={setAddOpenMemoDialog}
           baseData={data}
-          setReload={setReload}
         />
         {memoData !== undefined && (
           <MemoDetailDialogs
@@ -107,31 +105,35 @@ export function GroupMemo(props: {
       </CardContent>
       <Divider />
     </StyledCardRoot1>
-  )
+  );
 }
 
 export function MemoAddDialogs(props: {
-  open: boolean
-  setOpen: Dispatch<SetStateAction<boolean>>
-  baseData: GroupDetailData
-  setReload: Dispatch<SetStateAction<boolean>>
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  baseData: GroupDetailData;
 }) {
-  const { open, setOpen, baseData, setReload } = props
-  const [data, setData] = React.useState(DefaultMemoAddData)
-  const { enqueueSnackbar } = useSnackbar()
+  const { open, setOpen, baseData } = props;
+  const [data, setData] = React.useState(DefaultMemoAddData);
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const addMemoMutation = useMutation({
+    mutationFn: () => api.post('/memo', data),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
 
   const request = () => {
-    data.group_id = baseData.ID
-    Post(baseData.ID, data).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-        setOpen(false)
-        setReload(true)
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-    })
-  }
+    data.group_id = baseData.ID;
+    addMemoMutation.mutate();
+  };
 
   return (
     <div>
@@ -157,7 +159,7 @@ export function MemoAddDialogs(props: {
                 inputProps={{ maxLength: 10 }}
                 value={data.title}
                 onChange={(event) => {
-                  setData({ ...data, title: event.target.value })
+                  setData({ ...data, title: event.target.value });
                 }}
               />
             </Grid>
@@ -172,7 +174,7 @@ export function MemoAddDialogs(props: {
                 variant="outlined"
                 value={data.message}
                 onChange={(event) => {
-                  setData({ ...data, message: event.target.value })
+                  setData({ ...data, message: event.target.value });
                 }}
               />
             </Grid>
@@ -187,7 +189,7 @@ export function MemoAddDialogs(props: {
                   defaultValue="top"
                   value={data.type}
                   onChange={(event) => {
-                    setData({ ...data, type: Number(event.target.value) })
+                    setData({ ...data, type: Number(event.target.value) });
                   }}
                 >
                   <FormControlLabel
@@ -220,15 +222,15 @@ export function MemoAddDialogs(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }
 
 export function MemoDetailDialogs(props: {
-  open: boolean
-  setOpen: Dispatch<SetStateAction<boolean>>
-  data: MemoData
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  data: MemoData;
 }) {
-  const { open, setOpen, data } = props
+  const { open, setOpen, data } = props;
 
   return (
     <div>
@@ -258,5 +260,5 @@ export function MemoDetailDialogs(props: {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }

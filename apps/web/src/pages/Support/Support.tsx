@@ -9,14 +9,15 @@ import {
   RadioGroup,
   Typography,
 } from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Put } from '../../api/Support';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { Solved } from '../../components/Dashboard/Solved/Open';
 import { infoQueryKey, useInfo } from '../../hooks/useInfo';
 import type { TicketData } from '../../interface';
+import { api } from '../../lib/api';
 import { queryClient } from '../../lib/queryClient';
 import {
   StyledCardRoot3,
@@ -69,15 +70,20 @@ export default function Support() {
     setTickets(tmp);
   };
 
+  const solvedMutation = useMutation({
+    mutationFn: ({ id, solved }: { id: number; solved: boolean }) =>
+      api.put<any>(`/support/${id}`, { solved }),
+    onSuccess: () => {
+      enqueueSnackbar('OK', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
+
   const clickSolvedStatus = (id: number, solved: boolean) => {
-    Put(id, { solved }).then((res) => {
-      if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' });
-        queryClient.invalidateQueries({ queryKey: infoQueryKey });
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' });
-      }
-    });
+    solvedMutation.mutate({ id, solved });
   };
 
   const clickDetailPage = (id: number) => {

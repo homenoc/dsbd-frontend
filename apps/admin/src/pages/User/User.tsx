@@ -13,8 +13,8 @@ import {
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GetAll } from '../../api/User';
 import Dashboard from '../../components/Dashboard/Dashboard';
+import { useUsers } from '../../hooks/useResources';
 import type { UserDetailData } from '../../interface';
 import {
   StyledCard,
@@ -25,22 +25,17 @@ import {
 
 export default function User() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<UserDetailData[]>([]);
-  const [initUsers, setInitUsers] = useState<UserDetailData[]>([]);
+  const { data: initUsers, error } = useUsers();
+  const [search, setSearch] = useState('');
   const { enqueueSnackbar } = useSnackbar();
   // 1:有効 2:無効
   const [value, setValue] = React.useState(1);
 
   useEffect(() => {
-    GetAll().then((res) => {
-      if (res.error === '') {
-        setUsers(res.data);
-        setInitUsers(res.data);
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-    });
-  }, []);
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
+    }
+  }, [error]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(Number(event.target.value));
@@ -56,17 +51,16 @@ export default function User() {
     return true;
   };
 
-  const handleFilter = (search: string) => {
-    let tmp: UserDetailData[];
-    if (search === '') {
-      tmp = initUsers;
-    } else {
-      tmp = initUsers.filter((users: UserDetailData) => {
-        const name = users.name + users.name_en;
-        return name.toLowerCase().includes(search.toLowerCase());
-      });
-    }
-    setUsers(tmp);
+  const users =
+    search === ''
+      ? initUsers
+      : initUsers.filter((users: UserDetailData) => {
+          const name = users.name + users.name_en;
+          return name.toLowerCase().includes(search.toLowerCase());
+        });
+
+  const handleFilter = (value: string) => {
+    setSearch(value);
   };
 
   return (

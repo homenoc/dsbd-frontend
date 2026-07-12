@@ -16,20 +16,15 @@ import {
 } from '@mui/material';
 import { DesktopDatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { useSnackbar } from 'notistack';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DeleteSubscription, Put } from '../../../api/Group';
-import {
-  GetCustomerDashboard,
-  GetPayment,
-  GetSubscribeDashboard,
-  PostSubscribe,
-} from '../../../api/Payment';
 import { GroupStatusStr } from '../../../components/Dashboard/Status/Status';
-import { useTemplate } from '../../../hooks/useTemplate';
+import { useCatalog } from '../../../hooks/useCatalog';
 import type { GroupDetailData } from '../../../interface';
+import { api } from '../../../lib/api';
 import {
   StyledButtonSpaceRight,
   StyledButtonSpaceTop,
@@ -58,11 +53,11 @@ function ChipAgree(props: { agree: boolean }) {
 export function GroupProfileInfo(props: {
   data: GroupDetailData;
   setOpenMailSendDialog: Dispatch<SetStateAction<boolean>>;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { data, setOpenMailSendDialog, setReload } = props;
+  const { data, setOpenMailSendDialog } = props;
+  const queryClient = useQueryClient();
   const [lockPersonalInformation, setLockPersonalInformation] = React.useState(true);
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const [group, setGroup] = useState(data);
   const { enqueueSnackbar } = useSnackbar();
   const [paymentCoupon, setPaymentCoupon] = React.useState('');
@@ -86,6 +81,19 @@ export function GroupProfileInfo(props: {
     }
   }, []);
 
+  const putGroupMutation = useMutation({
+    mutationFn: ({ id, req }: { id: number; req: any }) => api.put('/group/' + id, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
+
   const membershipUpdate = () => {
     let dateStr = null;
     if (memberExpiredDate != null) {
@@ -100,67 +108,65 @@ export function GroupProfileInfo(props: {
       member_expired: dateStr,
     };
 
-    Put(data.ID, req).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putGroupMutation.mutate({ id: data.ID, req });
   };
+
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: () => api.delete('/group/' + data.ID + '/subscription'),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
 
   const cancelSubscription = () => {
-    DeleteSubscription(data.ID).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    cancelSubscriptionMutation.mutate();
   };
 
+  // Stripe URL fetches are one-shot user actions (they open a new tab), so
+  // they are modeled as mutations rather than cached queries.
+  const openPaymentUrlMutation = useMutation({
+    mutationFn: (path: string) => api.get<{ url: string }>(path).then((r) => r.url),
+    onSuccess: (url) => {
+      window.open(url, '_blank');
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const customerDashboard = () => {
-    GetCustomerDashboard(data.ID).then((res) => {
-      if (res.error === '') {
-        window.open(res.data, '_blank');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    openPaymentUrlMutation.mutate('/group/' + data.ID + '/payment/customer');
   };
 
   const subscribeDashboard = () => {
-    GetSubscribeDashboard(data.ID).then((res) => {
-      if (res.error === '') {
-        window.open(res.data, '_blank');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    openPaymentUrlMutation.mutate('/group/' + data.ID + '/payment/subscribe');
   };
 
+  const subscribeMutation = useMutation({
+    mutationFn: (plan: string) =>
+      api
+        .post<{ url: string }>('/group/' + data.ID + '/payment/subscribe', { plan })
+        .then((r) => r.url),
+    onSuccess: (url) => {
+      window.open(url, '_blank');
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
+
   const subscribe = (plan: string) => {
-    PostSubscribe(data.ID, plan).then((res) => {
-      if (res.error === '') {
-        window.open(res.data, '_blank');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    subscribeMutation.mutate(plan);
   };
 
   const getPayment = () => {
-    GetPayment(data.ID).then((res) => {
-      if (res.error === '') {
-        window.open(res.data, '_blank');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    openPaymentUrlMutation.mutate('/group/' + data.ID + '/payment');
   };
 
   const handleMemberExpiredDateChange = (newDate: Date | null) => {
@@ -173,15 +179,7 @@ export function GroupProfileInfo(props: {
 
   // Update Group Information
   const updateGroupInfo = () => {
-    Put(group.ID, group).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putGroupMutation.mutate({ id: group.ID, req: group });
   };
 
   return (
@@ -470,31 +468,22 @@ export function GroupProfileInfo(props: {
 export function GroupMainMenu(props: {
   data: GroupDetailData;
   autoMail: Dispatch<SetStateAction<string>>;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { data, autoMail, setReload } = props;
+  const { data, autoMail } = props;
 
   return (
     <StyledCardRoot1>
       <CardContent>
-        <GroupStatusButton
-          key={'group_status_button'}
-          data={data}
-          autoMail={autoMail}
-          setReload={setReload}
-        />
-        <GroupLockButton key={'group_lock_button'} data={data} setReload={setReload} />
-        <GroupAbolition key={'group_abolition'} data={data} setReload={setReload} />
+        <GroupStatusButton key={'group_status_button'} data={data} autoMail={autoMail} />
+        <GroupLockButton key={'group_lock_button'} data={data} />
+        <GroupAbolition key={'group_abolition'} data={data} />
       </CardContent>
     </StyledCardRoot1>
   );
 }
 
-export function GroupStatus(props: {
-  data: GroupDetailData;
-  setReload: boolean;
-}) {
-  const { data, setReload } = props;
+export function GroupStatus(props: { data: GroupDetailData }) {
+  const { data } = props;
   const [createDate, setCreateDate] = useState('');
   const [updateDate, setUpdateDate] = useState('');
   const [membershipLabel, setMembershipLabel] = useState<{
@@ -609,7 +598,7 @@ export function GroupStatus(props: {
       color: 'primary',
       label: paymentMemberStatus,
     });
-  }, [setReload]);
+  }, [data]);
 
   return (
     <StyledCardRoot1>

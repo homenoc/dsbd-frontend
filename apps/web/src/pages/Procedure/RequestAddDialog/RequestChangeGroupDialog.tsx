@@ -1,39 +1,23 @@
-import React from 'react'
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { DefaultSupportAddData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { Post } from '../../../api/Request'
-import { Get } from '../../../api/Info'
-import { StyledTextFieldVeryLong } from '../../../style'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React from 'react';
+import { useRequestMutation } from '../../../hooks/useRequest';
+import { DefaultSupportAddData } from '../../../interface';
+import { StyledTextFieldVeryLong } from '../../../style';
 
 export function RequestChangeGroupDialog() {
-  const navigate = useNavigate()
-  const [data, setData] = React.useState(DefaultSupportAddData)
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const [data, setData] = React.useState(DefaultSupportAddData);
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const requestMutation = useRequestMutation();
 
   const request = () => {
     if (data.data === '') {
-      enqueueSnackbar('本文が入力されていません。', { variant: 'error' })
+      enqueueSnackbar('本文が入力されていません。', { variant: 'error' });
     }
-    Post(data).then((res) => {
-      if (res.error === undefined) {
-        Get().then(() => {
-          navigate('/dashboard/support/' + res.data.id)
-        })
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-    })
-  }
+    requestMutation.mutate(data);
+  };
 
   return (
     <div>
@@ -51,9 +35,7 @@ export function RequestChangeGroupDialog() {
           },
         }}
       >
-        <DialogTitle id="customized-dialog-title">
-          Support情報の追加
-        </DialogTitle>
+        <DialogTitle id="customized-dialog-title">Support情報の追加</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -65,9 +47,7 @@ export function RequestChangeGroupDialog() {
                 multiline
                 rows={1}
                 value={data.title}
-                onChange={(event) =>
-                  setData({ ...data, title: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, title: event.target.value })}
                 variant="outlined"
               />
               <br />
@@ -77,9 +57,7 @@ export function RequestChangeGroupDialog() {
                 multiline
                 rows={6}
                 value={data.data}
-                onChange={(event) =>
-                  setData({ ...data, data: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, data: event.target.value })}
                 variant="outlined"
               />
             </Grid>
@@ -95,5 +73,5 @@ export function RequestChangeGroupDialog() {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }

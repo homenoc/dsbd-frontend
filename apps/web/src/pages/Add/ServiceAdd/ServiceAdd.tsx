@@ -23,15 +23,16 @@ import {
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { Fragment, useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
-import { Post } from '../../../api/Service';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
+import { useCatalog } from '../../../hooks/useCatalog';
 import { infoQueryKey, useInfo } from '../../../hooks/useInfo';
-import { useTemplate } from '../../../hooks/useTemplate';
+import { api } from '../../../lib/api';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledRootForm,
@@ -47,7 +48,7 @@ import {
 import { phoneRegExp, v4NetworkNameRegExp, v6NetworkNameRegExp } from '../reg';
 
 export default function ServiceAdd() {
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const { data: infoData, error } = useInfo();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -436,6 +437,19 @@ export default function ServiceAdd() {
 
   const serviceType = watch('service_type');
 
+  const serviceAddMutation = useMutation({
+    mutationFn: (request: any) =>
+      api.post<{ service: any }>('/service', request).then((r) => r.service),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
+      navigate('/dashboard/add');
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
+
   const onSubmit = (data: any, e: any) => {
     const start_date =
       data.start_date.getFullYear() +
@@ -561,15 +575,7 @@ export default function ServiceAdd() {
       request.bgp_comment = data.bgp_comment;
     }
 
-    Post(request).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        queryClient.invalidateQueries({ queryKey: infoQueryKey });
-        navigate('/dashboard/add');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    serviceAddMutation.mutate(request);
   };
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console

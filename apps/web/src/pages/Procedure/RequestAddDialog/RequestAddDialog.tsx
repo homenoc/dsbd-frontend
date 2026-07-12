@@ -1,45 +1,28 @@
-import React, { useEffect } from 'react'
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { DefaultSupportAddData } from '../../../interface'
-import { useSnackbar } from 'notistack'
-import { Post } from '../../../api/Request'
-import { Get } from '../../../api/Info'
-import { StyledTextFieldVeryLong } from '../../../style'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import React, { useEffect } from 'react';
+import { useRequestMutation } from '../../../hooks/useRequest';
+import { DefaultSupportAddData } from '../../../interface';
+import { StyledTextFieldVeryLong } from '../../../style';
 
 export function RequestAddDialog(props: { title: string }) {
-  const { title } = props
-  const navigate = useNavigate()
-  const [data, setData] = React.useState(DefaultSupportAddData)
-  const [open, setOpen] = React.useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { title } = props;
+  const [data, setData] = React.useState(DefaultSupportAddData);
+  const [open, setOpen] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const requestMutation = useRequestMutation({ onSuccess: () => setOpen(false) });
 
   const request = () => {
     if (data.data === '') {
-      enqueueSnackbar('本文が入力されていません。', { variant: 'error' })
+      enqueueSnackbar('本文が入力されていません。', { variant: 'error' });
     }
-    Post(data).then((res) => {
-      if (res.error === undefined) {
-        Get().then(() => {
-          navigate('/dashboard/support/' + res.data.id)
-        })
-        setOpen(false)
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-    })
-  }
+    requestMutation.mutate(data);
+  };
 
   useEffect(() => {
-    setData({ ...data, title: title })
-  }, [])
+    setData({ ...data, title: title });
+  }, []);
 
   return (
     <div>
@@ -69,16 +52,12 @@ export function RequestAddDialog(props: { title: string }) {
                 multiline
                 rows={1}
                 value={data.title}
-                onChange={(event) =>
-                  setData({ ...data, title: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, title: event.target.value })}
                 variant="outlined"
               />
               <br />
               <div>「{title}」の理由について詳しく説明してください。</div>
-              <div>
-                内容によりまして、承諾できない可能性がありますがご了承ください。
-              </div>
+              <div>内容によりまして、承諾できない可能性がありますがご了承ください。</div>
               <br />
               <StyledTextFieldVeryLong
                 id="data"
@@ -86,9 +65,7 @@ export function RequestAddDialog(props: { title: string }) {
                 multiline
                 rows={10}
                 value={data.data}
-                onChange={(event) =>
-                  setData({ ...data, data: event.target.value })
-                }
+                onChange={(event) => setData({ ...data, data: event.target.value })}
                 variant="outlined"
               />
             </Grid>
@@ -104,5 +81,5 @@ export function RequestAddDialog(props: { title: string }) {
         </DialogActions>
       </Dialog>
     </div>
-  )
+  );
 }

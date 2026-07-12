@@ -17,10 +17,6 @@ import {
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
-import { GetAll as ConnectionGetAll } from '../../api/Connection';
-import { GetAll as GroupGetAll } from '../../api/Group';
-import { GetAll as ServiceGetAll } from '../../api/Service';
-import { GetAll as SupportGetAll } from '../../api/Support';
 import Connection from '../../components/Dashboard/Connection/Connection';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
 import { Group } from '../../components/Dashboard/Group/Group';
@@ -28,8 +24,13 @@ import { MemoGroup } from '../../components/Dashboard/Group/Memo';
 import Request from '../../components/Dashboard/Request/Request';
 import Service from '../../components/Dashboard/Service/Service';
 import Ticket from '../../components/Dashboard/Ticket/Ticket';
-import { useGroups } from '../../hooks/useResources';
-import { useTemplate } from '../../hooks/useTemplate';
+import { useCatalog } from '../../hooks/useCatalog';
+import {
+  useConnections,
+  useGroups,
+  useServices,
+  useSupportTickets,
+} from '../../hooks/useResources';
 import type {
   ConnectionDetailData,
   GroupDetailData,
@@ -39,14 +40,34 @@ import type {
 
 export default function Dashboard() {
   const { enqueueSnackbar } = useSnackbar();
-  const [reload, setReload] = useState(true);
-  const [ticket, setTicket] = useState<TicketDetailData[]>();
-  const [request, setRequest] = useState<TicketDetailData[]>();
-  const [service, setService] = useState<ServiceDetailData[]>();
-  const [group, setGroup] = useState<GroupDetailData[]>();
-  const [connection, setConnection] = useState<ConnectionDetailData[]>();
-  const { data: template } = useTemplate();
-  const { data: groups } = useGroups();
+  const { data: template } = useCatalog();
+  // The group list comes from the shared useGroups hook (['group']) instead of
+  // a page-local GroupGetAll query (TECH-DEBT #9).
+  const { data: groups, error: groupsError } = useGroups();
+  const { data: supportData, error: supportError, isLoading: supportLoading } = useSupportTickets();
+  const { data: service, error: serviceError, isLoading: serviceLoading } = useServices();
+  const {
+    data: connection,
+    error: connectionError,
+    isLoading: connectionLoading,
+  } = useConnections();
+
+  const ticket = supportData?.filter((item: TicketDetailData) => !item.request);
+  const request = supportData?.filter((item: TicketDetailData) => item.request);
+  const group: GroupDetailData[] | undefined = groups;
+
+  useEffect(() => {
+    for (const err of [groupsError, supportError, serviceError, connectionError]) {
+      if (err) {
+        enqueueSnackbar(String((err as Error).message), { variant: 'error' });
+      }
+    }
+  }, [groupsError, supportError, serviceError, connectionError]);
+
+  // The old reload flag flipped false once the first fetch resolved; the
+  // summary card stays hidden until then.
+  const reload = supportLoading && serviceLoading && connectionLoading;
+
   const [expired_status0IsChecked, setExpired_status0IsChecked] = useState(true);
   const [expired_status1IsChecked, setExpired_status1IsChecked] = useState(false);
   const [expired_status2IsChecked, setExpired_status2IsChecked] = useState(false);
@@ -56,48 +77,6 @@ export default function Dashboard() {
   const [hasEnabledServiceIsChecked, setHasEnabledServiceIsChecked] = useState(true);
   const [hasEnabledConnectionIsChecked, setHasEnabledConnectionIsChecked] = useState(true);
   const [groupDialogIsOpen, setGroupDialogIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (reload) {
-      GroupGetAll().then((res) => {
-        if (res.error === '') {
-          const data = res.data;
-          setGroup(data);
-          setReload(false);
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-        }
-      });
-      SupportGetAll().then((res) => {
-        if (res.error === '') {
-          const data = res.data;
-          setTicket(data.filter((item: TicketDetailData) => !item.request));
-          setRequest(data.filter((item: TicketDetailData) => item.request));
-          setReload(false);
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-        }
-      });
-      ServiceGetAll().then((res) => {
-        if (res.error === '') {
-          const data = res.data;
-          setService(data);
-          setReload(false);
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-        }
-      });
-      ConnectionGetAll().then((res) => {
-        if (res.error === '') {
-          const data = res.data;
-          setConnection(data);
-          setReload(false);
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-        }
-      });
-    }
-  }, [reload]);
 
   return (
     <DashboardComponent title="Dashboard">
@@ -163,17 +142,12 @@ export default function Dashboard() {
           </Grid>
         )}
         <Grid item xs={12}>
-          <Ticket
-            key={'ticket'}
-            data={ticket?.filter((item: TicketDetailData) => !item.solved)}
-            setReload={setReload}
-          />
+          <Ticket key={'ticket'} data={ticket?.filter((item: TicketDetailData) => !item.solved)} />
         </Grid>
         <Grid item xs={12}>
           <Request
             key={'request'}
             data={request?.filter((item: TicketDetailData) => !item.solved)}
-            setReload={setReload}
           />
         </Grid>
         <Grid item xs={12}>
@@ -181,7 +155,6 @@ export default function Dashboard() {
             key={'service'}
             data={service?.filter((item: ServiceDetailData) => item.enable && !item.pass)}
             template={template}
-            setReload={setReload}
           />
         </Grid>
         <Grid item xs={12}>
@@ -189,7 +162,6 @@ export default function Dashboard() {
             key={'connection'}
             data={connection?.filter((item: ConnectionDetailData) => item.enable && !item.open)}
             template={template}
-            setReload={setReload}
           />
         </Grid>
         <Grid item xs={12}>
@@ -230,7 +202,6 @@ export default function Dashboard() {
 
               return true;
             })}
-            setReload={setReload}
           />
           <FormControlLabel
             control={
@@ -368,7 +339,7 @@ export default function Dashboard() {
           )}
         </Grid>
         <Grid item xs={12}>
-          <MemoGroup key={'group_memo'} data={groups} setReload={setReload} />
+          <MemoGroup key={'group_memo'} data={groups} />
         </Grid>
       </Grid>
     </DashboardComponent>

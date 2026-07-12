@@ -15,14 +15,15 @@ import {
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { Fragment, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
-import { Post } from '../../../api/Group';
 import DashboardComponent from '../../../components/Dashboard/Dashboard';
 import { infoQueryKey, useInfo } from '../../../hooks/useInfo';
+import { api } from '../../../lib/api';
 import { queryClient } from '../../../lib/queryClient';
 import {
   StyledTextFieldLong,
@@ -133,6 +134,19 @@ export default function GroupAdd() {
   });
   const isMember = watch('isMember');
   const is_student = watch('is_student');
+
+  const groupAddMutation = useMutation({
+    mutationFn: (request: any) => api.post<{ group: any }>('/group', request).then((r) => r.group),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
+      navigate('/dashboard/add');
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
+
   const onSubmit = (data: any, e: any) => {
     const studentDate =
       data.student_expired.getFullYear() +
@@ -175,15 +189,7 @@ export default function GroupAdd() {
     request.question = question;
     request.student_expired = studentDate;
 
-    Post(request).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        queryClient.invalidateQueries({ queryKey: infoQueryKey });
-        navigate('/dashboard/add');
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    groupAddMutation.mutate(request);
   };
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console

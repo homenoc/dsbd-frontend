@@ -12,22 +12,23 @@ import {
   Select,
   Stack,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { enqueueSnackbar, useSnackbar } from 'notistack';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Update } from '../../../api/Connection';
-import { Get, Put } from '../../../api/Connection';
-import { findConnectionType, findServiceType } from '../../../api/Tool';
 import Dashboard from '../../../components/Dashboard/Dashboard';
 import { Open } from '../../../components/Dashboard/Open/Open';
 import { GenServiceCode } from '../../../components/Tool';
+import { useCatalog } from '../../../hooks/useCatalog';
+import { useConnection } from '../../../hooks/useResources';
 import { useBGPRouters, useGatewayIPs } from '../../../hooks/useResources';
-import { useTemplate } from '../../../hooks/useTemplate';
 import type {
   BGPRouterDetailData,
   ConnectionDetailData,
   TunnelEndPointRouterIPTemplateData,
 } from '../../../interface';
+import { api } from '../../../lib/api';
+import { findConnectionType, findServiceType } from '../../../lib/tool';
 import {
   StyledButton1,
   StyledCardRoot3,
@@ -41,24 +42,15 @@ import {
 import classes from './ConnectionDialog.module.scss';
 
 export default function ConnectionDetail() {
-  const { data: template } = useTemplate();
-  const [reload, setReload] = useState(true);
-  const [connection, setConnection] = useState<ConnectionDetailData>();
   const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
+  const { data: connection, error } = useConnection(Number(id));
 
   useEffect(() => {
-    if (reload) {
-      Get(Number(id)).then((res) => {
-        if (res.error !== '') {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-          return;
-        }
-        setConnection(res.data);
-        setReload(false);
-      });
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
     }
-  }, [template, reload]);
+  }, [error]);
 
   return (
     <Dashboard title="Connection Detail">
@@ -75,11 +67,7 @@ export default function ConnectionDetail() {
             <ConnectionEtc key={`connectionETC_${connection.ID}`} connection={connection} />
           </Grid>
           <Grid item xs={12} lg={6}>
-            <ConnectionOpen
-              key={`connection_open_${connection.ID}`}
-              connection={connection}
-              setReload={setReload}
-            />
+            <ConnectionOpen key={`connection_open_${connection.ID}`} connection={connection} />
           </Grid>
           <Grid item xs={12}>
             <ConnectionUserDisplay
@@ -88,11 +76,7 @@ export default function ConnectionDetail() {
             />
           </Grid>
           <Grid item xs={12}>
-            <ConnectionEtc2
-              key={`connection_etc2_${connection.ID}`}
-              connection={connection}
-              setReload={setReload}
-            />
+            <ConnectionEtc2 key={`connection_etc2_${connection.ID}`} connection={connection} />
           </Grid>
         </Grid>
       )}
@@ -103,25 +87,30 @@ export default function ConnectionDetail() {
 export function ConnectionOpenButton(props: {
   connection: ConnectionDetailData;
   lock: boolean;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { connection, lock, setReload } = props;
+  const { connection, lock } = props;
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: (req: ConnectionDetailData) => api.put('/connection/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['connection'] });
+    },
+  });
 
   // Update Service Information
   const updateInfo = (open: boolean) => {
     connection.open = open;
     connection.bgp_router = undefined;
     connection.tunnel_endpoint_router_ip = undefined;
-    Update(connection).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    updateMutation.mutate(connection);
   };
 
   if (!connection.open) {
@@ -150,11 +139,9 @@ export function ConnectionOpenButton(props: {
   );
 }
 
-export function ConnectionOpen(props: {
-  connection: ConnectionDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { connection: original_connection, setReload } = props;
+export function ConnectionOpen(props: { connection: ConnectionDetailData }) {
+  const { connection: original_connection } = props;
+  const queryClient = useQueryClient();
   const { data: bgpRouters } = useBGPRouters();
   const { data: gatewayIPs } = useGatewayIPs();
   const [connection, setConnection] = useState(original_connection);
@@ -167,18 +154,23 @@ export function ConnectionOpen(props: {
     setConnection(original_connection);
     setLock(true);
   };
+  const updateMutation = useMutation({
+    mutationFn: (req: ConnectionDetailData) => api.put('/connection/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['connection'] });
+    },
+  });
+
   const updateInfo = () => {
     connection.bgp_router = undefined;
     connection.tunnel_endpoint_router_ip = undefined;
-    Update(connection).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    updateMutation.mutate(connection);
   };
 
   return (
@@ -287,7 +279,6 @@ export function ConnectionOpen(props: {
               key={'connection_open_button'}
               connection={connection}
               lock={lock}
-              setReload={setReload}
             />
           </Stack>
         </CardContent>
@@ -332,7 +323,7 @@ export function ConnectionOpenL3User(props: {
   lock: boolean;
 }) {
   const { connection, setConnection, lock } = props;
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
 
   if (
     connection.service === undefined ||
@@ -405,7 +396,7 @@ export function ConnectionOpenL3User(props: {
 
 export function ConnectionStatus(props: { connection: ConnectionDetailData }) {
   const { connection } = props;
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
   const serviceCode = GenServiceCode(connection);
   const createDate = '作成日: ' + connection.CreatedAt;
   const updateDate = '更新日: ' + connection.UpdatedAt;
@@ -519,7 +510,7 @@ export function ConnectionUserDisplay(props: {
   connection: ConnectionDetailData;
 }) {
   const { connection } = props;
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
 
   const distinctionIPAssign = (our: boolean) => {
     if (our) {
@@ -642,15 +633,13 @@ export function ConnectionUserDisplay(props: {
   );
 }
 
-export function ConnectionEtc2(props: {
-  connection: ConnectionDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { connection: original_connection, setReload } = props;
+export function ConnectionEtc2(props: { connection: ConnectionDetailData }) {
+  const { connection: original_connection } = props;
+  const queryClient = useQueryClient();
   const [lock, setLockInfo] = React.useState(true);
   const [connection, setConnection] = useState(original_connection);
   const { enqueueSnackbar } = useSnackbar();
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
 
   const clickLockInfo = () => {
     setLockInfo(!lock);
@@ -660,18 +649,23 @@ export function ConnectionEtc2(props: {
     setLockInfo(true);
   };
 
+  const putMutation = useMutation({
+    mutationFn: (req: ConnectionDetailData) => api.put('/connection/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      setLockInfo(true);
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['connection'] });
+    },
+  });
+
   // Update Group Information
   const updateInfo = () => {
-    Put(connection.ID, connection).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        setLockInfo(true);
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putMutation.mutate(connection);
   };
 
   return (

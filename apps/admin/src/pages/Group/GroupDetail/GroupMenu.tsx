@@ -1,48 +1,49 @@
 import { ExpiredStatus, expiredStatusLabels, isActive } from '@dsbd/shared';
 import { Menu, MenuItem } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { type Dispatch, type SetStateAction } from 'react';
-import { Put } from '../../../api/Group';
 import type { GroupDetailData } from '../../../interface';
+import { api } from '../../../lib/api';
 import { StyledButton1 } from '../../../style';
 
 export function GroupStatusButton(props: {
   data: GroupDetailData;
   autoMail: Dispatch<SetStateAction<string>>;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { data, autoMail, setReload } = props;
+  const { data, autoMail } = props;
+  const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClose = () => {
     setAnchorEl(null);
   };
 
+  const putGroupMutation = useMutation({
+    mutationFn: (req: GroupDetailData) => api.put('/group/' + data.ID, req),
+  });
+
   const changePassStatus = (pass: boolean) => {
     data.pass = pass;
-    Put(data.ID, data).then((res) => {
-      if (res.error === '') {
-        // console.log(res.error);
-      }
+    putGroupMutation.mutate(data, {
+      onSettled: () => {
+        if (pass) {
+          autoMail('pass_the_examination');
+        }
 
-      if (pass) {
-        autoMail('pass_the_examination');
-      }
-
-      handleClose();
-      setReload(true);
+        handleClose();
+        queryClient.invalidateQueries({ queryKey: ['group'] });
+      },
     });
   };
 
   const changeAddAllowStatus = (add_allow: boolean) => {
     data.add_allow = add_allow;
-    Put(data.ID, data).then((res) => {
-      if (res.error === '') {
-        // console.log(res.error);
-      }
-
-      handleClose();
-      setReload(true);
+    putGroupMutation.mutate(data, {
+      onSettled: () => {
+        handleClose();
+        queryClient.invalidateQueries({ queryKey: ['group'] });
+      },
     });
   };
 
@@ -85,25 +86,28 @@ export function GroupStatusButton(props: {
   );
 }
 
-export function GroupLockButton(props: {
-  data: GroupDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { data, setReload } = props;
+export function GroupLockButton(props: { data: GroupDetailData }) {
+  const { data } = props;
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const putGroupMutation = useMutation({
+    mutationFn: (req: GroupDetailData) => api.put('/group/' + data.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
 
   const changeLock = (pass: boolean) => {
     data.pass = pass;
 
-    Put(data.ID, data).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putGroupMutation.mutate(data);
   };
 
   if (data.pass) {
@@ -132,45 +136,41 @@ export function GroupLockButton(props: {
   );
 }
 
-export function GroupAbolition(props: {
-  data: GroupDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}): any {
-  const { data, setReload } = props;
+export function GroupAbolition(props: { data: GroupDetailData }): any {
+  const { data } = props;
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => setAnchorEl(null);
+
+  const putGroupMutation = useMutation({
+    mutationFn: (req: GroupDetailData) => api.put('/group/' + data.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
+
   const handleClickExpire = (expired_status: number) => {
     data.expired_status = expired_status;
 
-    Put(data.ID, data).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putGroupMutation.mutate(data);
     handleClose();
   };
 
   const clickActive = () => {
     data.expired_status = ExpiredStatus.None;
 
-    Put(data.ID, data).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putGroupMutation.mutate(data);
   };
 
   if (!isActive(data.expired_status)) {

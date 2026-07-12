@@ -1,5 +1,3 @@
-import { GroupDetailData } from '../../../interface'
-import React, { Dispatch, SetStateAction } from 'react'
 import {
   Box,
   Button,
@@ -13,16 +11,15 @@ import {
   TablePagination,
   TableRow,
   Toolbar,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { StyledTable2, StyledTypographyHeading } from '../../../style'
+} from '@mui/material';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { GroupDetailData } from '../../../interface';
+import { StyledTable2, StyledTypographyHeading } from '../../../style';
 
-export function Group(props: {
-  data: GroupDetailData[] | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { data, setReload } = props
-  const nowDate = new Date()
+export function Group(props: { data: GroupDetailData[] | undefined }) {
+  const { data } = props;
+  const nowDate = new Date();
 
   return (
     <TableContainer component={Paper}>
@@ -33,53 +30,45 @@ export function Group(props: {
       {data !== undefined && (
         <StatusTable
           key={'group_status_table'}
-          setReload={setReload}
           group={data.filter((item) => {
             if (item.member_expired === '' || item.member_expired == null) {
-              return true
+              return true;
             }
             if (!item.pass) {
-              return true
+              return true;
             }
-            const tmp = item.member_expired.split('T')
-            const tmpDate = new Date(tmp[0])
+            const tmp = item.member_expired.split('T');
+            const tmpDate = new Date(tmp[0]);
 
-            return !(nowDate < tmpDate)
+            return !(nowDate < tmpDate);
           })}
         />
       )}
     </TableContainer>
-  )
+  );
 }
 
-export function StatusTable(props: {
-  group: GroupDetailData[]
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { group } = props
-  const navigate = useNavigate()
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(5)
-  const nowDate = new Date()
+export function StatusTable(props: { group: GroupDetailData[] }) {
+  const { group } = props;
+  const navigate = useNavigate();
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const nowDate = new Date();
 
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, group.length - page * rowsPerPage)
+  const emptyRows = rowsPerPage - Math.min(rowsPerPage, group.length - page * rowsPerPage);
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage)
-  }
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPage(newPage);
+  };
 
   const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-  const GroupPage = (id: number) => navigate('/dashboard/group/' + id)
+  const GroupPage = (id: number) => navigate('/dashboard/group/' + id);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -95,10 +84,7 @@ export function StatusTable(props: {
           </TableHead>
           <TableBody>
             {(rowsPerPage > 0
-              ? group.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
+              ? group.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               : group
             ).map((row, index) => (
               <TableRow key={'group_detail_' + index}>
@@ -109,27 +95,20 @@ export function StatusTable(props: {
                   {row.CreatedAt}
                 </TableCell>
                 <TableCell style={{ width: 160 }} align="right">
-                  {!row.pass && (
-                    <Chip size="small" color="secondary" label="Group未承認" />
-                  )}
+                  {!row.pass && <Chip size="small" color="secondary" label="Group未承認" />}
                   {row.member_expired == null && (
                     <Chip size="small" color="secondary" label="未払い状態" />
                   )}
-                  {row.member_expired != null &&
-                    new Date(row.member_expired) < nowDate && (
-                      <Chip
-                        size="small"
-                        color="secondary"
-                        label={'期限切れ: ' + row.member_expired}
-                      />
-                    )}
+                  {row.member_expired != null && new Date(row.member_expired) < nowDate && (
+                    <Chip
+                      size="small"
+                      color="secondary"
+                      label={'期限切れ: ' + row.member_expired}
+                    />
+                  )}
                 </TableCell>
                 <TableCell style={{ width: 300 }} align="right">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => GroupPage(row.ID)}
-                  >
+                  <Button size="small" variant="outlined" onClick={() => GroupPage(row.ID)}>
                     Detail
                   </Button>
                 </TableCell>
@@ -155,5 +134,5 @@ export function StatusTable(props: {
         />
       </FormControl>
     </Box>
-  )
+  );
 }

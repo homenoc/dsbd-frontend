@@ -9,14 +9,16 @@ import {
   MenuItem,
   Select,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Get, Put } from '../../../api/Service';
 import Dashboard from '../../../components/Dashboard/Dashboard';
 import { GenServiceCodeOnlyService } from '../../../components/Tool';
-import { useTemplate } from '../../../hooks/useTemplate';
+import { useCatalog } from '../../../hooks/useCatalog';
+import { useService } from '../../../hooks/useResources';
 import type { ServiceDetailData } from '../../../interface';
+import { api } from '../../../lib/api';
 import {
   StyledButton1,
   StyledCardRoot1,
@@ -35,24 +37,16 @@ import { ServiceJPNICTechBase } from './JPNICTech/JPNICTech';
 import { ServiceAddAllowButton } from './ServiceMenu';
 
 export default function ServiceDetail() {
-  const { data: template } = useTemplate();
-  const [reload, setReload] = useState(true);
-  const [service, setService] = useState<ServiceDetailData>();
+  const { data: template } = useCatalog();
   const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
+  const { data: service, error } = useService(Number(id));
 
   useEffect(() => {
-    if (reload) {
-      Get(Number(id)).then((res) => {
-        if (res.error !== '') {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-          return;
-        }
-        setService(res.data);
-        setReload(false);
-      });
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
     }
-  }, [template, reload]);
+  }, [error]);
 
   return (
     <Dashboard title="Service Dialog">
@@ -66,10 +60,10 @@ export default function ServiceDetail() {
             <ServiceStatus key={'ServiceStatus'} service={service} />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <ServiceOpen key={'ServiceOpen'} service={service} setReload={setReload} />
+            <ServiceOpen key={'ServiceOpen'} service={service} />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <ServiceMainMenu key={'ServiceMainMenu'} service={service} setReload={setReload} />
+            <ServiceMainMenu key={'ServiceMainMenu'} service={service} />
           </Grid>
           <Grid item xs={12} sm={6} lg={3}>
             <StyledCardRoot1>
@@ -93,12 +87,7 @@ export default function ServiceDetail() {
           </Grid>
           {template.services?.find((ser) => ser.type === service.service_type)?.need_jpnic && (
             <Grid item xs={6}>
-              <ServiceIPBase
-                key={'ServiceIPBase'}
-                ip={service.ip}
-                serviceID={service.ID}
-                setReload={setReload}
-              />
+              <ServiceIPBase key={'ServiceIPBase'} ip={service.ip} serviceID={service.ID} />
             </Grid>
           )}
           <Grid item xs={12}>
@@ -106,7 +95,7 @@ export default function ServiceDetail() {
           </Grid>
           {template.services?.find((ser) => ser.type === service.service_type)?.need_jpnic && (
             <Grid item xs={12}>
-              <ServiceJPNICBase key={'ServiceJPNICBase'} service={service} setReload={setReload} />
+              <ServiceJPNICBase key={'ServiceJPNICBase'} service={service} />
             </Grid>
           )}
           {template.services?.find((ser) => ser.type === service.service_type)?.need_jpnic && (
@@ -115,7 +104,6 @@ export default function ServiceDetail() {
                 key={'ServiceJPNICAdminBase'}
                 serviceID={service.ID}
                 jpnic={service.jpnic_admin}
-                setReload={setReload}
               />
             </Grid>
           )}
@@ -126,18 +114,17 @@ export default function ServiceDetail() {
                 serviceID={service.ID}
                 jpnicAdmin={service.jpnic_admin}
                 jpnicTech={service.jpnic_tech}
-                setReload={setReload}
               />
             </Grid>
           )}
           <Grid item xs={12}>
-            <ServiceBase key={'ServiceBase'} service={service} setReload={setReload} />
+            <ServiceBase key={'ServiceBase'} service={service} />
           </Grid>
           <Grid>
             <div className={cssModule.contract}></div>
           </Grid>
           <Grid item xs={12}>
-            <ConnectionList key={'connection_list'} service={service} setReload={setReload} />
+            <ConnectionList key={'connection_list'} service={service} />
           </Grid>
           <Grid item xs={12}></Grid>
           <Grid item xs={12}></Grid>
@@ -177,11 +164,8 @@ export function ServiceStatus(props: { service: ServiceDetailData }) {
   );
 }
 
-export function ServiceMainMenu(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { service, setReload } = props;
+export function ServiceMainMenu(props: { service: ServiceDetailData }) {
+  const { service } = props;
   const navigate = useNavigate();
 
   const clickGroupPage = () => navigate('/dashboard/group/' + service.group_id);
@@ -190,11 +174,7 @@ export function ServiceMainMenu(props: {
     <StyledCardRoot1>
       <CardContent>
         <h3>Menu</h3>
-        <ServiceAddAllowButton
-          key={'serviceAddAllowButton'}
-          service={service}
-          setReload={setReload}
-        />
+        <ServiceAddAllowButton key={'serviceAddAllowButton'} service={service} />
         <br />
         <StyledButton1
           aria-controls="simple-menu"
@@ -213,23 +193,28 @@ export function ServiceMainMenu(props: {
 export function ServiceOpenButton(props: {
   service: ServiceDetailData;
   lockInfo: boolean;
-  setReload: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { service, lockInfo, setReload } = props;
+  const { service, lockInfo } = props;
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const putServiceMutation = useMutation({
+    mutationFn: (req: ServiceDetailData) => api.put('/service/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   // Update Service Information
   const updateInfo = (pass: boolean) => {
     service.pass = pass;
-    Put(service.ID, service).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putServiceMutation.mutate(service);
   };
 
   if (!service.pass) {
@@ -246,11 +231,8 @@ export function ServiceOpenButton(props: {
   );
 }
 
-export function ServiceOpen(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { service, setReload } = props;
+export function ServiceOpen(props: { service: ServiceDetailData }) {
+  const { service } = props;
   const [serviceCopy, setServiceCopy] = useState(service);
   const serviceCode = GenServiceCodeOnlyService(service);
   const [lock, setLockInfo] = React.useState(true);
@@ -300,7 +282,7 @@ export function ServiceOpen(props: {
         <Button size="small" disabled={lock} onClick={resetAction}>
           Reset
         </Button>
-        <ServiceOpenButton service={serviceCopy} lockInfo={lock} setReload={setReload} />
+        <ServiceOpenButton service={serviceCopy} lockInfo={lock} />
       </CardContent>
     </StyledCardRoot1>
   );
@@ -396,30 +378,25 @@ export function ServiceEtc2(props: { service: ServiceDetailData }) {
   );
 }
 
-export function ServiceJPNICBase(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { service, setReload } = props;
+export function ServiceJPNICBase(props: { service: ServiceDetailData }) {
+  const { service } = props;
 
   return (
     <Card className={cssModule.contract}>
       <CardContent>
         <h3>JPNIC基本情報</h3>
-        <ServiceJPNICDetail key={'ServiceJPNICDetail'} service={service} setReload={setReload} />
+        <ServiceJPNICDetail key={'ServiceJPNICDetail'} service={service} />
       </CardContent>
     </Card>
   );
 }
 
-export function ServiceJPNICDetail(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { service, setReload } = props;
+export function ServiceJPNICDetail(props: { service: ServiceDetailData }) {
+  const { service } = props;
   const [lock, setLockInfo] = React.useState(true);
   const [serviceCopy, setServiceCopy] = useState(service);
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   const clickLockInfo = () => {
     setLockInfo(!lock);
@@ -429,18 +406,23 @@ export function ServiceJPNICDetail(props: {
     setLockInfo(true);
   };
 
+  const putServiceMutation = useMutation({
+    mutationFn: (req: ServiceDetailData) => api.put('/service/' + service.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      setLockInfo(true);
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
+
   // Update Group Information
   const updateInfo = () => {
-    Put(service.ID, serviceCopy).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        setLockInfo(true);
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putServiceMutation.mutate(serviceCopy);
   };
 
   return (
@@ -540,15 +522,13 @@ export function ServiceJPNICDetail(props: {
   );
 }
 
-export function ServiceBase(props: {
-  service: ServiceDetailData;
-  setReload: Dispatch<SetStateAction<boolean>>;
-}) {
-  const { service, setReload } = props;
+export function ServiceBase(props: { service: ServiceDetailData }) {
+  const { service } = props;
   const [lock, setLockInfo] = React.useState(true);
   const [serviceCopy, setServiceCopy] = useState(service);
   const { enqueueSnackbar } = useSnackbar();
-  const { data: template } = useTemplate();
+  const { data: template } = useCatalog();
+  const queryClient = useQueryClient();
 
   const clickLockInfo = () => {
     setLockInfo(!lock);
@@ -558,18 +538,23 @@ export function ServiceBase(props: {
     setLockInfo(true);
   };
 
+  const putServiceMutation = useMutation({
+    mutationFn: (req: ServiceDetailData) => api.put('/service/' + service.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      setLockInfo(true);
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
+
   // Update Group Information
   const updateInfo = () => {
-    Put(service.ID, serviceCopy).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        setLockInfo(true);
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-
-      setReload(true);
-    });
+    putServiceMutation.mutate(serviceCopy);
   };
 
   return (

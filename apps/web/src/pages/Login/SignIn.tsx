@@ -1,3 +1,4 @@
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {
   Container,
   CssBaseline,
@@ -6,63 +7,49 @@ import {
   TextField,
   ThemeProvider,
   Typography,
-} from '@mui/material'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import React, { FormEvent, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Login } from '../../api/Auth'
-import { useSnackbar } from 'notistack'
-import { Get } from '../../api/Info'
-import Cookies from 'js-cookie'
-import { queryClient } from '../../lib/queryClient'
-import { muiColorTheme } from '../../components/Theme'
-import {
-  StyledAvatar,
-  StyledButtonSubmit,
-  StyledForm,
-  StyledPaper,
-} from './styles'
+} from '@mui/material';
+import Cookies from 'js-cookie';
+import { useSnackbar } from 'notistack';
+import React, { type FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { muiColorTheme } from '../../components/Theme';
+import { infoQueryKey } from '../../hooks/useInfo';
+import { Login } from '../../lib/auth';
+import { queryClient } from '../../lib/queryClient';
+import { StyledAvatar, StyledButtonSubmit, StyledForm, StyledPaper } from './styles';
 
 export default function SignIn() {
-  const navigate = useNavigate()
-  const [mail, setMail] = useState('')
-  const [password, setPassword] = useState('')
-  const { enqueueSnackbar } = useSnackbar()
+  const navigate = useNavigate();
+  const [mail, setMail] = useState('');
+  const [password, setPassword] = useState('');
+  const { enqueueSnackbar } = useSnackbar();
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     if (mail === '') {
       enqueueSnackbar('メールアドレスが入力されていません。', {
         variant: 'error',
-      })
-      return
+      });
+      return;
     }
     if (password === '') {
-      enqueueSnackbar('パスワードが入力されていません。', { variant: 'error' })
-      return
+      enqueueSnackbar('パスワードが入力されていません。', { variant: 'error' });
+      return;
     }
 
-    Cookies.remove('user_token')
-    Cookies.remove('access_token')
-    queryClient.clear()
+    Cookies.remove('user_token');
+    Cookies.remove('access_token');
+    queryClient.clear();
 
-    Login(mail, password)
-      .then((err) => {
-        if (err === '') {
-          enqueueSnackbar('Login Success !', { variant: 'info' })
-          Get().then()
-          navigate('/dashboard')
-        } else {
-          enqueueSnackbar(err, { variant: 'error' })
-        }
-      })
-      .catch((error) => {
-        enqueueSnackbar(
-          '何かしらのエラーが発生しました。 error: ' + error.response,
-          { variant: 'error' }
-        )
-      })
-  }
+    try {
+      await Login(mail, password);
+      enqueueSnackbar('Login Success !', { variant: 'info' });
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
+      navigate('/dashboard');
+    } catch (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
+    }
+  };
 
   return (
     <ThemeProvider theme={muiColorTheme}>
@@ -102,12 +89,7 @@ export default function SignIn() {
               defaultValue=""
               onChange={(event) => setPassword(event.target.value)}
             />
-            <StyledButtonSubmit
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-            >
+            <StyledButtonSubmit type="submit" fullWidth variant="contained" color="primary">
               Sign In
             </StyledButtonSubmit>
             <Grid container>
@@ -129,5 +111,5 @@ export default function SignIn() {
         {/*</Box>*/}
       </Container>
     </ThemeProvider>
-  )
+  );
 }

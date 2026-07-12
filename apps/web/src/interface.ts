@@ -1,9 +1,4 @@
-import type {
-  ServiceAddIPData,
-  ServiceAddIPv4PlanData,
-  ServiceTemplateData,
-  TemplateData,
-} from '@dsbd/shared';
+import type { ServiceAddIPData, ServiceAddIPv4PlanData, ServiceTemplateData } from '@dsbd/shared';
 
 export type {
   ConnectionTemplateData,
@@ -12,7 +7,7 @@ export type {
   ServiceAddIPData,
   ServiceAddIPv4PlanData,
   ServiceTemplateData,
-  TemplateData,
+  TemplateData as CatalogData,
 } from '@dsbd/shared';
 export { DefaultAddIP, DefaultServiceAddIPv4PlanData } from '@dsbd/shared';
 

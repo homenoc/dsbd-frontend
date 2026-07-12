@@ -1,4 +1,3 @@
-import { TicketDetailData } from '../../../interface'
 import {
   Box,
   Button,
@@ -12,91 +11,92 @@ import {
   TablePagination,
   TableRow,
   Toolbar,
-} from '@mui/material'
-import React, { Dispatch, SetStateAction } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Put } from '../../../api/Support'
-import { useSnackbar } from 'notistack'
-import { StyledTable2, StyledTypographyHeading } from '../../../style'
+} from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { TicketDetailData } from '../../../interface';
+import { api } from '../../../lib/api';
+import { StyledTable2, StyledTypographyHeading } from '../../../style';
 
 export default function Request(props: {
-  data: TicketDetailData[] | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  data: TicketDetailData[] | undefined;
 }) {
-  const { data, setReload } = props
+  const { data } = props;
 
   return (
     <TableContainer component={Paper}>
       <Toolbar variant="dense">
-        <StyledTypographyHeading id="requests">
-          Requests
-        </StyledTypographyHeading>
+        <StyledTypographyHeading id="requests">Requests</StyledTypographyHeading>
       </Toolbar>
       {data === undefined && <h3>データがありません</h3>}
       {data !== undefined && (
         <StatusTable
           key={'request_status_table'}
-          setReload={setReload}
-          ticket={data
-            .filter((item) => item.request)
-            .sort((a, b) => b.ID - a.ID)}
+          ticket={data.filter((item) => item.request).sort((a, b) => b.ID - a.ID)}
         />
       )}
     </TableContainer>
-  )
+  );
 }
 
-export function StatusTable(props: {
-  ticket: TicketDetailData[]
-  setReload: Dispatch<SetStateAction<boolean>>
-}) {
-  const { ticket, setReload } = props
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(5)
-  const { enqueueSnackbar } = useSnackbar()
-  const navigate = useNavigate()
+export function StatusTable(props: { ticket: TicketDetailData[] }) {
+  const { ticket } = props;
+  const queryClient = useQueryClient();
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
 
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, ticket.length - page * rowsPerPage)
+  const emptyRows = rowsPerPage - Math.min(rowsPerPage, ticket.length - page * rowsPerPage);
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage)
-  }
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPage(newPage);
+  };
 
   const GroupDetailPage = (groupID: number) => {
-    navigate('/dashboard/group/' + groupID)
-  }
+    navigate('/dashboard/group/' + groupID);
+  };
 
   const UserDetailPage = (userID: number) => {
-    navigate('/dashboard/user/' + userID)
-  }
+    navigate('/dashboard/user/' + userID);
+  };
 
   const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-  const ChatPage = (id: number) => navigate('/dashboard/support/' + id)
+  const ChatPage = (id: number) => navigate('/dashboard/support/' + id);
 
-  const clickChangeStatus = (
-    id: number,
-    solved: boolean,
-    request_reject: boolean
-  ) => {
-    Put(id, { solved, request_reject }).then((res) => {
-      if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' })
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' })
-      }
-      setReload(true)
-    })
-  }
+  const changeStatusMutation = useMutation({
+    mutationFn: ({
+      id,
+      solved,
+      request_reject,
+    }: {
+      id: number;
+      solved: boolean;
+      request_reject: boolean;
+    }) => api.put('/support/' + id, { solved, request_reject }),
+    onSuccess: () => {
+      enqueueSnackbar('OK', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['support'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+    },
+  });
+
+  const clickChangeStatus = (id: number, solved: boolean, request_reject: boolean) => {
+    changeStatusMutation.mutate({ id, solved, request_reject });
+  };
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -112,10 +112,7 @@ export function StatusTable(props: {
           </TableHead>
           <TableBody>
             {(rowsPerPage > 0
-              ? ticket.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
+              ? ticket.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               : ticket
             ).map((row, index) => (
               <TableRow key={'ticket_detail_' + index}>
@@ -126,9 +123,7 @@ export function StatusTable(props: {
                   {row.CreatedAt}
                 </TableCell>
                 <TableCell style={{ width: 160 }} align="right">
-                  {row.request_reject && (
-                    <Chip size="small" color="secondary" label="却下" />
-                  )}
+                  {row.request_reject && <Chip size="small" color="secondary" label="却下" />}
                   {!row.request_reject && !row.solved && (
                     <Chip size="small" color="primary" label="申請中" />
                   )}
@@ -169,11 +164,7 @@ export function StatusTable(props: {
                     </Button>
                   )}
                   &nbsp;
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => ChatPage(row.ID)}
-                  >
+                  <Button size="small" variant="outlined" onClick={() => ChatPage(row.ID)}>
                     Chat
                   </Button>
                   &nbsp;
@@ -218,5 +209,5 @@ export function StatusTable(props: {
         />
       </FormControl>
     </Box>
-  )
+  );
 }

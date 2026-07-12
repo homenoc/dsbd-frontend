@@ -1,5 +1,5 @@
-import { JPNICData } from '../../../../interface'
-import React, { Dispatch, SetStateAction } from 'react'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
   Box,
   Card,
@@ -13,22 +13,18 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-} from '@mui/material'
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import {
-  JPNICDetail,
-  JPNICTechAdd,
-} from '../../../../components/Dashboard/JPNIC/JPNIC'
-import { StyledCardRoot2, StyledTableRowRoot } from '../../../../style'
+} from '@mui/material';
+import React from 'react';
+import { JPNICDetail, JPNICTechAdd } from '../../../../components/Dashboard/JPNIC/JPNIC';
+import type { JPNICData } from '../../../../interface';
+import { StyledCardRoot2, StyledTableRowRoot } from '../../../../style';
 
 export function ServiceJPNICTechBase(props: {
-  serviceID: number
-  jpnicAdmin: JPNICData | undefined
-  jpnicTech: JPNICData[] | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  jpnicAdmin: JPNICData | undefined;
+  jpnicTech: JPNICData[] | undefined;
 }) {
-  const { jpnicAdmin, jpnicTech, serviceID, setReload } = props
+  const { jpnicAdmin, jpnicTech, serviceID } = props;
 
   if (jpnicTech === undefined) {
     return (
@@ -40,7 +36,7 @@ export function ServiceJPNICTechBase(props: {
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
   return (
     <ServiceJPNICTech
@@ -48,29 +44,22 @@ export function ServiceJPNICTechBase(props: {
       serviceID={serviceID}
       jpnicAdmin={jpnicAdmin}
       jpnicTech={jpnicTech}
-      setReload={setReload}
     />
-  )
+  );
 }
 
 export function ServiceJPNICTech(props: {
-  serviceID: number
-  jpnicAdmin: JPNICData | undefined
-  jpnicTech: JPNICData[]
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  jpnicAdmin: JPNICData | undefined;
+  jpnicTech: JPNICData[];
 }) {
-  const { jpnicAdmin, jpnicTech, serviceID, setReload } = props
+  const { jpnicAdmin, jpnicTech, serviceID } = props;
 
   return (
     <StyledCardRoot2>
       <CardContent>
         <h3>JPNIC技術連絡担当者</h3>
-        <JPNICTechAdd
-          key={'jpnic_tech_add'}
-          serviceID={serviceID}
-          jpnicAdmin={jpnicAdmin}
-          setReload={setReload}
-        />
+        <JPNICTechAdd key={'jpnic_tech_add'} serviceID={serviceID} jpnicAdmin={jpnicAdmin} />
         <TableContainer component={Paper}>
           <Table aria-label="collapsible table">
             <TableHead>
@@ -87,7 +76,6 @@ export function ServiceJPNICTech(props: {
                   key={'service_jpnic_tech_row_' + row.ID}
                   serviceID={serviceID}
                   jpnic={row}
-                  setReload={setReload}
                 />
               ))}
             </TableBody>
@@ -95,26 +83,21 @@ export function ServiceJPNICTech(props: {
         </TableContainer>
       </CardContent>
     </StyledCardRoot2>
-  )
+  );
 }
 
 export function ServiceJPNICTechRow(props: {
-  serviceID: number
-  jpnic: JPNICData
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  jpnic: JPNICData;
 }) {
-  const { jpnic, serviceID, setReload } = props
-  const [open, setOpen] = React.useState(false)
+  const { jpnic, serviceID } = props;
+  const [open, setOpen] = React.useState(false);
 
   return (
     <React.Fragment>
       <StyledTableRowRoot>
         <TableCell>
-          <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
+          <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
@@ -133,12 +116,11 @@ export function ServiceJPNICTechRow(props: {
                 jpnicAdmin={false}
                 serviceID={serviceID}
                 jpnic={jpnic}
-                setReload={setReload}
               />
             </Box>
           </Collapse>
         </TableCell>
       </TableRow>
     </React.Fragment>
-  )
+  );
 }

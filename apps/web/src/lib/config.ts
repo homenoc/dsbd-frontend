@@ -7,7 +7,7 @@ const Config = () => {
       hCaptchaSiteKey: import.meta.env.VITE_HCAPTCHA_SITE_KEY,
       enableMoney: import.meta.env.VITE_ENABLE_MONEY,
     },
-  }
-}
+  };
+};
 
-export const restfulApiConfig = Config().restful
+export const restfulApiConfig = Config().restful;

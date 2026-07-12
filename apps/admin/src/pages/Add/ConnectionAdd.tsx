@@ -15,38 +15,35 @@ import {
   Select,
   Typography,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
-import React, { Fragment, useEffect, useState } from 'react';
+import React, { Fragment, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as Yup from 'yup';
-import { Post } from '../../api/Connection';
-import { Get } from '../../api/Group';
 import DashboardComponent from '../../components/Dashboard/Dashboard';
 import { GenServiceCodeOnlyService } from '../../components/Tool';
-import { useTemplate } from '../../hooks/useTemplate';
-import type { GroupDetailData } from '../../interface';
+import { useCatalog } from '../../hooks/useCatalog';
+import { useGroup } from '../../hooks/useResources';
+import { api } from '../../lib/api';
 import { StyledFormControlFormSelect, StyledTextFieldLong, StyledTextFieldVeryLong } from './style';
 
 export default function ConnectionAdd() {
   const { enqueueSnackbar } = useSnackbar();
-  const { data: template } = useTemplate();
-  const [group, setGroup] = useState<GroupDetailData>();
+  const { data: template } = useCatalog();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [serviceType, setServiceType] = React.useState('');
   const [serviceID, setServiceID] = React.useState(0);
   let groupID: string | undefined;
   ({ id: groupID } = useParams());
+  const { data: group, error: groupError } = useGroup(groupID);
 
   useEffect(() => {
-    Get(groupID!).then((res) => {
-      if (res.error === '') {
-        setGroup(res.data);
-      } else {
-        enqueueSnackbar('' + res.error, { variant: 'error' });
-      }
-    });
-  }, []);
+    if (groupError) {
+      enqueueSnackbar(String((groupError as Error).message), { variant: 'error' });
+    }
+  }, [groupError]);
 
   const isNeedComment = (value: string) =>
     template.connections?.find((ct) => ct.type === value)?.need_comment ?? false;
@@ -260,15 +257,22 @@ export default function ConnectionAdd() {
     // eslint-disable-next-line no-console
     console.log(serviceID, request);
 
-    Post(serviceID, request).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' });
-        navigate('/dashboard/group/' + groupID);
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' });
-      }
-    });
+    addConnectionMutation.mutate(request);
   };
+
+  const addConnectionMutation = useMutation({
+    mutationFn: (request: any) => api.post('/service/' + serviceID + '/connection', request),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['connection'] });
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+      navigate('/dashboard/group/' + groupID);
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+  });
 
   const onError = (errors: any) => {
     // eslint-disable-next-line no-console

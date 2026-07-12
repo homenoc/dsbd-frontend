@@ -4,11 +4,13 @@ import type {
   ServiceAddIPData,
   ServiceAddIPv4PlanData,
   ServiceTemplateData,
-  TemplateData,
   TunnelEndPointRouterIPTemplateData,
   TunnelEndPointRouterTemplateData,
 } from '@dsbd/shared';
 
+// App-local name for the shared catalog blob type (TECH-DEBT #10): the admin
+// app calls the /catalog payload "catalog", not "template". The shared package
+// keeps its original TemplateData name.
 export type {
   BGPRouterDetailData,
   ConnectionTemplateData,
@@ -20,7 +22,7 @@ export type {
   ServiceAddIPData,
   ServiceAddIPv4PlanData,
   ServiceTemplateData,
-  TemplateData,
+  TemplateData as CatalogData,
   TunnelEndPointRouterIPTemplateData,
   TunnelEndPointRouterTemplateData,
 } from '@dsbd/shared';

@@ -10,14 +10,15 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import shaJS from 'sha.js';
-import { Delete, Put } from '../../../../api/User';
 import Dashboard from '../../../../components/Dashboard/Dashboard';
 import { infoQueryKey, useInfo } from '../../../../hooks/useInfo';
 import type { UserData } from '../../../../interface';
+import { api } from '../../../../lib/api';
 import { queryClient } from '../../../../lib/queryClient';
 import {
   StyledCardRoot3,
@@ -75,14 +76,6 @@ export default function UserDetail() {
     password_verify: '',
   });
   const [name, setName] = React.useState({ name: '', name_en: '' });
-  const [reload, setReload] = React.useState(false);
-
-  useEffect(() => {
-    if (reload) {
-      queryClient.invalidateQueries({ queryKey: infoQueryKey });
-      setReload(false);
-    }
-  }, [reload]);
 
   // 401 is handled centrally by the shared API client (redirect to /login).
   useEffect(() => {
@@ -109,17 +102,32 @@ export default function UserDetail() {
     setValue(index);
   };
 
+  const deleteUserMutation = useMutation({
+    mutationFn: (userID: number) => api.delete<void>(`/user/${userID}`),
+    onSuccess: () => {
+      enqueueSnackbar('OK', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
+      navigate('/dashboard/procedure/user');
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
+
   const clickDeleteUser = () => {
-    Delete(Number(id)).then((res) => {
-      if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' });
-        queryClient.invalidateQueries({ queryKey: infoQueryKey });
-        navigate('/dashboard/procedure/user');
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' });
-      }
-    });
+    deleteUserMutation.mutate(Number(id));
   };
+
+  const updateUserMutation = useMutation({
+    mutationFn: (data: any) => api.put<void>(`/user/${Number(id)}`, data),
+    onSuccess: () => {
+      enqueueSnackbar('OK', { variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: infoQueryKey });
+    },
+    onError: (e: Error) => {
+      enqueueSnackbar(String(e.message), { variant: 'error' });
+    },
+  });
 
   const clickUpdateUser = () => {
     let data: any;
@@ -157,14 +165,7 @@ export default function UserDetail() {
       return;
     }
 
-    Put(Number(id), data).then((res) => {
-      if (res.error === undefined) {
-        enqueueSnackbar('OK', { variant: 'success' });
-        setReload(true);
-      } else {
-        enqueueSnackbar(res.error, { variant: 'error' });
-      }
-    });
+    updateUserMutation.mutate(data);
   };
 
   return (

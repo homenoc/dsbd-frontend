@@ -1,6 +1,5 @@
-import { IPData, PlanData, TemplateData } from '../../../../interface'
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
-import { useSnackbar } from 'notistack'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
   Box,
   Button,
@@ -16,78 +15,74 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-} from '@mui/material'
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { Enable } from '../../../../components/Dashboard/Open/Open'
-import { DeleteIP, DeletePlan, PutIP, PutPlan } from '../../../../api/Service'
-import { DeleteAlertDialog } from '../../../../components/Dashboard/Alert/Alert'
-import { AddAssignIPDialog } from './IPAdd'
+} from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
+import { DeleteAlertDialog } from '../../../../components/Dashboard/Alert/Alert';
+import { Enable } from '../../../../components/Dashboard/Open/Open';
+import { useCatalog } from '../../../../hooks/useCatalog';
+import type { CatalogData, IPData, PlanData } from '../../../../interface';
+import { api } from '../../../../lib/api';
 import {
   StyledCardRoot2,
   StyledRootForm,
   StyledTableRowRoot,
   StyledTextFieldShort,
   StyledTextFieldTooVeryShort,
-} from '../../../../style'
-import { useTemplate } from '../../../../hooks/useTemplate'
+} from '../../../../style';
+import { AddAssignIPDialog } from './IPAdd';
 
 export function IPOpenButton(props: {
-  ip: IPData
-  lockInfo: boolean
-  setLockInfo: Dispatch<SetStateAction<boolean>>
-  setReload: Dispatch<SetStateAction<boolean>>
-  template: TemplateData
+  ip: IPData;
+  lockInfo: boolean;
+  setLockInfo: Dispatch<SetStateAction<boolean>>;
+  template: CatalogData;
 }) {
-  const { ip, lockInfo, setLockInfo, setReload } = props
-  const { enqueueSnackbar } = useSnackbar()
+  const { ip, lockInfo, setLockInfo } = props;
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+
+  const putIPMutation = useMutation({
+    mutationFn: (req: IPData) => api.put('/ip/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setLockInfo(true);
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   // Update IP Information
   const updateInfo = (open: boolean) => {
-    ip.open = open
-    PutIP(ip).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
-
-      setLockInfo(true)
-      setReload(true)
-    })
-  }
+    ip.open = open;
+    putIPMutation.mutate(ip);
+  };
 
   if (!ip.open) {
     return (
-      <Button
-        size="small"
-        color="primary"
-        disabled={lockInfo}
-        onClick={() => updateInfo(true)}
-      >
+      <Button size="small" color="primary" disabled={lockInfo} onClick={() => updateInfo(true)}>
         有効
       </Button>
-    )
+    );
   }
   return (
-    <Button
-      size="small"
-      color="secondary"
-      disabled={lockInfo}
-      onClick={() => updateInfo(false)}
-    >
+    <Button size="small" color="secondary" disabled={lockInfo} onClick={() => updateInfo(false)}>
       無効
     </Button>
-  )
+  );
 }
 
 export function ServiceIPBase(props: {
-  serviceID: number
-  ip: IPData[] | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  ip: IPData[] | undefined;
 }) {
-  const { ip, serviceID, setReload } = props
-  const { data: template } = useTemplate()
+  const { ip, serviceID } = props;
+  const { data: template } = useCatalog();
 
   if (ip === undefined) {
     return (
@@ -99,37 +94,24 @@ export function ServiceIPBase(props: {
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
-  return (
-    <ServiceIP
-      key={serviceID}
-      serviceID={serviceID}
-      ip={ip}
-      setReload={setReload}
-      template={template}
-    />
-  )
+  return <ServiceIP key={serviceID} serviceID={serviceID} ip={ip} template={template} />;
 }
 
 export function ServiceIP(props: {
-  serviceID: number
-  ip: IPData[]
-  setReload: Dispatch<SetStateAction<boolean>>
-  template: TemplateData
+  serviceID: number;
+  ip: IPData[];
+  template: CatalogData;
 }) {
-  const { ip, serviceID, setReload, template } = props
+  const { ip, serviceID, template } = props;
 
   return (
     <StyledCardRoot2>
       <CardContent>
         <h3>IP</h3>
         <TableContainer component={Paper}>
-          <AddAssignIPDialog
-            key={'add_assign_ip_dialog'}
-            serviceID={serviceID}
-            setReload={setReload}
-          />
+          <AddAssignIPDialog key={'add_assign_ip_dialog'} serviceID={serviceID} />
           <Table aria-label="collapsible table">
             <TableHead>
               <TableRow>
@@ -142,75 +124,76 @@ export function ServiceIP(props: {
             </TableHead>
             <TableBody>
               {ip.map((row) => (
-                <ServiceIPRow
-                  key={row.ID}
-                  serviceID={serviceID}
-                  ip={row}
-                  setReload={setReload}
-                  template={template}
-                />
+                <ServiceIPRow key={row.ID} serviceID={serviceID} ip={row} template={template} />
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       </CardContent>
     </StyledCardRoot2>
-  )
+  );
 }
 
 export function ServiceIPRow(props: {
-  serviceID: number
-  ip: IPData
-  setReload: Dispatch<SetStateAction<boolean>>
-  template: TemplateData
+  serviceID: number;
+  ip: IPData;
+  template: CatalogData;
 }) {
-  const { ip: originalIP, serviceID, setReload, template } = props
-  const [open, setOpen] = React.useState(false)
-  const [lockInfo, setLockInfo] = React.useState(true)
-  const [ip, setIP] = useState(originalIP)
-  const { enqueueSnackbar } = useSnackbar()
+  const { ip: originalIP, serviceID, template } = props;
+  const [open, setOpen] = React.useState(false);
+  const [lockInfo, setLockInfo] = React.useState(true);
+  const [ip, setIP] = useState(originalIP);
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   const clickLockInfo = () => {
-    setLockInfo(!lockInfo)
-  }
+    setLockInfo(!lockInfo);
+  };
   const resetAction = () => {
-    setIP(originalIP)
-    setLockInfo(true)
-  }
+    setIP(originalIP);
+    setLockInfo(true);
+  };
+
+  const putIPMutation = useMutation({
+    mutationFn: (req: IPData) => api.put('/ip/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setLockInfo(true);
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   const updateInfo = () => {
-    PutIP(ip).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
+    putIPMutation.mutate(ip);
+  };
 
-      setLockInfo(true)
-      setReload(true)
-    })
-  }
+  const deleteIPMutation = useMutation({
+    mutationFn: (id: number) => api.delete('/ip/' + id),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   const deleteIP = () => {
-    DeleteIP(ip.ID).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
-      setReload(true)
-    })
-  }
+    deleteIPMutation.mutate(ip.ID);
+  };
 
   return (
     <React.Fragment>
       <StyledTableRowRoot>
         <TableCell>
-          <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
+          <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
@@ -238,7 +221,7 @@ export function ServiceIPRow(props: {
                   }}
                   variant="outlined"
                   onChange={(event) => {
-                    setIP({ ...ip, name: event.target.value })
+                    setIP({ ...ip, name: event.target.value });
                   }}
                 />
                 <StyledTextFieldShort
@@ -251,7 +234,7 @@ export function ServiceIPRow(props: {
                   }}
                   variant="outlined"
                   onChange={(event) => {
-                    setIP({ ...ip, ip: event.target.value })
+                    setIP({ ...ip, ip: event.target.value });
                   }}
                 />
               </StyledRootForm>
@@ -265,18 +248,13 @@ export function ServiceIPRow(props: {
                   >
                     ロック解除
                   </Button>
-                  <Button
-                    size="small"
-                    disabled={lockInfo}
-                    onClick={resetAction}
-                  >
+                  <Button size="small" disabled={lockInfo} onClick={resetAction}>
                     Reset
                   </Button>
                   <IPOpenButton
                     ip={ip}
                     lockInfo={lockInfo}
                     setLockInfo={setLockInfo}
-                    setReload={setReload}
                     template={template}
                   />
                   <Button size="small" disabled={lockInfo} onClick={updateInfo}>
@@ -306,7 +284,6 @@ export function ServiceIPRow(props: {
                     key={'service_ip_plan_base'}
                     serviceID={serviceID}
                     plan={ip.plan}
-                    setReload={setReload}
                   />
                 </TableBody>
               </Table>
@@ -315,95 +292,96 @@ export function ServiceIPRow(props: {
         </TableCell>
       </TableRow>
     </React.Fragment>
-  )
+  );
 }
 
 export function ServiceIPPlanBase(props: {
-  serviceID: number
-  plan: PlanData[] | undefined
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  plan: PlanData[] | undefined;
 }) {
-  const { plan, serviceID, setReload } = props
+  const { plan, serviceID } = props;
 
   if (plan === undefined) {
     return (
       <p>
         <b>情報なし</b>
       </p>
-    )
+    );
   }
   return (
     <>
       {plan.map((row) => (
-        <ServiceIPPlanRow
-          key={'ip_plan_' + row.ID}
-          serviceID={serviceID}
-          plan={row}
-          setReload={setReload}
-        />
+        <ServiceIPPlanRow key={'ip_plan_' + row.ID} serviceID={serviceID} plan={row} />
       ))}
     </>
-  )
+  );
 }
 
 export function ServiceIPPlanRow(props: {
-  serviceID: number
-  plan: PlanData
-  setReload: Dispatch<SetStateAction<boolean>>
+  serviceID: number;
+  plan: PlanData;
 }) {
-  const { plan, setReload } = props
-  const [open, setOpen] = React.useState(false)
-  const [lockInfo, setLockInfo] = React.useState(true)
-  const [ipPlanCopy, setIPPlanCopy] = useState(plan)
-  const [deleteIPPlan, setDeleteIPPlan] = useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const { plan } = props;
+  const [open, setOpen] = React.useState(false);
+  const [lockInfo, setLockInfo] = React.useState(true);
+  const [ipPlanCopy, setIPPlanCopy] = useState(plan);
+  const [deleteIPPlan, setDeleteIPPlan] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
 
   const clickLockInfo = () => {
-    setLockInfo(!lockInfo)
-  }
+    setLockInfo(!lockInfo);
+  };
   const resetAction = () => {
-    setIPPlanCopy(plan)
-    setLockInfo(true)
-  }
+    setIPPlanCopy(plan);
+    setLockInfo(true);
+  };
+
+  const putPlanMutation = useMutation({
+    mutationFn: (req: PlanData) => api.put('/plan/' + req.ID, req),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      setLockInfo(true);
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   // Update Plan Information
   const updateInfo = () => {
-    PutPlan(ipPlanCopy).then((res) => {
-      if (res.error === '') {
-        enqueueSnackbar('Request Success', { variant: 'success' })
-      } else {
-        enqueueSnackbar(String(res.error), { variant: 'error' })
-      }
+    putPlanMutation.mutate(ipPlanCopy);
+  };
 
-      setLockInfo(true)
-      setReload(true)
-    })
-  }
+  const deletePlanMutation = useMutation({
+    mutationFn: (id: number) => api.delete('/plan/' + id),
+    onSuccess: () => {
+      enqueueSnackbar('Request Success', { variant: 'success' });
+      setLockInfo(true);
+    },
+    onError: (e) => {
+      enqueueSnackbar(String((e as Error).message), { variant: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['service'] });
+    },
+  });
 
   useEffect(() => {
     if (deleteIPPlan) {
-      DeletePlan(plan.ID).then((res) => {
-        if (res.error === '') {
-          enqueueSnackbar('Request Success', { variant: 'success' })
-          setLockInfo(true)
-        } else {
-          enqueueSnackbar(String(res.error), { variant: 'error' })
-        }
-        setReload(true)
-      })
-      setDeleteIPPlan(false)
+      deletePlanMutation.mutate(plan.ID);
+      setDeleteIPPlan(false);
     }
-  }, [deleteIPPlan])
+  }, [deleteIPPlan]);
 
   return (
     <React.Fragment>
       <StyledTableRowRoot>
         <TableCell>
-          <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
+          <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
@@ -430,7 +408,7 @@ export function ServiceIPPlanRow(props: {
                   }}
                   variant="outlined"
                   onChange={(event) => {
-                    setIPPlanCopy({ ...ipPlanCopy, name: event.target.value })
+                    setIPPlanCopy({ ...ipPlanCopy, name: event.target.value });
                   }}
                 />
                 <br />
@@ -448,7 +426,7 @@ export function ServiceIPPlanRow(props: {
                     setIPPlanCopy({
                       ...ipPlanCopy,
                       after: Number(event.target.value),
-                    })
+                    });
                   }}
                 />
                 <StyledTextFieldTooVeryShort
@@ -465,7 +443,7 @@ export function ServiceIPPlanRow(props: {
                     setIPPlanCopy({
                       ...ipPlanCopy,
                       half_year: Number(event.target.value),
-                    })
+                    });
                   }}
                 />
                 <StyledTextFieldTooVeryShort
@@ -482,7 +460,7 @@ export function ServiceIPPlanRow(props: {
                     setIPPlanCopy({
                       ...ipPlanCopy,
                       one_year: Number(event.target.value),
-                    })
+                    });
                   }}
                 />
               </StyledRootForm>
@@ -496,11 +474,7 @@ export function ServiceIPPlanRow(props: {
                   >
                     ロック解除
                   </Button>
-                  <Button
-                    size="small"
-                    disabled={lockInfo}
-                    onClick={resetAction}
-                  >
+                  <Button size="small" disabled={lockInfo} onClick={resetAction}>
                     Reset
                   </Button>
                   <Button size="small" disabled={lockInfo} onClick={updateInfo}>
@@ -519,5 +493,5 @@ export function ServiceIPPlanRow(props: {
         </TableCell>
       </TableRow>
     </React.Fragment>
-  )
+  );
 }

@@ -12,9 +12,9 @@ import {
 import { useSnackbar } from 'notistack';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GetAll } from '../../api/Service';
 import Dashboard from '../../components/Dashboard/Dashboard';
 import { GenServiceCode, GenServiceCodeOnlyService } from '../../components/Tool';
+import { useServices } from '../../hooks/useResources';
 import type { ServiceDetailData } from '../../interface';
 import {
   StyledCard,
@@ -25,26 +25,17 @@ import {
 
 export default function Service() {
   const navigate = useNavigate();
-  const [services, setServices] = useState<ServiceDetailData[]>([]);
-  const [initServices, setInitServices] = useState<ServiceDetailData[]>([]);
-  const [reload, setReload] = useState(true);
+  const { data: initServices, error } = useServices();
+  const [search, setSearch] = useState('');
   const { enqueueSnackbar } = useSnackbar();
   // 1:開通 2:未開通
   const [value, setValue] = React.useState(1);
 
   useEffect(() => {
-    if (reload) {
-      GetAll().then((res) => {
-        if (res.error === '') {
-          setServices(res.data);
-          setInitServices(res.data);
-          setReload(false);
-        } else {
-          enqueueSnackbar('' + res.error, { variant: 'error' });
-        }
-      });
+    if (error) {
+      enqueueSnackbar(String((error as Error).message), { variant: 'error' });
     }
-  }, [reload]);
+  }, [error]);
 
   const checkConnection = (service: ServiceDetailData) => {
     if (value === 1) {
@@ -60,17 +51,16 @@ export default function Service() {
     setValue(Number(event.target.value));
   };
 
-  const handleFilter = (search: string) => {
-    let tmp: ServiceDetailData[];
-    if (search === '') {
-      tmp = initServices;
-    } else {
-      tmp = initServices.filter((service: ServiceDetailData) => {
-        const code = GenServiceCodeOnlyService(service);
-        return code.toLowerCase().includes(search.toLowerCase());
-      });
-    }
-    setServices(tmp);
+  const services =
+    search === ''
+      ? (initServices ?? [])
+      : (initServices ?? []).filter((service: ServiceDetailData) => {
+          const code = GenServiceCodeOnlyService(service);
+          return code.toLowerCase().includes(search.toLowerCase());
+        });
+
+  const handleFilter = (value: string) => {
+    setSearch(value);
   };
 
   const clickGroupPage = (id: number) => navigate('/dashboard/group/' + id);

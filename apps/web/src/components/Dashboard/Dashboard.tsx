@@ -31,12 +31,13 @@ import {
 import MuiAppBar, { type AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import MuiDrawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { useMutation } from '@tanstack/react-query';
 import Cookies from 'js-cookie';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Logout } from '../../api/Auth';
-import { restfulApiConfig } from '../../api/Config';
 import { infoQueryKey, useInfo } from '../../hooks/useInfo';
+import { Logout } from '../../lib/auth';
+import { restfulApiConfig } from '../../lib/config';
 import { queryClient } from '../../lib/queryClient';
 import { AntisocialAgreementDialog } from '../AntisocialAgreementDialog';
 import { muiColorTheme } from '../Theme';
@@ -262,13 +263,18 @@ export function UserMenu() {
     setAnchorEl(null);
   };
 
-  const clickLogout = () => {
-    Logout().then((res) => {
+  const logoutMutation = useMutation({
+    mutationFn: () => Logout(),
+    onSettled: () => {
       Cookies.remove('user_token');
       Cookies.remove('access_token');
       queryClient.clear();
       navigate('/login');
-    });
+    },
+  });
+
+  const clickLogout = () => {
+    logoutMutation.mutate();
   };
 
   return (
