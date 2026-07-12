@@ -91,7 +91,10 @@ export function GroupProfileInfo(props: {
     if (memberExpiredDate != null) {
       dateStr = format(memberExpiredDate, "yyyy-MM-dd'T'HH:mm:ss+09:00");
     }
+    // The admin PUT contract is a whole object — the store whitelist always
+    // writes value-typed columns, so a sparse body would clear org etc.
     const req = {
+      ...data,
       coupon_id: paymentCoupon,
       member_type: memberType,
       member_expired: dateStr,
