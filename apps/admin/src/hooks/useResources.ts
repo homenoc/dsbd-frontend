@@ -47,10 +47,12 @@ export function useGatewayIPs(): {
 export function useUsers(): { data: UserDetailData[]; error: unknown } {
   const q = useQuery({
     queryKey: ['user'],
-    queryFn: () => api.get<{ user: UserDetailData[] }>('/user'),
+    // NOTE: the admin API returns this list under "users" (plural) — unlike
+    // /group,/noc,/router which use the singular resource name.
+    queryFn: () => api.get<{ users: UserDetailData[] }>('/user'),
     staleTime: 60 * 1000,
   });
-  return { data: q.data?.user ?? [], error: q.error };
+  return { data: q.data?.users ?? [], error: q.error };
 }
 
 export function useGroups(): { data: GroupDetailData[]; error: unknown } {
