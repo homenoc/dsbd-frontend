@@ -45,7 +45,7 @@ export default function NoticeDetail() {
   }, [error]);
 
   const updateNoticeMutation = useMutation({
-    mutationFn: (req: NoticeData) => api.put('/notice/' + Number(id), req),
+    mutationFn: (req: NoticeData & { body: string }) => api.put('/notice/' + Number(id), req),
     onSuccess: () => {
       enqueueSnackbar('登録しました。', { variant: 'success' });
       queryClient.invalidateQueries({ queryKey: ['notice'] });
@@ -57,14 +57,18 @@ export default function NoticeDetail() {
 
   const request = () => {
     const start_time = DateToString1(startTime);
-    let end_time = undefined;
+    let end_time: string | undefined;
     if (!isPermanent) {
       end_time = DateToString1(endTime);
     }
 
-    data.start_time = start_time;
-    data.end_time = end_time;
-    updateNoticeMutation.mutate(data);
+    updateNoticeMutation.mutate({
+      ...data,
+      start_time,
+      end_time,
+      // バックエンドの notice.Input は本文を json:"body" で受け取る
+      body: data.data,
+    });
   };
 
   return (
