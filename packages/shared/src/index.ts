@@ -1,4 +1,4 @@
-// @dsbd/shared — code shared between apps/web and apps/admin.
+// @dsbd/shared — code shared between apps/user and apps/admin.
 // Subpath entries are also exported for tree-shaking: '@dsbd/shared/vlan' etc.
 
 export * from './vlan';

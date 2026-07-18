@@ -1,6 +1,6 @@
 # dsbd-frontend
 
-HomeNOC (AS59105) のフロントエンド monorepo。`dsbd-web`（ユーザー向け）と
+HomeNOC (AS59105) のフロントエンド monorepo。`dsbd-user`（ユーザー向け）と
 `dsbd-web-admin`（管理向け）を統合し、共通コードを `packages/shared` に集約する。
 
 > 現状 private。公開を前提に整備中。

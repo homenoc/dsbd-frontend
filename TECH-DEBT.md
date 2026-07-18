@@ -18,7 +18,7 @@
 - **あるべき姿**: #1 解決後、`UseQueryResult<T>` をそのまま返す。
 
 ### 4. `onUnauthorized` が `window.location.href` でリダイレクト
-- **場所**: `apps/web/src/lib/api.ts`, `apps/admin/src/lib/api.ts`
+- **場所**: `apps/user/src/lib/api.ts`, `apps/admin/src/lib/api.ts`
 - **何をした**: 401 時に `window.location.href='/login'`（web）/ `'/'`（admin）でハードリダイレクト。
 - **なぜ暫定**: 共有クライアントは React Router の外側なので `navigate` が使えない。
 - **あるべき姿**: ルーターと連携した 401 ハンドリング（router 経由の soft navigation）。

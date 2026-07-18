@@ -103,7 +103,7 @@ importers:
         specifier: ^8.1.4
         version: 8.1.4(@types/node@26.1.1)(sass@1.101.0)(terser@5.49.0)
 
-  apps/web:
+  apps/user:
     dependencies:
       '@dsbd/shared':
         specifier: workspace:*
