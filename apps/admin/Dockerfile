@@ -1,11 +1,13 @@
-FROM node:16.13.0 AS builder
-WORKDIR /builder
-WORKDIR /builder/dsbd-web-admin
-COPY . ./
-RUN npm install
-RUN npm run build-prod
+# Build from the repository root:
+#   docker build -f apps/admin/Dockerfile .
+FROM node:26-alpine AS builder
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN npm install -g corepack && corepack enable
+WORKDIR /repo
+COPY . .
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter dsbd-web-admin build
 
-FROM nginx:latest
-WORKDIR /usr/share/nginx/html
-COPY ./nginx-default.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /builder/dsbd-web-admin/build ./
+FROM nginx:stable-alpine
+COPY apps/admin/nginx-default.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /repo/apps/admin/build /usr/share/nginx/html
