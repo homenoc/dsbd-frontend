@@ -26,7 +26,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.71.1",
     "react-markdown": "^8.0.7",
-    "react-router-dom": "^6.30.3",
+    "react-router-dom": "^7.18.1",
     "react-use-websocket": "^4.13.0",
     "remark-gfm": "^3.0.1",
     "sha.js": "^2.4.12",
